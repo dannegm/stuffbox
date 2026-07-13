@@ -1,0 +1,11 @@
+@utility bg-strip-* {
+    --strip-color: --value(--color-*);
+    --strip-color-b: --alpha(--value(--color-*) / 80%);
+    background: repeating-linear-gradient(
+        -45deg,
+        var(--strip-color),
+        var(--strip-color) 20px,
+        var(--strip-color-b) 20px,
+        var(--strip-color-b) 40px
+    );
+}

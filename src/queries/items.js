@@ -40,6 +40,7 @@ export const createItemMutation = (opts = {}) => ({
         icon = null,
         sku = null,
         purchasePrice = null,
+        sentimentalValue = null,
     }) => {
         const { data, error } = await supabase()
             .from('items')
@@ -56,6 +57,7 @@ export const createItemMutation = (opts = {}) => ({
                 icon,
                 sku,
                 purchase_price: purchasePrice,
+                sentimental_value: sentimentalValue,
             })
             .select()
             .single();
@@ -77,6 +79,7 @@ export const updateItemMutation = (opts = {}) => ({
         icon = null,
         sku = null,
         purchasePrice = null,
+        sentimentalValue = null,
     }) => {
         const { data, error } = await supabase()
             .from('items')
@@ -90,6 +93,7 @@ export const updateItemMutation = (opts = {}) => ({
                 icon,
                 sku,
                 purchase_price: purchasePrice,
+                sentimental_value: sentimentalValue,
             })
             .eq('id', id)
             .select()

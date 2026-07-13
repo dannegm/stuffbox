@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
+import { PackedTape } from '@/components/moves/packed-tape';
 import { getLocationIcon, getLocationPhotoUrl } from '@/helpers/location';
 import { cn } from '@/helpers/utils';
 
@@ -34,7 +35,7 @@ export const LocationListItem = ({
         .join(' · ');
 
     const className = cn(
-        'flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
+        'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
         draggable && 'cursor-grab active:cursor-grabbing',
         isDragOver && 'border-primary bg-primary/10 ring-2 ring-primary/40',
@@ -42,14 +43,21 @@ export const LocationListItem = ({
 
     const content = (
         <>
+            {location.active_move_id && (
+                <PackedTape
+                    className={cn({
+                        'opacity-50 w-14.5': selectable,
+                    })}
+                />
+            )}
             {selectable && (
                 // Same fix as ItemListRow — stop the click from bubbling to the
                 // row's own button, which shares this exact toggle handler.
-                <span onClick={event => event.stopPropagation()}>
+                <span className='z-1' onClick={event => event.stopPropagation()}>
                     <Checkbox checked={selected} onCheckedChange={() => onToggle(location.id)} />
                 </span>
             )}
-            <span className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
+            <span className='z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
                 {photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photoUrl} alt='' className='size-full object-cover' />

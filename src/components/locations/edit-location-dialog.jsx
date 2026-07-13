@@ -22,6 +22,7 @@ import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { OptionDropdown } from '@/components/items/option-dropdown';
+import { LocationMapPicker } from '@/components/locations/location-map-picker';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
 import { isContainerType, getLocationIcon } from '@/helpers/location';
 import { updateLocationMutation } from '@/queries/locations';
@@ -43,7 +44,10 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
     const [isFragile, setIsFragile] = useState(false);
     const [storageOrientation, setStorageOrientation] = useState('');
     const [sentimentalValue, setSentimentalValue] = useState(null);
+    const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
+
+    const isRoot = location.parent_id == null;
 
     // Re-sync from the (possibly stale-closed) location whenever the dialog
     // reopens, rather than trying to keep local state live the whole time.
@@ -56,6 +60,7 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
         setIsFragile(location.is_fragile ?? false);
         setStorageOrientation(location.storage_orientation ?? '');
         setSentimentalValue(location.sentimental_value ?? null);
+        setCoords(location.lat != null ? { lat: location.lat, lng: location.lng } : null);
         setError(null);
     }, [open, location]);
 
@@ -93,6 +98,7 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
             isFragile,
             storageOrientation: storageOrientation || null,
             sentimentalValue,
+            ...(isRoot && { lat: coords?.lat ?? null, lng: coords?.lng ?? null }),
         });
     };
 
@@ -149,6 +155,17 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
                                 />
                                 <FieldError>{error}</FieldError>
                             </Field>
+
+                            {isRoot && (
+                                <Field>
+                                    <FieldLabel>Ubicación en el mapa</FieldLabel>
+                                    <LocationMapPicker
+                                        value={coords}
+                                        onChange={setCoords}
+                                        workspaceId={location.workspace_id}
+                                    />
+                                </Field>
+                            )}
 
                             {isContainer && (
                                 <>

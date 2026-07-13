@@ -23,7 +23,9 @@ import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
 import { PhotoGallery } from '@/ui/photo-gallery';
+import { HeartRating } from '@/ui/heart-rating';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
+import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
@@ -79,6 +81,7 @@ export default function ItemPage({ params }) {
     const [icon, setIcon] = useState(null);
     const [sku, setSku] = useState('');
     const [purchasePrice, setPurchasePrice] = useState('');
+    const [sentimentalValue, setSentimentalValue] = useState(null);
     const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -96,6 +99,7 @@ export default function ItemPage({ params }) {
         setIcon(item.icon ?? null);
         setSku(item.sku ?? '');
         setPurchasePrice(item.purchase_price != null ? String(item.purchase_price) : '');
+        setSentimentalValue(item.sentimental_value ?? null);
     }, [item]);
 
     useEffect(() => {
@@ -190,6 +194,7 @@ export default function ItemPage({ params }) {
             icon: icon ?? FALLBACK_ITEM_ICON,
             sku: sku.trim() || null,
             purchasePrice: purchasePrice === '' ? null : Number(purchasePrice),
+            sentimentalValue,
         });
         syncTags({ itemId: id, tagIds });
     };
@@ -209,7 +214,8 @@ export default function ItemPage({ params }) {
         .map(tag => tag.icon ?? FALLBACK_TAG_ICON);
 
     return (
-        <div className='flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>
+        <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>
+            {item.active_move_id && <PackedTapeTop />}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={[...(ancestors ?? []), location]}
@@ -380,6 +386,11 @@ export default function ItemPage({ params }) {
                                 value={tagIds}
                                 onChange={setTagIds}
                             />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Valor sentimental</FieldLabel>
+                            <HeartRating value={sentimentalValue} onChange={setSentimentalValue} />
                         </Field>
 
                         <Field orientation='horizontal'>

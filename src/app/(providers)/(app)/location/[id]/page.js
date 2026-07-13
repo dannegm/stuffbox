@@ -39,6 +39,7 @@ import { CreateLocationDialog } from '@/components/locations/create-location-dia
 import { EditLocationDialog } from '@/components/locations/edit-location-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
+import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
@@ -361,9 +362,13 @@ export default function LocationPage({ params }) {
 
     return (
         <div
-            className={cn('flex flex-1 flex-col gap-4 p-4', isDesktop && 'h-dvh overflow-hidden')}
+            className={cn(
+                'relative flex flex-1 flex-col gap-4 p-4',
+                isDesktop && 'h-dvh overflow-hidden',
+            )}
             data-block='LocationPage'
         >
+            {location.active_move_id && <PackedTapeTop />}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={ancestors ?? []}

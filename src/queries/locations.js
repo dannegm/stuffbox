@@ -144,6 +144,8 @@ export const updateLocationMutation = (opts = {}) => ({
         isFragile = false,
         storageOrientation = null,
         sentimentalValue = null,
+        lat,
+        lng,
     }) => {
         const { data, error } = await supabase()
             .from('locations')
@@ -156,6 +158,11 @@ export const updateLocationMutation = (opts = {}) => ({
                 is_fragile: isFragile,
                 storage_orientation: storageOrientation,
                 sentimental_value: sentimentalValue,
+                // Only root locations get a map picker in the edit dialog —
+                // omitted (rather than defaulted to null) elsewhere so
+                // editing a room/box never clobbers coordinates it never had.
+                ...(lat !== undefined && { lat }),
+                ...(lng !== undefined && { lng }),
             })
             .eq('id', id)
             .select()

@@ -27,6 +27,7 @@ export const DEFAULT_LOCATION_ICONS = {
     outdoor: { library: 'phosphor', name: 'ParkIcon' },
     // Transition zone, hallway, entryway, corridor.
     hallway: { library: 'phosphor', name: 'FootprintsIcon' },
+    pet: { library: 'lucide', name: 'Cat' },
     other: { library: 'phosphor', name: 'DotsThreeIcon' },
 };
 

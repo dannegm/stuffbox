@@ -179,12 +179,17 @@ export default function MovePage({ params }) {
                             key={location.id}
                             className='flex items-center gap-3 rounded-lg border p-3 text-sm'
                         >
-                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                <DynamicIcon icon={getLocationIcon(location)} />
-                            </span>
-                            <span className='min-w-0 flex-1 truncate font-medium'>
-                                {location.name}
-                            </span>
+                            <Link
+                                href={`/location/${location.id}`}
+                                className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                            >
+                                <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                    <DynamicIcon icon={getLocationIcon(location)} />
+                                </span>
+                                <span className='min-w-0 flex-1 truncate font-medium'>
+                                    {location.name}
+                                </span>
+                            </Link>
                             <Button
                                 size='sm'
                                 variant='outline'
@@ -202,10 +207,17 @@ export default function MovePage({ params }) {
                             key={item.id}
                             className='flex items-center gap-3 rounded-lg border p-3 text-sm'
                         >
-                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                <DynamicIcon icon={getItemIcon(item)} />
-                            </span>
-                            <span className='min-w-0 flex-1 truncate font-medium'>{item.name}</span>
+                            <Link
+                                href={`/item/${item.id}`}
+                                className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                            >
+                                <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                    <DynamicIcon icon={getItemIcon(item)} />
+                                </span>
+                                <span className='min-w-0 flex-1 truncate font-medium'>
+                                    {item.name}
+                                </span>
+                            </Link>
                             <Button
                                 size='sm'
                                 variant='outline'

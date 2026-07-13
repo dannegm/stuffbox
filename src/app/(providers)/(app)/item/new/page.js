@@ -17,6 +17,7 @@ import { TagPicker } from '@/components/items/tag-picker';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { getLocationIcon } from '@/helpers/location';
 import { PhotoGallery } from '@/ui/photo-gallery';
+import { HeartRating } from '@/ui/heart-rating';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';
@@ -62,6 +63,7 @@ export default function NewItemPage() {
     const [icon, setIcon] = useState(null);
     const [sku, setSku] = useState('');
     const [purchasePrice, setPurchasePrice] = useState('');
+    const [sentimentalValue, setSentimentalValue] = useState(null);
     const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
 
@@ -75,6 +77,7 @@ export default function NewItemPage() {
         setIcon(null);
         setSku('');
         setPurchasePrice('');
+        setSentimentalValue(null);
         setTagIds([]);
     };
 
@@ -105,6 +108,7 @@ export default function NewItemPage() {
             icon: icon ?? FALLBACK_ITEM_ICON,
             sku: sku.trim() || null,
             purchasePrice: purchasePrice === '' ? null : Number(purchasePrice),
+            sentimentalValue,
         };
     };
 
@@ -258,6 +262,11 @@ export default function NewItemPage() {
                                 value={tagIds}
                                 onChange={setTagIds}
                             />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Valor sentimental</FieldLabel>
+                            <HeartRating value={sentimentalValue} onChange={setSentimentalValue} />
                         </Field>
 
                         <Field orientation='horizontal'>
