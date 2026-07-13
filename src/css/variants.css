@@ -1,0 +1,38 @@
+/* Custom Tailwind v4 variants keyed off the data attributes DeviceProvider
+   and DebugProvider set on <html>. See src/providers/device-provider.jsx
+   and src/providers/debug-provider.jsx. */
+
+@custom-variant debug (&:where([data-debug='true'], [data-debug='true'] *));
+
+@custom-variant chrome (&:where([data-browser='chrome'], [data-browser='chrome'] *));
+@custom-variant firefox (&:where([data-browser='firefox'], [data-browser='firefox'] *));
+@custom-variant safari (&:where([data-browser='safari'], [data-browser='safari'] *));
+@custom-variant edge (&:where([data-browser='edge'], [data-browser='edge'] *));
+@custom-variant opera (&:where([data-browser='opera'], [data-browser='opera'] *));
+
+@custom-variant mobile (&:where([data-device='mobile'], [data-device='mobile'] *));
+@custom-variant tablet (&:where([data-device='tablet'], [data-device='tablet'] *));
+@custom-variant desktop (&:where([data-device='desktop'], [data-device='desktop'] *));
+@custom-variant bot (&:where([data-device='bot'], [data-device='bot'] *));
+
+@custom-variant windows (&:where([data-os='windows'], [data-os='windows'] *));
+@custom-variant macos (&:where([data-os='macos'], [data-os='macos'] *));
+@custom-variant linux (&:where([data-os='linux'], [data-os='linux'] *));
+@custom-variant android (&:where([data-os='android'], [data-os='android'] *));
+@custom-variant ios (&:where([data-os='ios'], [data-os='ios'] *));
+@custom-variant chromeos (&:where([data-os='chromeos'], [data-os='chromeos'] *));
+
+@custom-variant touch (&:where([data-touch='true'], [data-touch='true'] *));
+@custom-variant no-touch (&:where([data-touch='false'], [data-touch='false'] *));
+
+/* One per app/ route root — see CLAUDE.md's Routes section */
+@custom-variant page-home (&:where([data-page='home'], [data-page='home'] *));
+@custom-variant page-login (&:where([data-page='login'], [data-page='login'] *));
+@custom-variant page-invite (&:where([data-page='invite'], [data-page='invite'] *));
+@custom-variant page-workspace (&:where([data-page='workspace'], [data-page='workspace'] *));
+@custom-variant page-location (&:where([data-page='location'], [data-page='location'] *));
+@custom-variant page-item (&:where([data-page='item'], [data-page='item'] *));
+@custom-variant page-moves (&:where([data-page='moves'], [data-page='moves'] *));
+@custom-variant page-move (&:where([data-page='move'], [data-page='move'] *));
+@custom-variant page-settings (&:where([data-page='settings'], [data-page='settings'] *));
+@custom-variant page-admin (&:where([data-page='admin'], [data-page='admin'] *));
