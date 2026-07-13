@@ -89,8 +89,11 @@ export const locationAncestorsQuery = (parentId, opts = {}) => ({
                 .from('locations')
                 .select('id, name, type, icon, parent_id')
                 .eq('id', currentId)
-                .single();
+                .maybeSingle();
             if (error) throw error;
+            // No row back (deleted mid-walk, or RLS no longer grants access to
+            // it) — stop here instead of crashing on a missing `parent_id`.
+            if (!data) break;
             ancestors.unshift(data);
             currentId = data.parent_id;
         }
