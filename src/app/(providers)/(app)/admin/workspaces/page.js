@@ -30,9 +30,10 @@ const useAdminWorkspaces = ({ page, search, sortBy, sortDir }) =>
         queryFn: async () => {
             let query = supabase()
                 .from('workspaces')
-                .select('id, name, color, created_at, profiles(name), workspace_members(count)', {
-                    count: 'exact',
-                });
+                .select(
+                    'id, name, color, created_at, profiles!workspaces_owner_id_fkey(name), workspace_members(count)',
+                    { count: 'exact' },
+                );
 
             const q = search.trim();
             if (q) query = query.ilike('name', `%${q}%`);
