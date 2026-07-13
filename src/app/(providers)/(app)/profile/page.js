@@ -55,14 +55,14 @@ export default function ProfilePage() {
 
     const { mutate, isPending: isSaving } = useMutation(
         updateProfileMutation({
-            onSuccess: updated => queryClient.setQueryData(['profile', user.id], updated),
+            onSuccess: updated => queryClient.setQueryData(['profile', user?.id], updated),
         }),
     );
 
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
-        mutate({ id: user.id, name: name.trim(), gender, avatarSeed, color });
+        mutate({ id: user?.id, name: name.trim(), gender, avatarSeed, color });
     };
 
     if (isAuthLoading || !user || isPending || !profile) {

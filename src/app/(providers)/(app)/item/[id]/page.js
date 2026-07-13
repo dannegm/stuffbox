@@ -130,9 +130,9 @@ export default function ItemPage({ params }) {
                 // path; the future "optimize storage" button is the net).
                 deleteR2Objects(itemPhotos.photos.map(photo => photo.r2_key));
                 queryClient.invalidateQueries({
-                    queryKey: ['items', 'by-location', item.location_id],
+                    queryKey: ['items', 'by-location', item?.location_id],
                 });
-                router.replace(`/location/${item.location_id}`);
+                router.replace(`/location/${item?.location_id}`);
             },
             onError: err => setError(err.message),
         }),
@@ -141,7 +141,7 @@ export default function ItemPage({ params }) {
     const { mutate: transfer, isPending: isTransferring } = useMutation(
         transferItemMutation({
             onSuccess: updated => {
-                const previousLocationId = item.location_id;
+                const previousLocationId = item?.location_id;
                 queryClient.setQueryData(['item', id], updated);
                 queryClient.invalidateQueries({
                     queryKey: ['items', 'by-location', previousLocationId],
@@ -194,7 +194,7 @@ export default function ItemPage({ params }) {
     };
 
     const handleDelete = () => {
-        if (!window.confirm(`¿Eliminar "${item.name}"? Esto no se puede deshacer.`)) return;
+        if (!window.confirm(`¿Eliminar "${item?.name}"? Esto no se puede deshacer.`)) return;
         destroy(id);
     };
 

@@ -234,12 +234,12 @@ export default function CollaboratorsPage() {
     );
 
     const handleRemoveMember = member => {
-        const isSelf = member.user_id === user.id;
+        const isSelf = member.user_id === user?.id;
         const message = isSelf
             ? '¿Salir de este espacio?'
             : `¿Quitar a ${member.profiles.name} de este espacio?`;
         if (!window.confirm(message)) return;
-        removeMember({ workspaceId: workspace.id, userId: member.user_id });
+        removeMember({ workspaceId: workspace?.id, userId: member.user_id });
     };
 
     if (

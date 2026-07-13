@@ -62,7 +62,7 @@ const CreateWorkspaceDialog = ({ open, onOpenChange }) => {
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
-        mutate({ name: name.trim(), userId: user.id });
+        mutate({ name: name.trim(), userId: user?.id });
     };
 
     return (

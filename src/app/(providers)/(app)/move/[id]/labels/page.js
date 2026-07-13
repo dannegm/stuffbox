@@ -120,7 +120,7 @@ export default function MoveLabelsPage({ params }) {
         // already covers them, no need for a redundant one (stuffbox-plan.md
         // §8). Still shown, just unchecked, so the owner can override.
         const nested = new Set(
-            packed.locations
+            packed?.locations
                 .filter(
                     location =>
                         selectedLocationIds.has(location.id) &&
@@ -138,8 +138,8 @@ export default function MoveLabelsPage({ params }) {
     const handleGeneratePdf = async () => {
         setIsGenerating(true);
         try {
-            const confirmedItems = packed.items.filter(item => confirmedItemIds.has(item.id));
-            const confirmedLocations = packed.locations.filter(location =>
+            const confirmedItems = packed?.items.filter(item => confirmedItemIds.has(item.id));
+            const confirmedLocations = packed?.locations.filter(location =>
                 confirmedLocationIds.has(location.id),
             );
 
@@ -191,7 +191,7 @@ export default function MoveLabelsPage({ params }) {
         try {
             const formData = new FormData();
             formData.append('email', email.trim());
-            formData.append('moveName', move.name);
+            formData.append('moveName', move?.name);
             formData.append('file', pdfBlob, 'etiquetas.pdf');
             const response = await fetch('/api/labels/email', { method: 'POST', body: formData });
             setSendResult(response.ok ? 'ok' : 'error');

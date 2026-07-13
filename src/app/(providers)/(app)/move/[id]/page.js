@@ -67,19 +67,19 @@ export default function MovePage({ params }) {
     );
 
     const handleStatusChange = status =>
-        updateMove({ id, name: move.name, status, routeType: move.route_type });
+        updateMove({ id, name: move?.name, status, routeType: move?.route_type });
 
     const handleDelete = () => {
-        if (!window.confirm(`¿Eliminar la mudanza "${move.name}"? Se desempaca todo lo suelto.`))
+        if (!window.confirm(`¿Eliminar la mudanza "${move?.name}"? Se desempaca todo lo suelto.`))
             return;
         destroyMove(id);
     };
 
     const handleUnpack = destinationId => {
-        if (unpackTarget.type === 'item') {
+        if (unpackTarget?.type === 'item') {
             unpackItem({ id: unpackTarget.id, locationId: destinationId });
         } else {
-            unpackLocation({ id: unpackTarget.id, parentId: destinationId });
+            unpackLocation({ id: unpackTarget?.id, parentId: destinationId });
         }
         setUnpackTarget(null);
     };
