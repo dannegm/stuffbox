@@ -3,18 +3,27 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { WarningDiamondIcon, ArrowsLeftRightIcon } from '@phosphor-icons/react/ssr';
+import { WarningDiamondIcon, ArrowsLeftRightIcon, PackageIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import {
     itemQuery,
     updateItemMutation,
     deleteItemMutation,
     transferItemMutation,
+    packItemMutation,
+    unpackItemMutation,
 } from '@/queries/items';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
 import { optionListsQuery } from '@/queries/option-lists';
+import { itemTagsQuery, syncItemTagsMutation } from '@/queries/tags';
+import { moveQuery } from '@/queries/moves';
+import { useItemPhotos } from '@/hooks/use-item-photos';
+import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
+import { TagPicker } from '@/components/items/tag-picker';
+import { ItemPhotoGallery } from '@/components/items/item-photo-gallery';
+import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
@@ -55,6 +64,10 @@ export default function ItemPage({ params }) {
     const { data: orientations } = useQuery(
         optionListsQuery(location?.workspace_id, 'orientation', { enabled: !!location }),
     );
+    const { data: itemTags } = useQuery(itemTagsQuery(id, { enabled: !!item }));
+    const { data: packedMove } = useQuery(
+        moveQuery(item?.active_move_id, { enabled: !!item?.active_move_id }),
+    );
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -63,8 +76,12 @@ export default function ItemPage({ params }) {
     const [storageOrientation, setStorageOrientation] = useState('');
     const [isFragile, setIsFragile] = useState(false);
     const [icon, setIcon] = useState(null);
+    const [sku, setSku] = useState('');
+    const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [packDialogOpen, setPackDialogOpen] = useState(false);
+    const [unpackOpen, setUnpackOpen] = useState(false);
 
     useEffect(() => {
         if (!item) return;
@@ -75,7 +92,20 @@ export default function ItemPage({ params }) {
         setStorageOrientation(item.storage_orientation ?? '');
         setIsFragile(item.is_fragile);
         setIcon(item.icon ?? null);
+        setSku(item.sku ?? '');
     }, [item]);
+
+    useEffect(() => {
+        if (itemTags) setTagIds(itemTags.map(tag => tag.id));
+    }, [itemTags]);
+
+    const { mutate: syncTags } = useMutation(
+        syncItemTagsMutation({
+            onSuccess: () => queryClient.invalidateQueries({ queryKey: ['item-tags', id] }),
+        }),
+    );
+
+    const itemPhotos = useItemPhotos({ itemId: id, workspaceId: location?.workspace_id });
 
     const { mutate: save, isPending: isSaving } = useMutation(
         updateItemMutation({
@@ -93,6 +123,10 @@ export default function ItemPage({ params }) {
     const { mutate: destroy, isPending: isDeleting } = useMutation(
         deleteItemMutation({
             onSuccess: () => {
+                // item_photos rows cascade-delete with the item — the R2
+                // objects don't, so clean those up here (immediate-deletion
+                // path; the future "optimize storage" button is the net).
+                deleteR2Objects(itemPhotos.photos.map(photo => photo.r2_key));
                 queryClient.invalidateQueries({
                     queryKey: ['items', 'by-location', item.location_id],
                 });
@@ -118,7 +152,26 @@ export default function ItemPage({ params }) {
         }),
     );
 
+    const { mutate: pack } = useMutation(
+        packItemMutation({
+            onSuccess: updated => queryClient.setQueryData(['item', id], updated),
+        }),
+    );
+
+    const { mutate: unpack } = useMutation(
+        unpackItemMutation({
+            onSuccess: updated => {
+                queryClient.setQueryData(['item', id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['items', 'by-location', updated.location_id],
+                });
+            },
+        }),
+    );
+
     const handleTransfer = newLocationId => transfer({ id, locationId: newLocationId });
+    const handlePack = moveId => pack({ id, moveId });
+    const handleUnpack = newLocationId => unpack({ id, locationId: newLocationId });
 
     const handleSubmit = event => {
         event.preventDefault();
@@ -132,7 +185,9 @@ export default function ItemPage({ params }) {
             storageOrientation: storageOrientation || null,
             isFragile,
             icon: icon ?? FALLBACK_ITEM_ICON,
+            sku: sku.trim() || null,
         });
+        syncTags({ itemId: id, tagIds });
     };
 
     const handleDelete = () => {
@@ -158,21 +213,43 @@ export default function ItemPage({ params }) {
                     current={item}
                     currentIcon={previewIcon}
                 />
-                <Button
-                    type='button'
-                    size='sm'
-                    variant='outline'
-                    disabled={isTransferring}
-                    onClick={() => setPickerOpen(true)}
-                    className='shrink-0'
-                >
-                    {isTransferring ? (
-                        <Spinner data-icon='inline-start' />
+                <div className='flex shrink-0 items-center gap-2'>
+                    {item.active_move_id ? (
+                        <Button
+                            type='button'
+                            size='sm'
+                            variant='outline'
+                            onClick={() => setUnpackOpen(true)}
+                        >
+                            <PackageIcon data-icon='inline-start' />
+                            Desempacar{packedMove ? `: ${packedMove.name}` : ''}
+                        </Button>
                     ) : (
-                        <ArrowsLeftRightIcon data-icon='inline-start' />
+                        <Button
+                            type='button'
+                            size='sm'
+                            variant='outline'
+                            onClick={() => setPackDialogOpen(true)}
+                        >
+                            <PackageIcon data-icon='inline-start' />
+                            Empacar
+                        </Button>
                     )}
-                    Transferir
-                </Button>
+                    <Button
+                        type='button'
+                        size='sm'
+                        variant='outline'
+                        disabled={isTransferring}
+                        onClick={() => setPickerOpen(true)}
+                    >
+                        {isTransferring ? (
+                            <Spinner data-icon='inline-start' />
+                        ) : (
+                            <ArrowsLeftRightIcon data-icon='inline-start' />
+                        )}
+                        Transferir
+                    </Button>
+                </div>
             </div>
 
             <LocationPicker
@@ -180,6 +257,20 @@ export default function ItemPage({ params }) {
                 onOpenChange={setPickerOpen}
                 workspaceId={location.workspace_id}
                 onSelect={handleTransfer}
+            />
+
+            <LocationPicker
+                open={unpackOpen}
+                onOpenChange={setUnpackOpen}
+                workspaceId={location.workspace_id}
+                onSelect={handleUnpack}
+            />
+
+            <PackIntoMoveDialog
+                workspaceId={location.workspace_id}
+                open={packDialogOpen}
+                onOpenChange={setPackDialogOpen}
+                onSelect={handlePack}
             />
 
             <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
@@ -226,6 +317,27 @@ export default function ItemPage({ params }) {
                         />
                     </Field>
 
+                    <Field>
+                        <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
+                        <Input
+                            id='item-sku'
+                            value={sku}
+                            onChange={event => setSku(event.target.value)}
+                            placeholder='Opcional'
+                        />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Fotos</FieldLabel>
+                        <ItemPhotoGallery
+                            photos={itemPhotos.photos}
+                            pending={itemPhotos.pending}
+                            isProcessing={itemPhotos.isProcessing}
+                            onAddFiles={itemPhotos.addFiles}
+                            onRemove={itemPhotos.removePhoto}
+                        />
+                    </Field>
+
                     <OptionDropdown
                         label='Condición'
                         value={condition}
@@ -239,6 +351,15 @@ export default function ItemPage({ params }) {
                         onChange={setStorageOrientation}
                         options={orientations}
                     />
+
+                    <Field>
+                        <FieldLabel>Tags</FieldLabel>
+                        <TagPicker
+                            workspaceId={location.workspace_id}
+                            value={tagIds}
+                            onChange={setTagIds}
+                        />
+                    </Field>
 
                     <Field orientation='horizontal'>
                         <FieldLabel htmlFor='item-fragile' className='flex-1'>

@@ -10,7 +10,12 @@ import { cn } from '@/helpers/utils';
 // Below this many options, scanning by eye beats typing — the search box
 // only earns its place once there's enough to actually search through.
 const SEARCH_THRESHOLD = 10;
-const LIST_HEIGHT = 'h-56';
+// fit-content(14rem) instead of a plain h-56: ScrollArea's viewport is
+// height:100% of this box, so a plain max-height alone can't shrink it below
+// 14rem (percentage heights don't resolve against max-height, only against
+// an explicit/definite height) — fit-content gives it a real definite height
+// that's still capped, so short lists shrink and long lists scroll.
+const LIST_HEIGHT = 'h-[fit-content(14rem)]';
 
 // A searchable option list in a Popover, modeled on pinia's CategorySelect
 // (src/components/categories/category-select.jsx) — generalized so every

@@ -10,6 +10,8 @@ export const DEFAULT_LOCATION_ICONS = {
     gameroom: { library: 'phosphor', name: 'GameControllerIcon' },
     box: { library: 'phosphor', name: 'PackageIcon' },
     shelf: { library: 'phosphor', name: 'BooksIcon' },
+    toolbox: { library: 'phosphor', name: 'ToolboxIcon' },
+    baggage: { library: 'phosphor', name: 'SuitcaseRollingIcon' },
     library: { library: 'phosphor', name: 'BooksIcon' },
     closet: { library: 'phosphor', name: 'TShirtIcon' },
     drawer: { library: 'phosphor', name: 'ArchiveIcon' },

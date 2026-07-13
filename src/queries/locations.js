@@ -101,6 +101,38 @@ export const updateLocationMutation = (opts = {}) => ({
     ...opts,
 });
 
+// Pack a box = set active_move_id, parent_id untouched (§6) — same shape as
+// packItemMutation, just this table's position column is parent_id not
+// location_id.
+export const packLocationMutation = (opts = {}) => ({
+    mutationFn: async ({ id, moveId }) => {
+        const { data, error } = await supabase()
+            .from('locations')
+            .update({ active_move_id: moveId })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
+// Unpack a box = set parent_id to the destination + clear active_move_id.
+export const unpackLocationMutation = (opts = {}) => ({
+    mutationFn: async ({ id, parentId }) => {
+        const { data, error } = await supabase()
+            .from('locations')
+            .update({ parent_id: parentId, active_move_id: null })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
 // Cascades to every descendant location and item (db.sql: parent_id/location_id
 // both `on delete cascade`) — the caller is responsible for warning about that.
 export const deleteLocationMutation = (opts = {}) => ({

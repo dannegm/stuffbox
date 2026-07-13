@@ -131,6 +131,7 @@ create table stuffbox.items (
   description         text,
   quantity            int not null default 1,
   condition           text,                               -- ref option_lists(field='condition'), no hard FK
+  sku                 text,
   serial_number       text,
   purchase_price      numeric,
   acquired_month      int,
@@ -139,7 +140,7 @@ create table stuffbox.items (
   is_fragile          boolean not null default false,
   storage_orientation text,                                -- ref option_lists(field='orientation'), no hard FK
   icon                jsonb,                                -- own fallback icon
-  active_move_id      text references stuffbox.moves(id),  -- loose items only; boxed items inherit their box's move
+  active_move_id      text references stuffbox.moves(id) on delete set null,  -- loose items only; boxed items inherit their box's move
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
@@ -164,6 +165,7 @@ create table stuffbox.tags (
   name        text not null,
   color       text not null,
   icon        jsonb,
+  sku         text,
   created_at  timestamptz not null default now()
 );
 

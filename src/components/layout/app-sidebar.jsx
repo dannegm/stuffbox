@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TruckIcon, GearIcon } from '@phosphor-icons/react/ssr';
+import { TruckIcon, TagIcon, GearIcon } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
     SidebarContent,
@@ -21,6 +21,7 @@ import { ProfileMenu } from '@/components/layout/profile-menu';
 
 const NAV_ITEMS = [
     { href: '/moves', label: 'Mudanzas', icon: TruckIcon, match: /^\/moves(\/|$)/ },
+    { href: '/tags', label: 'Tags', icon: TagIcon, match: /^\/tags(\/|$)/ },
     { href: '/settings', label: 'Ajustes', icon: GearIcon, match: /^\/settings(\/|$)/ },
 ];
 

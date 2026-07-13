@@ -9,6 +9,7 @@ import {
     DotsThreeVerticalIcon,
     PencilSimpleIcon,
     TrashIcon,
+    PackageIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -17,12 +18,17 @@ import {
     locationChildrenQuery,
     locationAncestorsQuery,
     deleteLocationMutation,
+    packLocationMutation,
+    unpackLocationMutation,
 } from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
+import { moveQuery } from '@/queries/moves';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
 import { EditLocationDialog } from '@/components/locations/edit-location-dialog';
+import { LocationPicker } from '@/components/locations/location-picker';
+import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
@@ -49,6 +55,8 @@ export default function LocationPage({ params }) {
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
     const [editOpen, setEditOpen] = useState(false);
+    const [packDialogOpen, setPackDialogOpen] = useState(false);
+    const [unpackOpen, setUnpackOpen] = useState(false);
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -70,6 +78,29 @@ export default function LocationPage({ params }) {
     const { data: items, isPending: isItemsPending } = useQuery(
         itemsAtLocationQuery(id, { enabled: !!location }),
     );
+    const { data: packedMove } = useQuery(
+        moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
+    );
+
+    const { mutate: pack } = useMutation(
+        packLocationMutation({
+            onSuccess: updated => queryClient.setQueryData(['location', id], updated),
+        }),
+    );
+
+    const { mutate: unpack } = useMutation(
+        unpackLocationMutation({
+            onSuccess: updated => {
+                queryClient.setQueryData(['location', id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, updated.parent_id],
+                });
+            },
+        }),
+    );
+
+    const handlePack = moveId => pack({ id, moveId });
+    const handleUnpack = newParentId => unpack({ id, parentId: newParentId });
 
     const { mutate: destroy } = useMutation(
         deleteLocationMutation({
@@ -133,6 +164,22 @@ export default function LocationPage({ params }) {
                     </div>
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
+                    {location.type === 'box' &&
+                        (location.active_move_id ? (
+                            <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
+                                <PackageIcon data-icon='inline-start' />
+                                Desempacar{packedMove ? `: ${packedMove.name}` : ''}
+                            </Button>
+                        ) : (
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() => setPackDialogOpen(true)}
+                            >
+                                <PackageIcon data-icon='inline-start' />
+                                Empacar
+                            </Button>
+                        ))}
                     <Button
                         size='sm'
                         variant='outline'
@@ -170,6 +217,20 @@ export default function LocationPage({ params }) {
             </div>
 
             <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />
+
+            <LocationPicker
+                open={unpackOpen}
+                onOpenChange={setUnpackOpen}
+                workspaceId={location.workspace_id}
+                onSelect={handleUnpack}
+            />
+
+            <PackIntoMoveDialog
+                workspaceId={location.workspace_id}
+                open={packDialogOpen}
+                onOpenChange={setPackDialogOpen}
+                onSelect={handlePack}
+            />
 
             {isEmpty ? (
                 <Empty className='flex-1' data-block='LocationEmpty'>

@@ -8,7 +8,12 @@ import { useAuth } from '@/providers/auth-provider';
 import { locationQuery } from '@/queries/locations';
 import { createItemMutation } from '@/queries/items';
 import { optionListsQuery } from '@/queries/option-lists';
+import { syncItemTagsMutation } from '@/queries/tags';
+import { useItemPhotos } from '@/hooks/use-item-photos';
+import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
+import { TagPicker } from '@/components/items/tag-picker';
+import { ItemPhotoGallery } from '@/components/items/item-photo-gallery';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';
@@ -47,6 +52,8 @@ export default function NewItemPage() {
     const [storageOrientation, setStorageOrientation] = useState('');
     const [isFragile, setIsFragile] = useState(false);
     const [icon, setIcon] = useState(null);
+    const [sku, setSku] = useState('');
+    const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
 
     const resetForm = () => {
@@ -57,10 +64,19 @@ export default function NewItemPage() {
         setStorageOrientation('');
         setIsFragile(false);
         setIcon(null);
+        setSku('');
+        setTagIds([]);
     };
+
+    const { mutate: syncTags } = useMutation(syncItemTagsMutation());
+    const itemPhotos = useItemPhotos({ itemId: null, workspaceId: location?.workspace_id });
 
     const { mutate, isPending } = useMutation(
         createItemMutation({
+            onSuccess: item => {
+                if (tagIds.length > 0) syncTags({ itemId: item.id, tagIds });
+                itemPhotos.commitPending(item.id);
+            },
             onError: err => setError(err.message),
         }),
     );
@@ -77,10 +93,14 @@ export default function NewItemPage() {
             storageOrientation: storageOrientation || null,
             isFragile,
             icon: icon ?? FALLBACK_ITEM_ICON,
+            sku: sku.trim() || null,
         };
     };
 
     const handleDiscard = () => {
+        // Photos already uploaded to R2 for this not-yet-created item have no
+        // item_photos row yet, so nothing cascades — clean them up here.
+        deleteR2Objects(itemPhotos.pending.map(photo => photo.r2Key));
         router.replace(`/location/${locationId}`);
     };
 
@@ -163,6 +183,27 @@ export default function NewItemPage() {
                         />
                     </Field>
 
+                    <Field>
+                        <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
+                        <Input
+                            id='item-sku'
+                            value={sku}
+                            onChange={event => setSku(event.target.value)}
+                            placeholder='Opcional'
+                        />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Fotos</FieldLabel>
+                        <ItemPhotoGallery
+                            photos={itemPhotos.photos}
+                            pending={itemPhotos.pending}
+                            isProcessing={itemPhotos.isProcessing}
+                            onAddFiles={itemPhotos.addFiles}
+                            onRemove={itemPhotos.removePhoto}
+                        />
+                    </Field>
+
                     <OptionDropdown
                         label='Condición'
                         value={condition}
@@ -176,6 +217,15 @@ export default function NewItemPage() {
                         onChange={setStorageOrientation}
                         options={orientations}
                     />
+
+                    <Field>
+                        <FieldLabel>Tags</FieldLabel>
+                        <TagPicker
+                            workspaceId={location.workspace_id}
+                            value={tagIds}
+                            onChange={setTagIds}
+                        />
+                    </Field>
 
                     <Field orientation='horizontal'>
                         <FieldLabel htmlFor='item-fragile' className='flex-1'>

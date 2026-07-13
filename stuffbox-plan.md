@@ -121,7 +121,7 @@ One schema per project. **Updated id strategy (decided during initial `db.sql` w
 
 ### `items`
 
-`id` PK · `workspace_id` (cascade) · `location_id` → locations (cascade) **required, exactly one at a time** · `name` · `description` (nullable) · `quantity` int default 1 · `condition` (ref → option_lists, nullable) · `serial_number` (nullable) · `purchase_price` numeric (nullable) · `acquired_month` int (nullable) · `acquired_year` int (nullable) · `sentimental_value` smallint 1–5 (nullable, hearts) · `is_fragile` bool default false · `storage_orientation` (ref → option_lists, nullable) · `icon` jsonb (nullable, own fallback icon) · `active_move_id` → moves (nullable; **loose items only** — boxed items inherit their box's move state) · timestamps
+`id` PK · `workspace_id` (cascade) · `location_id` → locations (cascade) **required, exactly one at a time** · `name` · `description` (nullable) · `quantity` int default 1 · `condition` (ref → option_lists, nullable) · `sku` (nullable, no uniqueness constraint) · `serial_number` (nullable) · `purchase_price` numeric (nullable) · `acquired_month` int (nullable) · `acquired_year` int (nullable) · `sentimental_value` smallint 1–5 (nullable, hearts) · `is_fragile` bool default false · `storage_orientation` (ref → option_lists, nullable) · `icon` jsonb (nullable, own fallback icon) · `active_move_id` → moves (nullable; **loose items only** — boxed items inherit their box's move state) · timestamps
 No-photo icon priority: photo → item.icon → first tag icon → `Package2`.
 
 ### `item_photos` (square-masked at render, never physically cropped)
@@ -131,7 +131,7 @@ No-photo icon priority: photo → item.icon → first tag icon → `Package2`.
 
 ### `tags` (predefined categories, multi per item)
 
-`id` PK · `workspace_id` (cascade) · `name` · `color` (single) · `icon` jsonb · `created_at`
+`id` PK · `workspace_id` (cascade) · `name` · `color` (single) · `icon` jsonb · `sku` (nullable, no uniqueness constraint) · `created_at`
 
 ### `item_tags`
 
@@ -276,8 +276,8 @@ src/app/(providers)/(app)/layout.js     # SidebarProvider + AppSidebar + Sidebar
   house/new/page.js                     # dedicated route (not a dialog) — name/type/icon/lat+lng map picker for a root location; child locations (room/box/etc.) still use CreateLocationDialog
   item/new/page.js                      # create item (MVP field set: name/description/quantity/condition/orientation/fragile/icon — no photos/tags/serial/price/acquired-date/sentimental-value yet, "guardar y crear otro" toggle)
   item/[id]/page.js                     # item detail (read-only for now — no edit/delete yet)
-  moves/page.js                         # move list (placeholder until the Moves feature lands)
-  move/[id]/page.js                     # move planner: map + route + pack/unpack + label builder
+  moves/page.js                         # move list + create dialog
+  move/[id]/page.js                     # move planner: map + route, pack/unpack (label builder not built yet)
   settings/page.js                      # stacked sections + side nav (placeholder until the Settings feature lands)
   admin/page.js                         # redirect → /admin/workspaces
   admin/workspaces/page.js
@@ -318,6 +318,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=  # Supabase renamed anon key → publishab
 NEXT_PUBLIC_ORS_API_KEY=
 NEXT_PUBLIC_MAPTILER_KEY=
 NEXT_PUBLIC_NTFY_TOPIC=          # optional
+NEXT_PUBLIC_R2_PUBLIC_URL=       # bucket needs R2 public access (or a custom domain) enabled — no trailing slash
+NEXT_PUBLIC_STUFFBOX_MAX_IMAGE_DIMENSION=2000  # image pipeline runs client-side, so this must be NEXT_PUBLIC_
 # server-only (Route Handlers)
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
@@ -327,7 +329,6 @@ RESEND_API_KEY=
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=          # e.g. anthropic/claude-sonnet-4.5
 OPENROUTER_BASE_URL=       # optional — @openrouter/ai-sdk-provider defaults to https://openrouter.ai/api/v1
-STUFFBOX_MAX_IMAGE_DIMENSION=2000
 ```
 
 ## 15. Development process (owner's standing rule)
