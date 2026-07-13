@@ -1,10 +1,10 @@
 ---
 name: make-skill
 description: >
-  Create a new Claude Code skill following the project convention:
-  SKILL.md in .agents/skills/<name>/ and a symlink in ~/.claude/skills/<name>.
-  Use when the user wants to add a new slash command or skill to the project.
-  Invoke as: /make-skill <name>
+    Create a new Claude Code skill following the project convention:
+    SKILL.md in .agents/skills/<name>/ and a symlink in ~/.claude/skills/<name>.
+    Use when the user wants to add a new slash command or skill to the project.
+    Invoke as: /make-skill <name>
 ---
 
 # /make-skill
@@ -20,16 +20,17 @@ Skills live in `.agents/skills/<name>/SKILL.md` inside the project repo, then ge
 1. **Gather intent** — if the user only provided a name, ask what the skill should do (one sentence is enough). If args already describe the purpose, proceed directly.
 
 2. **Design the SKILL.md** — write the file with:
-   - Frontmatter: `name`, `description` (shown in skill list — should also describe when to auto-trigger), optional `trigger`
-   - Body: clear instructions for Claude on what to do when invoked, including usage examples and step-by-step behavior
+    - Frontmatter: `name`, `description` (shown in skill list — should also describe when to auto-trigger), optional `trigger`
+    - Body: clear instructions for Claude on what to do when invoked, including usage examples and step-by-step behavior
 
 3. **Create the file** at `.agents/skills/<name>/SKILL.md` in the current project root.
 
 4. **Create the symlink** (relative, so it works on any machine):
-   ```bash
-   mkdir -p .claude/skills
-   cd .claude/skills && ln -sfn "../../.agents/skills/<name>" "<name>"
-   ```
+
+    ```bash
+    mkdir -p .claude/skills
+    cd .claude/skills && ln -sfn "../../.agents/skills/<name>" "<name>"
+    ```
 
 5. **Confirm** — show the skill name, its description, and that the symlink is live.
 
@@ -39,9 +40,9 @@ Skills live in `.agents/skills/<name>/SKILL.md` inside the project repo, then ge
 ---
 name: <kebab-case-name>
 description: >
-  One or two sentences. First sentence: what it does.
-  Second sentence: when to auto-trigger or usage hint.
-  Invoke as: /<name> <args>
+    One or two sentences. First sentence: what it does.
+    Second sentence: when to auto-trigger or usage hint.
+    Invoke as: /<name> <args>
 ---
 
 # /<name>

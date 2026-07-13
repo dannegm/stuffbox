@@ -13,6 +13,7 @@ A personal household inventory app (Spanish UI, English code) with move-planning
 ## Reference projects
 
 These are sibling repos on the owner's machine used as style/architecture references — read from them when the plan says "like bins" or "pinia's pattern":
+
 - `../bins` — closest reference: Vite+React SPA, Supabase + RLS, direct-from-client CRUD, admin area, settings, DiceBear avatars. Target for the admin look.
 - `../pinia` — icon-picker (`{library,name}` jsonb), map patterns (mapcn/MapLibre), `/migrate` skill.
 - `../aura` — providers, settings service, ntfy.
@@ -24,6 +25,7 @@ These are sibling repos on the owner's machine used as style/architecture refere
 Package manager is **pnpm**, Node 24. Standard Next.js scripts apply once scaffolded (`pnpm dev`, `pnpm build`, `pnpm lint`). No automated test suite by design — see Development process below.
 
 When scaffolding shadcn/ui, use the owner's saved preset (Base UI, not Radix):
+
 ```
 pnpm dlx shadcn@latest init --preset b5uFb8gHlI --template next --pointer
 ```
@@ -52,6 +54,7 @@ Effectively an SPA: Next.js (latest, App Router) is the bundler + host; **Vercel
 Plain JavaScript (JSX) — **no TypeScript, ever**; convert any `.tsx` registry block to `.jsx` on install. Tailwind v4 (CSS-based `@theme` config, no `tailwind.config.js`). shadcn/ui on **Base UI** (`@base-ui/react`), not Radix. Icons: Lucide (+lucide-lab) resolved via a `DynamicIcon` component from `icon` jsonb `{library, name}`. Maps: mapcn (`@mapcn/map`, MapLibre) + hosted MapTiler style; land routes via OpenRouteService, air routes via geodesic arc (`@turf/turf`). Storage: Cloudflare R2, direct-from-client upload via presigned URL. Avatars: DiceBear, style `micah`. AI summaries: Vercel AI SDK (`ai` + `@openrouter/ai-sdk-provider`) against OpenRouter, model set via `OPENROUTER_MODEL`.
 
 ### Code conventions (shared across all Danne reference projects — follow exactly)
+
 - JS only, no `.ts`/`.tsx`, no JSDoc types. `export const` for everything.
 - `useRef` vars: `$` prefix, no `Ref` suffix. `async/await`, never `.then()`.
 - kebab-case files/folders. Components PascalCase, hooks camelCase `use…`.
@@ -67,22 +70,27 @@ Plain JavaScript (JSX) — **no TypeScript, ever**; convert any `.tsx` registry 
 - **`data-block="BlockName"` on every important block, primitive, or section** — added since this makes it easy to identify pieces of the DOM in the inspector while debugging together. Apply going forward on new components; don't do a retroactive sweep of everything at once.
 
 ### Services pattern (from bins, `../bins/src/services/`)
+
 `src/services/` holds stateful or side-effecting modules that are neither pure functions (`src/helpers/`) nor TanStack Query factories (`src/queries/`) — local-storage-backed state, one-shot orchestration routines, future third-party integrations (ntfy, etc). Shape: one file per concern, plain `const fn = (...) => {...}` at module scope (no classes, no factory wrappers), exported either as a single namespace object bundling the public API (`settings`, `cache`) or as named exports when there's no need for a cohesive namespace. Storage-backed services follow a `get`/`set`/`subscribe` triad; `settings.js` additionally exposes `registerDevTools()` (attaches `window.settings` for console debugging — call it once, e.g. in a dev-only provider effect).
 
 Ported so far:
+
 - `src/services/settings.js` + `src/hooks/use-settings.js` — localStorage, dot-path keys (`useSettings('theme', 'system')`), cross-tab sync via `BroadcastChannel` + `storage` event. Defaults live in `src/constants/default-settings.js`, which starts with just `theme` and `debug` — settings get added here as features need them, not pre-declared.
 - `src/services/cache.js` — same shape, flat keys, no path notation, no cross-tab sync (simpler, non-critical caching).
 - `src/services/provision-account.js` — see Account provisioning below.
 - Depends on `src/helpers/objects.js` (`getByPath`/`setByPath`) and `src/helpers/strings.js` (`trim`) — pure functions, hence `helpers/` not `services/`.
 
 ### Local settings (current)
+
 - `theme` — `'system'` (default) | `'light'` | `'dark'`. Applied by `ThemeProvider` (`src/providers/theme-provider.jsx`) as the shadcn-standard `.dark` class on `<html>`; `'system'` tracks `prefers-color-scheme` live.
 - `debug` — boolean, default `false`. Applied by `DebugProvider` (`src/providers/debug-provider.jsx`) as `data-debug` on `<html>` (consumed by `src/css/variants.css`'s `debug:` variant and `src/css/debug.css`'s outline rule). No visual overlay yet — pinia's center crosshair was specific to its map pin editor; stuffbox's own debug affordance is still TBD.
 
 ### DeviceProvider (from bins/pinia, `src/providers/device-provider.jsx`)
+
 Sets `data-browser`/`data-os`/`data-device`/`data-touch` on `<html>` once (detection in `src/helpers/ua-parser.js`, plain UA-string sniffing — no vendor/bot metadata, unlike bins, since stuffbox has no public content to protect), and `data-page` on every navigation (first path segment via Next's `usePathname()`, defaulting to `'home'` for `/`). All of it is consumed by the matching `@custom-variant` rules in `src/css/variants.css` (`chrome:`, `mobile:`, `ios:`, `touch:`, `page-workspace:`, etc.) — add a `page-*` variant there whenever a new top-level route is added.
 
 ### JsonViewer (from pinia, `src/ui/json-viewer.jsx`)
+
 Debug-mode payload inspector — wraps `@microlink/react-json-view` in the shadcn `ScrollArea`. Use it to inspect raw payloads (query results, mutation variables, webhook bodies) behind the `debug` setting, not as a general-purpose data display.
 
 ### Account provisioning
@@ -100,6 +108,7 @@ Full field-level detail lives in `stuffbox-plan.md` §4 — consult it before wr
 ## RLS (adopted from `../bins/db.sql`)
 
 Since CRUD is direct-from-client, **RLS is the actual authorization layer**, not decorative. Pattern to replicate on every `workspace_id` table:
+
 - `stuffbox.is_workspace_member(workspace_id, auth.uid())` and `stuffbox.requesting_user_is_admin()` — both `security definer stable`, avoiding recursive RLS.
 - Two permissive policies per table (Postgres ORs them): member access, and admin full access via `requesting_user_is_admin()`.
 - `is_super_admin` gates both the admin RLS policy and admin UI visibility — never client-editable.
@@ -111,12 +120,13 @@ Explicitly **not** ported from bins: the delete-`auth.users`-on-profile-delete t
 ## Pack / unpack / transfer — one operation
 
 These are all the same DB write: set `location_id` and/or `active_move_id` on a batch of item/box ids.
+
 - **Transfer** = set `location_id`, leave `active_move_id`.
 - **Pack** = set `active_move_id`; `location_id` untouched (box still "lives" at origin, just flagged).
 - **Unpack** = set `location_id` to the destination + clear `active_move_id`.
 - **Bulk** = same, with an array of ids.
 
-A single FK means an item/box can't be in two moves at once by construction. Boxed items inherit their box's move state — to pack a boxed item into a *different* move, it must first leave the box (become loose).
+A single FK means an item/box can't be in two moves at once by construction. Boxed items inherit their box's move state — to pack a boxed item into a _different_ move, it must first leave the box (become loose).
 
 ## LocationPicker + bulk actions (the most important component)
 
@@ -125,12 +135,14 @@ Pack, unpack, transfer, and bulk are one UI shape matching the one DB operation 
 ## Route Handlers (the only server-side code)
 
 Exactly four, each holding a secret that must not reach the client — everything else is client + direct Supabase:
+
 ```
 POST /api/uploads/presign    # R2 secret → presigned PUT urls
 POST /api/uploads/optimize   # R2 secret → list + delete unreferenced R2 objects (manual button, no cron)
 POST /api/summary            # OpenRouter key → generate/refresh a box's ai_summary (Vercel AI SDK)
 POST /api/labels/email       # Resend key → email the client-built label PDF
 ```
+
 If any outgrows Vercel free limits, the documented escape hatch is a serverless worker outside Vercel (Cloudflare, or `../endpoints`) — not the main path.
 
 Photo pipeline is entirely client-side before upload: rotate per EXIF into pixels then strip it, resize to a configurable max dimension, strip metadata, convert to JPEG — all in one canvas round-trip, before the presign call.
@@ -145,4 +157,4 @@ Photo pipeline is entirely client-side before upload: rotate per EXIF into pixel
 
 ## Skills
 
-Reused as-is from `../skills` and reference projects' `.agents/skills/`: `frontend-design`, `shadcn`, `tailwind-design-system`, `make-skill`, `notify`. Adapted: `/migrate` (from pinia). Skills live at `.agents/skills/<name>/` with a `.claude/skills/<name>` symlink, matching the pinia/bins convention.
+Reused as-is from `../skills` and reference projects' `.agents/skills/`: `frontend-design`, `shadcn`, `tailwind-design-system`, `make-skill`, `notify`, `notify-test` (from pinia — sends a secret test push notification to verify ntfy delivery without ever exposing the secret in a visible tool call), `sync-instructions` (from pinia — keeps CLAUDE.md/AGENTS.md/docs in sync, per the Development process rule above). Adapted: `/migrate` (from pinia). Skills live at `.agents/skills/<name>/` with a `.claude/skills/<name>` symlink, matching the pinia/bins convention.

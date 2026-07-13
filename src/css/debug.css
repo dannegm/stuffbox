@@ -1,4 +1,4 @@
 [data-debug='true'],
 [data-debug='true'] * {
-  outline: 1px dashed pink;
+    outline: 1px dashed pink;
 }

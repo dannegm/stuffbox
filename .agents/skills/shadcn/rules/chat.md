@@ -35,12 +35,12 @@ track visibility, and jump to it. `MessageScrollerButton` sits inside
 
 ```tsx
 // Hand-rolled scroll container with manual stick-to-bottom logic.
-<div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
-  <div className="flex flex-col gap-6 p-4">
-    {messages.map((m) => (
-      <ChatMessage key={m.id} message={m} />
-    ))}
-  </div>
+<div ref={scrollRef} onScroll={handleScroll} className='flex-1 overflow-y-auto'>
+    <div className='flex flex-col gap-6 p-4'>
+        {messages.map(m => (
+            <ChatMessage key={m.id} message={m} />
+        ))}
+    </div>
 </div>
 ```
 
@@ -48,24 +48,24 @@ track visibility, and jump to it. `MessageScrollerButton` sits inside
 
 ```tsx
 <MessageScrollerProvider autoScroll>
-  <MessageScroller>
-    <MessageScrollerViewport>
-      <MessageScrollerContent>
-        {messages.map((message) => (
-          <MessageScrollerItem
-            key={message.id}
-            messageId={message.id}
-            scrollAnchor={message.role === "user"}
-          >
-            <Message align={message.role === "user" ? "end" : "start"}>
-              {/* ...message content... */}
-            </Message>
-          </MessageScrollerItem>
-        ))}
-      </MessageScrollerContent>
-    </MessageScrollerViewport>
-    <MessageScrollerButton />
-  </MessageScroller>
+    <MessageScroller>
+        <MessageScrollerViewport>
+            <MessageScrollerContent>
+                {messages.map(message => (
+                    <MessageScrollerItem
+                        key={message.id}
+                        messageId={message.id}
+                        scrollAnchor={message.role === 'user'}
+                    >
+                        <Message align={message.role === 'user' ? 'end' : 'start'}>
+                            {/* ...message content... */}
+                        </Message>
+                    </MessageScrollerItem>
+                ))}
+            </MessageScrollerContent>
+        </MessageScrollerViewport>
+        <MessageScrollerButton />
+    </MessageScroller>
 </MessageScrollerProvider>
 ```
 
@@ -80,20 +80,20 @@ rebuild the row from flex divs.
 `align="end"` is the current user's side; `align="start"` is everyone else.
 
 ```tsx
-<Message align="start">
-  <MessageAvatar>
-    <Avatar>
-      <AvatarImage src={sender.avatar} alt={sender.name} />
-      <AvatarFallback>{initials}</AvatarFallback>
-    </Avatar>
-  </MessageAvatar>
-  <MessageContent>
-    <MessageHeader>{sender.name}</MessageHeader>
-    <Bubble>
-      <BubbleContent>{text}</BubbleContent>
-    </Bubble>
-    <MessageFooter>{time}</MessageFooter>
-  </MessageContent>
+<Message align='start'>
+    <MessageAvatar>
+        <Avatar>
+            <AvatarImage src={sender.avatar} alt={sender.name} />
+            <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+    </MessageAvatar>
+    <MessageContent>
+        <MessageHeader>{sender.name}</MessageHeader>
+        <Bubble>
+            <BubbleContent>{text}</BubbleContent>
+        </Bubble>
+        <MessageFooter>{time}</MessageFooter>
+    </MessageContent>
 </Message>
 ```
 
@@ -114,19 +114,17 @@ with absolutely-positioned `Badge`s.
 **Incorrect:**
 
 ```tsx
-<div className="w-fit rounded-2xl bg-primary px-3 py-2 text-primary-foreground">
-  {text}
-</div>
+<div className='w-fit rounded-2xl bg-primary px-3 py-2 text-primary-foreground'>{text}</div>
 ```
 
 **Correct:**
 
 ```tsx
-<Bubble variant="default" align="end">
-  <BubbleContent>{text}</BubbleContent>
-  <BubbleReactions side="bottom" align="end">
-    <Badge variant="secondary">👍 2</Badge>
-  </BubbleReactions>
+<Bubble variant='default' align='end'>
+    <BubbleContent>{text}</BubbleContent>
+    <BubbleReactions side='bottom' align='end'>
+        <Badge variant='secondary'>👍 2</Badge>
+    </BubbleReactions>
 </Bubble>
 ```
 
@@ -144,19 +142,19 @@ separate spinner.
 - Use `AttachmentGroup` to lay out several attachments in a scrolling row.
 
 ```tsx
-<Attachment state="done">
-  <AttachmentMedia variant="icon">
-    <FileTextIcon />
-  </AttachmentMedia>
-  <AttachmentContent>
-    <AttachmentTitle>homepage-feedback.pdf</AttachmentTitle>
-    <AttachmentDescription>PDF · 2.4 MB</AttachmentDescription>
-  </AttachmentContent>
-  <AttachmentActions>
-    <AttachmentAction>
-      <DownloadIcon />
-    </AttachmentAction>
-  </AttachmentActions>
+<Attachment state='done'>
+    <AttachmentMedia variant='icon'>
+        <FileTextIcon />
+    </AttachmentMedia>
+    <AttachmentContent>
+        <AttachmentTitle>homepage-feedback.pdf</AttachmentTitle>
+        <AttachmentDescription>PDF · 2.4 MB</AttachmentDescription>
+    </AttachmentContent>
+    <AttachmentActions>
+        <AttachmentAction>
+            <DownloadIcon />
+        </AttachmentAction>
+    </AttachmentActions>
 </Attachment>
 ```
 
@@ -176,18 +174,18 @@ labeled separators are `Marker`, not a `Separator` plus a centered span.
 **Incorrect:**
 
 ```tsx
-<div className="flex items-center gap-3 py-2">
-  <Separator className="flex-1" />
-  <span className="text-xs text-muted-foreground">Today</span>
-  <Separator className="flex-1" />
+<div className='flex items-center gap-3 py-2'>
+    <Separator className='flex-1' />
+    <span className='text-xs text-muted-foreground'>Today</span>
+    <Separator className='flex-1' />
 </div>
 ```
 
 **Correct:**
 
 ```tsx
-<Marker variant="separator">
-  <MarkerContent>Today</MarkerContent>
+<Marker variant='separator'>
+    <MarkerContent>Today</MarkerContent>
 </Marker>
 ```
 
