@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldCheckIcon, HouseIcon, UsersIcon } from '@phosphor-icons/react/ssr';
+import { ShieldCheckIcon, HouseIcon, UsersIcon, GearIcon } from '@phosphor-icons/react/ssr';
 import { useIsAdmin } from '@/hooks/use-admin';
 import { supabase } from '@/services/supabase';
 import { Spinner } from '@/ui/spinner';
@@ -84,6 +84,12 @@ export default function AdminLayout({ children }) {
                         label='Usuarios'
                         count={usersCount}
                         active={pathname.startsWith('/admin/users')}
+                    />
+                    <NavTab
+                        href='/admin/settings'
+                        icon={GearIcon}
+                        label='Ajustes'
+                        active={pathname.startsWith('/admin/settings')}
                     />
                 </div>
             </div>

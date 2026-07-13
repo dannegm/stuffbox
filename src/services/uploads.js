@@ -1,3 +1,5 @@
+import { supabase } from '@/services/supabase';
+
 export const presignUploads = async ({ workspaceId, count }) => {
     const res = await fetch('/api/uploads/presign', {
         method: 'POST',
@@ -25,4 +27,32 @@ export const deleteR2Objects = async r2Keys => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ r2Keys }),
     });
+};
+
+// Admin-only, one-shot orchestration (/admin/settings' "optimizar
+// almacenamiento" button). Referenced keys are read directly via Supabase —
+// admin RLS grants full access to item_photos/location_photos across every
+// workspace, not just the caller's own — then the optimize route (which
+// holds the R2 secret) deletes whatever's left over in the bucket.
+export const optimizeStorage = async () => {
+    const client = supabase();
+    const [itemPhotos, locationPhotos] = await Promise.all([
+        client.from('item_photos').select('r2_key'),
+        client.from('location_photos').select('r2_key'),
+    ]);
+    if (itemPhotos.error) throw itemPhotos.error;
+    if (locationPhotos.error) throw locationPhotos.error;
+
+    const referencedKeys = [
+        ...itemPhotos.data.map(photo => photo.r2_key),
+        ...locationPhotos.data.map(photo => photo.r2_key),
+    ];
+
+    const res = await fetch('/api/uploads/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referencedKeys }),
+    });
+    if (!res.ok) throw new Error('No se pudo optimizar el almacenamiento.');
+    return res.json();
 };
