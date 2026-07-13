@@ -70,6 +70,23 @@ export const MoveDialog = ({ workspaceId, open, onOpenChange }) => {
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Nueva mudanza</ResponsiveDialogTitle>
                 </ResponsiveDialogHeader>
+                <div className='px-4 sm:px-0'>
+                    <div
+                        className='relative mb-4 flex items-center justify-center overflow-hidden rounded-xl bg-hero-mesh py-6 ring-1 ring-foreground/10'
+                        data-block='MoveDialogHero'
+                    >
+                        <span
+                            key={routeType}
+                            className='flex size-14 items-center justify-center rounded-2xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 animate-in zoom-in-50 duration-300 [&_svg]:size-7'
+                        >
+                            {routeType === 'air' ? (
+                                <AirplaneIcon weight='duotone' />
+                            ) : (
+                                <TruckIcon weight='duotone' />
+                            )}
+                        </span>
+                    </div>
+                </div>
                 <form id={FORM_ID} onSubmit={handleSubmit} className='px-4 sm:px-0'>
                     <FieldGroup>
                         <Field>

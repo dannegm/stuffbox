@@ -9,3 +9,19 @@
         var(--strip-color-b) 40px
     );
 }
+
+/* Soft two-tone wash (primary top-left, flourish top-right) for hero headers
+   — oklch color-mix keeps it correct in both themes without a dark: override. */
+@utility bg-hero-mesh {
+    background:
+        radial-gradient(
+            135% 100% at 0% 0%,
+            color-mix(in oklch, var(--primary) 16%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            135% 100% at 100% 0%,
+            color-mix(in oklch, var(--flourish) 14%, transparent),
+            transparent 60%
+        );
+}

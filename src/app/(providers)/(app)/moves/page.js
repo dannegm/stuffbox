@@ -12,11 +12,26 @@ import { MoveDialog } from '@/components/moves/move-dialog';
 import { getMoveStatusLabel } from '@/constants/move-status';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+import { cn } from '@/helpers/utils';
+
+const STATUS_DOT = {
+    planning: 'bg-muted-foreground',
+    in_transit: 'bg-flourish',
+    done: 'bg-emerald-500',
+};
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='MovesLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='MovesLoading'
+    >
+        <Skeleton className='h-7 w-32 rounded' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-16 w-full rounded-lg' />
+            <Skeleton className='h-16 w-full rounded-lg' />
+        </div>
     </div>
 );
 
@@ -55,7 +70,7 @@ export default function MovesPage() {
             {moves.length === 0 ? (
                 <Empty className='flex-1' data-block='MovesEmpty'>
                     <EmptyHeader>
-                        <EmptyMedia variant='icon'>
+                        <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
                             <TruckIcon />
                         </EmptyMedia>
                         <EmptyTitle>Sin mudanzas todavía</EmptyTitle>
@@ -70,19 +85,26 @@ export default function MovesPage() {
                         <Link
                             key={move.id}
                             href={`/move/${move.id}`}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted'
+                            className='group flex items-center gap-3 rounded-xl border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
                         >
-                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                            <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-flourish/15 text-flourish [&_svg]:size-4.5'>
                                 {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
                             </span>
                             <span className='min-w-0 flex-1'>
                                 <span className='block truncate font-medium'>{move.name}</span>
-                                <span className='block truncate text-xs text-muted-foreground'>
+                                <span className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
+                                    <span
+                                        aria-hidden
+                                        className={cn(
+                                            'size-1.5 shrink-0 rounded-full',
+                                            STATUS_DOT[move.status],
+                                        )}
+                                    />
                                     {move.origin?.name} → {move.destination?.name} ·{' '}
                                     {getMoveStatusLabel(move.status)}
                                 </span>
                             </span>
-                            <CaretRightIcon className='size-4 shrink-0 text-muted-foreground' />
+                            <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5' />
                         </Link>
                     ))}
                 </div>

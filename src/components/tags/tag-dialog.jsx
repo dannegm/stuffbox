@@ -96,7 +96,7 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                     <button
                                         type='button'
                                         aria-label='Elegir ícono'
-                                        className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-(--tag-color) transition-colors hover:bg-muted'
+                                        className='flex size-10 shrink-0 items-center justify-center rounded-lg border border-input bg-transparent text-(--tag-color) shadow-xs transition-colors hover:border-(--tag-color)/40 hover:bg-(--tag-color)/10 [&_svg]:size-4.5'
                                         style={{ '--tag-color': color }}
                                     >
                                         <DynamicIcon icon={previewIcon} />
@@ -106,7 +106,7 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                     <button
                                         type='button'
                                         aria-label='Elegir color'
-                                        className='size-9 shrink-0 rounded-md border border-input bg-(--tag-color)'
+                                        className='size-10 shrink-0 rounded-lg border border-input bg-(--tag-color) shadow-xs ring-1 ring-foreground/5 transition-transform hover:scale-105'
                                         style={{ '--tag-color': color }}
                                     />
                                 </ColorPicker>
@@ -131,6 +131,17 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                 placeholder='Opcional'
                             />
                         </Field>
+
+                        <div className='flex items-center gap-2 rounded-lg border border-dashed bg-muted/30 p-3'>
+                            <span className='text-xs text-muted-foreground'>Vista previa</span>
+                            <span
+                                className='flex items-center gap-1.5 rounded-full bg-(--tag-color)/15 px-2.5 py-1 text-xs font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20'
+                                style={{ '--tag-color': color }}
+                            >
+                                <DynamicIcon icon={previewIcon} className='size-3.5' />
+                                {name.trim() || 'Nombre del tag'}
+                            </span>
+                        </div>
                     </FieldGroup>
                 </form>
                 <ResponsiveDialogFooter>

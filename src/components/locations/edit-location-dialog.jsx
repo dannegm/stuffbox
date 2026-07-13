@@ -6,6 +6,7 @@ import { WarningDiamondIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
+    ResponsiveDialogDescription,
     ResponsiveDialogFooter,
     ResponsiveDialogHeader,
     ResponsiveDialogTitle,
@@ -15,7 +16,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { HeartRating } from '@/ui/heart-rating';
 import { PhotoGallery } from '@/ui/photo-gallery';
-import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
+import { Field, FieldGroup, FieldLabel, FieldError, FieldSeparator } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';
 import { Switch } from '@/ui/switch';
@@ -110,6 +111,9 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
             <ResponsiveDialogContent data-block='EditLocationDialog'>
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Editar</ResponsiveDialogTitle>
+                    <ResponsiveDialogDescription>
+                        Actualiza los detalles de este lugar.
+                    </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
                 <form id={FORM_ID} onSubmit={handleSubmit} className='px-4 sm:px-0 sm:pt-0 sm:pb-0'>
                     {/* The container fields (photos, orientation, etc.) can make this
@@ -124,7 +128,7 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
                                         <button
                                             type='button'
                                             aria-label='Elegir ícono'
-                                            className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-foreground transition-colors hover:bg-muted [&_svg]:size-4'
+                                            className='flex size-9 shrink-0 items-center justify-center rounded-md border border-dashed border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/15 [&_svg]:size-4'
                                         >
                                             <DynamicIcon icon={previewIcon} />
                                         </button>
@@ -169,6 +173,8 @@ export const EditLocationDialog = ({ location, open, onOpenChange }) => {
 
                             {isContainer && (
                                 <>
+                                    <FieldSeparator>Detalles del contenedor</FieldSeparator>
+
                                     <Field>
                                         <FieldLabel htmlFor='edit-location-description'>
                                             Descripción

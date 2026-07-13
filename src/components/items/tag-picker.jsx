@@ -31,7 +31,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                 render={
                     <button
                         type='button'
-                        className='flex min-h-9 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-transparent px-2.5 py-1.5 text-left text-sm shadow-xs transition-colors hover:bg-muted'
+                        className='flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-left text-sm shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted'
                     />
                 }
             >
@@ -41,7 +41,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                     selectedTags.map(tag => (
                         <span
                             key={tag.id}
-                            className='flex items-center gap-1 rounded-full bg-(--tag-color)/15 px-2 py-0.5 text-xs text-(--tag-color)'
+                            className='flex items-center gap-1 rounded-full bg-(--tag-color)/15 px-2 py-0.5 text-xs font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20'
                             style={{ '--tag-color': tag.color }}
                         >
                             <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} className='size-3' />
@@ -66,17 +66,17 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                                 key={tag.id}
                                 type='button'
                                 onClick={() => toggle(tag.id)}
-                                className='flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted'
+                                className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
                             >
                                 <span
-                                    className='flex size-5 shrink-0 items-center justify-center rounded-full bg-(--tag-color)/15 text-(--tag-color) [&_svg]:size-3'
+                                    className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'
                                     style={{ '--tag-color': tag.color }}
                                 >
                                     <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
                                 </span>
                                 <span className='min-w-0 flex-1 truncate'>{tag.name}</span>
                                 {value.includes(tag.id) && (
-                                    <CheckIcon className='size-4 shrink-0' />
+                                    <CheckIcon className='size-4 shrink-0 text-primary' />
                                 )}
                             </button>
                         ))}

@@ -15,11 +15,11 @@ export const PhotoGallery = ({ photos = [], pending = [], isProcessing, onAddFil
     const all = [...photos, ...pending];
 
     return (
-        <div className='flex flex-wrap gap-2' data-block='PhotoGallery'>
+        <div className='flex flex-wrap gap-3' data-block='PhotoGallery'>
             {all.map(photo => (
                 <div
                     key={photo.id ?? photo.r2Key}
-                    className='group relative size-20 shrink-0 overflow-hidden rounded-md border bg-muted'
+                    className='group relative size-24 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
                 >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={photoSrc(photo)} alt='' className='size-full object-cover' />
@@ -27,7 +27,7 @@ export const PhotoGallery = ({ photos = [], pending = [], isProcessing, onAddFil
                         type='button'
                         aria-label='Quitar foto'
                         onClick={() => onRemove(photo)}
-                        className='absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:size-3'
+                        className='absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-xs shadow-black/20 ring-1 ring-foreground/10 transition-opacity group-hover:opacity-100 touch:opacity-100 [&_svg]:size-3.5'
                     >
                         <XIcon />
                     </button>
@@ -36,7 +36,7 @@ export const PhotoGallery = ({ photos = [], pending = [], isProcessing, onAddFil
 
             <label
                 className={cn(
-                    'flex size-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground transition-colors hover:bg-muted',
+                    'flex size-24 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground',
                     isProcessing && 'pointer-events-none opacity-60',
                 )}
             >

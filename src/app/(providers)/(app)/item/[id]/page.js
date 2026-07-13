@@ -34,13 +34,23 @@ import { Textarea } from '@/ui/textarea';
 import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='ItemLoading'>
-        <Spinner className='size-6' />
+    <div className='flex flex-1 flex-col gap-4 p-4' data-block='ItemLoading'>
+        <Skeleton className='h-4 w-56 rounded' />
+        <div className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4'>
+            <div className='flex justify-end gap-2'>
+                <Skeleton className='h-9 w-24 rounded-md' />
+                <Skeleton className='h-9 w-28 rounded-md' />
+            </div>
+            <Skeleton className='h-32 w-full rounded-xl' />
+            <Skeleton className='h-40 w-full rounded-xl' />
+            <Skeleton className='h-32 w-full rounded-xl' />
+        </div>
     </div>
 );
 
@@ -215,7 +225,9 @@ export default function ItemPage({ params }) {
 
     return (
         <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>
-            {item.active_move_id && <PackedTapeTop />}
+            {item.active_move_id && (
+                <PackedTapeTop moveId={item.active_move_id} moveName={packedMove?.name} />
+            )}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={[...(ancestors ?? []), location]}
@@ -284,129 +296,172 @@ export default function ItemPage({ params }) {
                 />
 
                 <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor='item-name'>Nombre</FieldLabel>
-                            <div className='flex items-center gap-2'>
-                                <IconPicker
-                                    value={icon}
-                                    onChange={setIcon}
-                                    suggestedIcons={suggestedIcons}
-                                >
-                                    <button
-                                        type='button'
-                                        aria-label='Elegir ícono'
-                                        className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-foreground transition-colors hover:bg-muted [&_svg]:size-4'
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemIdentityCard'
+                    >
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor='item-name'>Nombre</FieldLabel>
+                                <div className='flex items-center gap-2'>
+                                    <IconPicker
+                                        value={icon}
+                                        onChange={setIcon}
+                                        suggestedIcons={suggestedIcons}
                                     >
-                                        <DynamicIcon icon={previewIcon} />
-                                    </button>
-                                </IconPicker>
-                                <Input
-                                    id='item-name'
-                                    required
-                                    value={name}
-                                    onChange={event => setName(event.target.value)}
+                                        <button
+                                            type='button'
+                                            aria-label='Elegir ícono'
+                                            className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-input bg-transparent text-foreground shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted [&_svg]:size-4'
+                                        >
+                                            <DynamicIcon icon={previewIcon} />
+                                        </button>
+                                    </IconPicker>
+                                    <Input
+                                        id='item-name'
+                                        required
+                                        value={name}
+                                        onChange={event => setName(event.target.value)}
+                                    />
+                                </div>
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
+                                <Textarea
+                                    id='item-description'
+                                    value={description}
+                                    onChange={event => setDescription(event.target.value)}
+                                    placeholder='Opcional'
                                 />
+                            </Field>
+                        </FieldGroup>
+                    </div>
+
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemDetailsCard'
+                    >
+                        <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                            Detalles
+                        </h2>
+                        <FieldGroup>
+                            <div className='grid grid-cols-2 gap-3'>
+                                <Field>
+                                    <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
+                                    <Input
+                                        id='item-quantity'
+                                        type='number'
+                                        min={1}
+                                        value={quantity}
+                                        onChange={event => setQuantity(event.target.value)}
+                                    />
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
+                                    <Input
+                                        id='item-price'
+                                        type='number'
+                                        min={0}
+                                        step='0.01'
+                                        value={purchasePrice}
+                                        onChange={event => setPurchasePrice(event.target.value)}
+                                        placeholder='Opcional'
+                                    />
+                                </Field>
                             </div>
-                        </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
-                            <Textarea
-                                id='item-description'
-                                value={description}
-                                onChange={event => setDescription(event.target.value)}
-                                placeholder='Opcional'
+                            <Field>
+                                <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
+                                <Input
+                                    id='item-sku'
+                                    value={sku}
+                                    onChange={event => setSku(event.target.value)}
+                                    placeholder='Opcional'
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>Fotos</FieldLabel>
+                                <PhotoGallery
+                                    photos={itemPhotos.photos}
+                                    pending={itemPhotos.pending}
+                                    isProcessing={itemPhotos.isProcessing}
+                                    onAddFiles={itemPhotos.addFiles}
+                                    onRemove={itemPhotos.removePhoto}
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </div>
+
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemClassificationCard'
+                    >
+                        <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                            Clasificación
+                        </h2>
+                        <FieldGroup>
+                            <OptionDropdown
+                                label='Condición'
+                                value={condition}
+                                onChange={setCondition}
+                                options={conditions}
                             />
-                        </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
-                            <Input
-                                id='item-quantity'
-                                type='number'
-                                min={1}
-                                value={quantity}
-                                onChange={event => setQuantity(event.target.value)}
+                            <OptionDropdown
+                                label='Orientación de almacenaje'
+                                value={storageOrientation}
+                                onChange={setStorageOrientation}
+                                options={orientations}
                             />
-                        </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
-                            <Input
-                                id='item-sku'
-                                value={sku}
-                                onChange={event => setSku(event.target.value)}
-                                placeholder='Opcional'
-                            />
-                        </Field>
+                            <Field>
+                                <FieldLabel>Tags</FieldLabel>
+                                <TagPicker
+                                    workspaceId={location.workspace_id}
+                                    value={tagIds}
+                                    onChange={setTagIds}
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </div>
 
-                        <Field>
-                            <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
-                            <Input
-                                id='item-price'
-                                type='number'
-                                min={0}
-                                step='0.01'
-                                value={purchasePrice}
-                                onChange={event => setPurchasePrice(event.target.value)}
-                                placeholder='Opcional'
-                            />
-                        </Field>
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemExtrasCard'
+                    >
+                        <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                            Extras
+                        </h2>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel>Valor sentimental</FieldLabel>
+                                <HeartRating
+                                    value={sentimentalValue}
+                                    onChange={setSentimentalValue}
+                                />
+                            </Field>
 
-                        <Field>
-                            <FieldLabel>Fotos</FieldLabel>
-                            <PhotoGallery
-                                photos={itemPhotos.photos}
-                                pending={itemPhotos.pending}
-                                isProcessing={itemPhotos.isProcessing}
-                                onAddFiles={itemPhotos.addFiles}
-                                onRemove={itemPhotos.removePhoto}
-                            />
-                        </Field>
+                            <Field
+                                orientation='horizontal'
+                                className='rounded-lg border bg-muted/30 px-3 py-2.5'
+                            >
+                                <FieldLabel htmlFor='item-fragile' className='flex-1'>
+                                    <WarningDiamondIcon className='text-muted-foreground' />
+                                    Es frágil
+                                </FieldLabel>
+                                <Switch
+                                    id='item-fragile'
+                                    checked={isFragile}
+                                    onCheckedChange={setIsFragile}
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </div>
 
-                        <OptionDropdown
-                            label='Condición'
-                            value={condition}
-                            onChange={setCondition}
-                            options={conditions}
-                        />
-
-                        <OptionDropdown
-                            label='Orientación de almacenaje'
-                            value={storageOrientation}
-                            onChange={setStorageOrientation}
-                            options={orientations}
-                        />
-
-                        <Field>
-                            <FieldLabel>Tags</FieldLabel>
-                            <TagPicker
-                                workspaceId={location.workspace_id}
-                                value={tagIds}
-                                onChange={setTagIds}
-                            />
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>Valor sentimental</FieldLabel>
-                            <HeartRating value={sentimentalValue} onChange={setSentimentalValue} />
-                        </Field>
-
-                        <Field orientation='horizontal'>
-                            <FieldLabel htmlFor='item-fragile' className='flex-1'>
-                                <WarningDiamondIcon className='text-muted-foreground' />
-                                Es frágil
-                            </FieldLabel>
-                            <Switch
-                                id='item-fragile'
-                                checked={isFragile}
-                                onCheckedChange={setIsFragile}
-                            />
-                        </Field>
-
-                        <FieldError>{error}</FieldError>
-                    </FieldGroup>
+                    <FieldError>{error}</FieldError>
 
                     <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
                         <Button

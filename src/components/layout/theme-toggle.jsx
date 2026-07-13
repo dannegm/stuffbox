@@ -16,10 +16,17 @@ export const ThemeToggle = () => {
 
     return (
         <Tabs value={theme} onValueChange={setTheme} data-block='ThemeToggle'>
-            <TabsList className='w-full'>
+            <TabsList className='w-full bg-sidebar-accent/70'>
                 {THEME_OPTIONS.map(option => (
                     <Tooltip key={option.value}>
-                        <TooltipTrigger render={<TabsTrigger value={option.value} />}>
+                        <TooltipTrigger
+                            render={
+                                <TabsTrigger
+                                    value={option.value}
+                                    className='text-sidebar-foreground/60 hover:text-sidebar-foreground data-active:bg-sidebar data-active:text-sidebar-foreground'
+                                />
+                            }
+                        >
                             <option.icon />
                             <span className='sr-only'>{option.label}</span>
                         </TooltipTrigger>

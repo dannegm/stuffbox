@@ -7,19 +7,25 @@ import { cn } from '@/helpers/utils';
 
 // Icon lives inside the same color-carrying element as the text (not a
 // sibling of it) so it inherits `current`/hover text color instead of
-// staying at the <nav>'s base muted color.
+// staying at the <nav>'s base muted color. Each crumb is width-capped so
+// `truncate` actually has something to clip against — without a bound, a
+// long location name just grows the row past a 380px viewport instead of
+// clipping, since `flex-wrap` alone doesn't constrain a single item's width.
 const Crumb = ({ href, icon, children, current = false }) => (
-    <span className='flex items-center gap-1'>
-        <CaretRightIcon className='size-3.5 shrink-0' />
+    <span className='flex min-w-0 shrink items-center gap-1'>
+        <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
         {current ? (
-            <span className='flex items-center gap-1 truncate font-medium text-foreground'>
+            <span className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground'>
                 {icon}
-                {children}
+                <span className='max-w-32 truncate sm:max-w-48'>{children}</span>
             </span>
         ) : (
-            <Link href={href} className='flex items-center gap-1 truncate hover:text-foreground'>
+            <Link
+                href={href}
+                className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
+            >
                 {icon}
-                {children}
+                <span className='max-w-24 truncate sm:max-w-36'>{children}</span>
             </Link>
         )}
     </span>
@@ -45,13 +51,13 @@ export const LocationBreadcrumb = ({
     >
         <Link
             href={`/workspace/${workspace.id}`}
-            className='flex items-center gap-1.5 truncate hover:text-foreground'
+            className='flex min-w-0 shrink items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
         >
             <span
                 className='size-2 shrink-0 rounded-full bg-(--bullet-color)'
                 style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
             />
-            {workspace.name}
+            <span className='max-w-24 truncate sm:max-w-36'>{workspace.name}</span>
         </Link>
         {ancestors.map(ancestor => (
             <Crumb

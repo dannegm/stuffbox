@@ -2,21 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CaretRightIcon, HouseIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, CheckCircleIcon, HouseIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
+    ResponsiveDialogDescription,
     ResponsiveDialogFooter,
     ResponsiveDialogHeader,
     ResponsiveDialogTitle,
 } from '@/ui/responsive-dialog';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
+import { FALLBACK_LOCATION_ICON } from '@/constants/location-icons';
 import { locationChildrenQuery } from '@/queries/locations';
 import { cn } from '@/helpers/utils';
+
+// Row-shaped placeholders instead of a centered spinner — keeps the dialog's
+// height stable while the next level loads instead of collapsing to a
+// spinner then popping back out to full rows.
+const RowsSkeleton = () => (
+    <div className='flex flex-col gap-1 pb-2' data-block='LocationPickerSkeleton'>
+        {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className='flex items-center gap-3 p-2'>
+                <Skeleton className='size-9 shrink-0 rounded-md' />
+                <Skeleton className='h-4 flex-1 rounded' />
+            </div>
+        ))}
+    </div>
+);
 
 // The plan's core interaction (§7): breadcrumb + drill-down through the
 // unbounded tree, "dejar aquí" at any level once inside a location, recurses
@@ -38,7 +54,10 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
     );
 
     const handleDrillIn = location =>
-        setStack([...stack, { id: location.id, name: location.name }]);
+        setStack([
+            ...stack,
+            { id: location.id, name: location.name, icon: getLocationIcon(location) },
+        ]);
     const handleBreadcrumbClick = index => setStack(stack.slice(0, index + 1));
     const handleConfirm = () => {
         onSelect(current?.id);
@@ -50,42 +69,54 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
             <ResponsiveDialogContent data-block='LocationPicker'>
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Elegir destino</ResponsiveDialogTitle>
+                    <ResponsiveDialogDescription>
+                        Navega por el árbol y elige dónde dejarlo.
+                    </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
 
-                <div className='flex flex-wrap items-center gap-1 px-4 text-sm text-muted-foreground sm:px-0'>
-                    <button
-                        type='button'
-                        onClick={() => setStack([])}
-                        className={cn(
-                            'flex items-center gap-1 hover:text-foreground',
-                            !current && 'font-medium text-foreground',
-                        )}
-                    >
-                        <HouseIcon className='size-3.5' />
-                        Casas
-                    </button>
-                    {stack.map((level, index) => (
-                        <span key={level.id} className='flex items-center gap-1'>
-                            <CaretRightIcon className='size-3.5 shrink-0' />
-                            <button
-                                type='button'
-                                onClick={() => handleBreadcrumbClick(index)}
-                                className={cn(
-                                    'truncate hover:text-foreground',
-                                    index === stack.length - 1 && 'font-medium text-foreground',
-                                )}
-                            >
-                                {level.name}
-                            </button>
-                        </span>
-                    ))}
+                <div className='px-4 sm:px-0'>
+                    <div className='flex flex-wrap items-center gap-1 rounded-lg bg-muted/50 p-1 text-sm text-muted-foreground'>
+                        <button
+                            type='button'
+                            onClick={() => setStack([])}
+                            className={cn(
+                                'flex items-center gap-1 rounded-md px-1.5 py-1 transition-colors hover:text-foreground',
+                                !current && 'bg-card font-medium text-foreground shadow-xs',
+                            )}
+                        >
+                            <HouseIcon className='size-3.5 shrink-0' />
+                            Casas
+                        </button>
+                        {stack.map((level, index) => (
+                            <span key={level.id} className='flex min-w-0 items-center gap-1'>
+                                <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
+                                <button
+                                    type='button'
+                                    onClick={() => handleBreadcrumbClick(index)}
+                                    className={cn(
+                                        'flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 transition-colors hover:text-foreground',
+                                        index === stack.length - 1 &&
+                                            'bg-card font-medium text-foreground shadow-xs',
+                                    )}
+                                >
+                                    {level.icon && (
+                                        <DynamicIcon
+                                            icon={level.icon}
+                                            className='size-3.5 shrink-0'
+                                        />
+                                    )}
+                                    <span className='max-w-24 truncate sm:max-w-36'>
+                                        {level.name}
+                                    </span>
+                                </button>
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
                 <ScrollArea className='h-[fit-content(16rem)] px-4 sm:px-0'>
                     {isPending ? (
-                        <div className='flex items-center justify-center py-8'>
-                            <Spinner className='size-5' />
-                        </div>
+                        <RowsSkeleton />
                     ) : (
                         <div className='flex flex-col gap-1 pb-2'>
                             {children?.map(location => (
@@ -93,17 +124,34 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
                                     key={location.id}
                                     type='button'
                                     onClick={() => handleDrillIn(location)}
-                                    className='flex items-center gap-2 rounded-md p-2 text-left text-sm hover:bg-muted'
+                                    className='group flex items-center gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted'
                                 >
-                                    <DynamicIcon icon={getLocationIcon(location)} />
-                                    <span className='min-w-0 flex-1 truncate'>{location.name}</span>
-                                    <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground' />
+                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4'>
+                                        <DynamicIcon icon={getLocationIcon(location)} />
+                                    </span>
+                                    <span className='min-w-0 flex-1'>
+                                        <span className='block truncate font-medium'>
+                                            {location.name}
+                                        </span>
+                                        <span className='block truncate text-xs text-muted-foreground capitalize'>
+                                            {location.type}
+                                        </span>
+                                    </span>
+                                    <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground' />
                                 </button>
                             ))}
                             {children?.length === 0 && (
-                                <p className='p-4 text-center text-sm text-muted-foreground'>
-                                    Vacío.
-                                </p>
+                                <div
+                                    className='flex flex-col items-center gap-2 px-4 py-10 text-center'
+                                    data-block='LocationPickerEmpty'
+                                >
+                                    <span className='flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-5'>
+                                        <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                                    </span>
+                                    <p className='text-sm text-muted-foreground'>
+                                        Nada aquí todavía.
+                                    </p>
+                                </div>
                             )}
                         </div>
                     )}
@@ -111,7 +159,8 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
 
                 <ResponsiveDialogFooter>
                     <Button type='button' disabled={!current} onClick={handleConfirm}>
-                        Dejar aquí{current ? `: ${current.name}` : ''}
+                        <CheckCircleIcon data-icon='inline-start' />
+                        {current ? `Dejar aquí: ${current.name}` : 'Elegir un destino'}
                     </Button>
                 </ResponsiveDialogFooter>
             </ResponsiveDialogContent>

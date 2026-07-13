@@ -10,6 +10,9 @@ import {
     PackageIcon,
     PrinterIcon,
     ArrowRightIcon,
+    TruckIcon,
+    AirplaneIcon,
+    StackIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     moveQuery,
@@ -27,12 +30,22 @@ import { getLocationIcon } from '@/helpers/location';
 import { getItemIcon } from '@/helpers/item';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { MOVE_STATUSES } from '@/constants/move-status';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='MoveLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='MoveLoading'
+    >
+        <Skeleton className='h-24 w-full rounded-2xl' />
+        <Skeleton className='h-48 w-full rounded-xl' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-14 w-full rounded-lg' />
+            <Skeleton className='h-14 w-full rounded-lg' />
+        </div>
     </div>
 );
 
@@ -97,45 +110,63 @@ export default function MovePage({ params }) {
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='MovePage'
         >
-            <div className='flex items-center justify-between gap-2'>
-                <div className='min-w-0'>
-                    <h1 className='truncate font-heading text-lg leading-tight font-medium'>
-                        {move.name}
-                    </h1>
-                    <p className='flex items-center gap-1 truncate text-xs text-muted-foreground'>
-                        <span className='truncate'>{move.origin?.name}</span>
-                        <ArrowRightIcon className='size-3 shrink-0' />
-                        <span className='truncate'>{move.destination?.name}</span>
-                    </p>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='MoveHero'
+            >
+                <div className='flex min-w-0 items-center gap-3'>
+                    <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
+                        {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                        <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                            {move.name}
+                        </h1>
+                        <p className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
+                            <span className='truncate'>{move.origin?.name}</span>
+                            <ArrowRightIcon className='size-3 shrink-0' />
+                            <span className='truncate'>{move.destination?.name}</span>
+                        </p>
+                    </div>
                 </div>
-                <div className='flex shrink-0 items-center gap-2'>
-                    {!isEmpty && (
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            render={<Link href={`/move/${id}/labels`} />}
-                        >
-                            <PrinterIcon data-icon='inline-start' />
-                            Etiquetas
-                        </Button>
-                    )}
-                    <SelectSearch
-                        options={MOVE_STATUSES}
-                        value={move.status}
-                        onChange={handleStatusChange}
-                        getKey={option => option.value}
-                        getLabel={option => option.label}
-                        triggerClassName='w-auto'
-                    />
+                {!isEmpty && (
+                    <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
+                        <Stat
+                            icon={StackIcon}
+                            value={packed.locations.length + packed.items.length}
+                            label='empacado'
+                        />
+                    </div>
+                )}
+            </div>
+
+            <div className='flex flex-wrap items-center justify-end gap-2'>
+                {!isEmpty && (
                     <Button
-                        size='icon-sm'
+                        size='sm'
                         variant='outline'
-                        disabled={isDeleting}
-                        onClick={handleDelete}
+                        render={<Link href={`/move/${id}/labels`} />}
                     >
-                        {isDeleting ? <Spinner /> : <TrashIcon />}
+                        <PrinterIcon data-icon='inline-start' />
+                        Etiquetas
                     </Button>
-                </div>
+                )}
+                <SelectSearch
+                    options={MOVE_STATUSES}
+                    value={move.status}
+                    onChange={handleStatusChange}
+                    getKey={option => option.value}
+                    getLabel={option => option.label}
+                    triggerClassName='w-auto'
+                />
+                <Button
+                    size='icon-sm'
+                    variant='outline'
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                >
+                    {isDeleting ? <Spinner /> : <TrashIcon />}
+                </Button>
             </div>
 
             {hasRoute ? (
@@ -163,7 +194,7 @@ export default function MovePage({ params }) {
             {isEmpty ? (
                 <Empty className='flex-1 -mt-16' data-block='MovePackedEmpty'>
                     <EmptyHeader>
-                        <EmptyMedia variant='icon'>
+                        <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
                             <PackageIcon />
                         </EmptyMedia>
                         <EmptyTitle>Nada empacado todavía</EmptyTitle>
@@ -177,7 +208,7 @@ export default function MovePage({ params }) {
                     {packed.locations.map(location => (
                         <div
                             key={location.id}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm'
+                            className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
                         >
                             <Link
                                 href={`/location/${location.id}`}
@@ -205,7 +236,7 @@ export default function MovePage({ params }) {
                     {packed.items.map(item => (
                         <div
                             key={item.id}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm'
+                            className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
                         >
                             <Link
                                 href={`/item/${item.id}`}

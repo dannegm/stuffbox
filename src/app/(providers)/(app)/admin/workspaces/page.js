@@ -10,6 +10,9 @@ import {
     CaretLeftIcon,
     CaretRightIcon,
     TrashIcon,
+    HouseIcon,
+    UsersIcon,
+    WarningCircleIcon,
 } from '@phosphor-icons/react/ssr';
 import { supabase } from '@/services/supabase';
 import { deleteWorkspaceMutation } from '@/queries/workspaces';
@@ -17,7 +20,10 @@ import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/ui/table';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+import { cn } from '@/helpers/utils';
 
 const PER_PAGE = 20;
 const SORT_KEYS = ['name', 'created_at'];
@@ -50,8 +56,13 @@ const useAdminWorkspaces = ({ page, search, sortBy, sortDir }) =>
         },
     });
 
+const HEAD_CLASS = 'text-xs font-semibold tracking-wide text-muted-foreground uppercase';
+
 const SortableHead = ({ label, sortKey, sortBy, sortDir, onSort }) => (
-    <TableHead className='cursor-pointer select-none' onClick={() => onSort(sortKey)}>
+    <TableHead
+        className={cn(HEAD_CLASS, 'cursor-pointer select-none hover:text-foreground')}
+        onClick={() => onSort(sortKey)}
+    >
         <span className='flex items-center gap-1'>
             {label}
             {sortBy === sortKey &&
@@ -62,6 +73,33 @@ const SortableHead = ({ label, sortKey, sortBy, sortDir, onSort }) => (
                 ))}
         </span>
     </TableHead>
+);
+
+const TableSkeletonRows = ({ rows = 6 }) => (
+    <>
+        {Array.from({ length: rows }).map((_, index) => (
+            <TableRow key={index} className='hover:bg-transparent'>
+                <TableCell>
+                    <span className='flex items-center gap-2'>
+                        <Skeleton className='size-2.5 shrink-0 rounded-full' />
+                        <Skeleton className='h-4 w-28 rounded' />
+                    </span>
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-24 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-8 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-20 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='size-6 rounded' />
+                </TableCell>
+            </TableRow>
+        ))}
+    </>
 );
 
 export default function AdminWorkspacesPage() {
@@ -107,9 +145,40 @@ export default function AdminWorkspacesPage() {
 
     const total = data?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const membersOnPage =
+        data?.rows?.reduce((sum, w) => sum + (w.workspace_members?.[0]?.count ?? 0), 0) ?? 0;
 
     return (
         <div className='flex flex-col gap-4' data-block='AdminWorkspacesPage'>
+            <div
+                className='grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-6'
+                data-block='AdminWorkspacesStats'
+            >
+                {isPending ? (
+                    <>
+                        <Skeleton className='h-16 w-full rounded-xl sm:w-40' />
+                        <Skeleton className='h-16 w-full rounded-xl sm:w-40' />
+                    </>
+                ) : (
+                    <>
+                        <div className='rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'>
+                            <Stat
+                                icon={HouseIcon}
+                                value={total}
+                                label={search ? 'resultados' : 'workspaces en total'}
+                            />
+                        </div>
+                        <div className='rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'>
+                            <Stat
+                                icon={UsersIcon}
+                                value={membersOnPage}
+                                label='miembros en esta página'
+                            />
+                        </div>
+                    </>
+                )}
+            </div>
+
             <InputGroup className='max-w-xs'>
                 <InputGroupAddon>
                     <MagnifyingGlassIcon />
@@ -124,9 +193,9 @@ export default function AdminWorkspacesPage() {
                 />
             </InputGroup>
 
-            <div className='overflow-hidden rounded-lg border'>
+            <div className='overflow-hidden rounded-xl border bg-card shadow-xs ring-1 ring-foreground/5'>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className='bg-muted/30'>
                         <TableRow>
                             <SortableHead
                                 label='Nombre'
@@ -135,8 +204,8 @@ export default function AdminWorkspacesPage() {
                                 sortDir={sortDir}
                                 onSort={handleSort}
                             />
-                            <TableHead>Dueño</TableHead>
-                            <TableHead>Miembros</TableHead>
+                            <TableHead className={HEAD_CLASS}>Dueño</TableHead>
+                            <TableHead className={HEAD_CLASS}>Miembros</TableHead>
                             <SortableHead
                                 label='Creado'
                                 sortKey='created_at'
@@ -149,32 +218,56 @@ export default function AdminWorkspacesPage() {
                     </TableHeader>
                     <TableBody>
                         {isPending ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className='py-8 text-center'>
-                                    <Spinner className='mx-auto size-5' />
-                                </TableCell>
-                            </TableRow>
+                            <TableSkeletonRows />
                         ) : isError ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={5}
-                                    className='py-8 text-center text-muted-foreground'
-                                >
-                                    Ocurrió un error al cargar los workspaces.
+                            <TableRow className='hover:bg-transparent'>
+                                <TableCell colSpan={5} className='p-0'>
+                                    <Empty
+                                        className='p-6 sm:p-10'
+                                        data-block='AdminWorkspacesError'
+                                    >
+                                        <EmptyHeader>
+                                            <EmptyMedia
+                                                variant='icon'
+                                                className='bg-destructive/10 text-destructive'
+                                            >
+                                                <WarningCircleIcon />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Error al cargar</EmptyTitle>
+                                            <EmptyDescription>
+                                                Ocurrió un error al cargar los workspaces.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </TableCell>
                             </TableRow>
                         ) : data.rows.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={5}
-                                    className='py-8 text-center text-muted-foreground'
-                                >
-                                    Sin resultados.
+                            <TableRow className='hover:bg-transparent'>
+                                <TableCell colSpan={5} className='p-0'>
+                                    <Empty
+                                        className='p-6 sm:p-10'
+                                        data-block='AdminWorkspacesEmpty'
+                                    >
+                                        <EmptyHeader>
+                                            <EmptyMedia
+                                                variant='icon'
+                                                className='bg-primary/10 text-primary'
+                                            >
+                                                <HouseIcon />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Sin workspaces</EmptyTitle>
+                                            <EmptyDescription>
+                                                {search
+                                                    ? 'No hay resultados para tu búsqueda.'
+                                                    : 'Todavía no se ha creado ningún workspace.'}
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             data.rows.map(workspace => (
-                                <TableRow key={workspace.id}>
+                                <TableRow key={workspace.id} className='[&>td]:py-3'>
                                     <TableCell>
                                         <Link
                                             href={`/workspace/${workspace.id}`}

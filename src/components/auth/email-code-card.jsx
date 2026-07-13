@@ -95,7 +95,10 @@ export const EmailCodeCard = ({
     };
 
     return (
-        <Card className='w-full max-w-sm gap-5'>
+        <Card
+            className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-dashed border-primary/40 shadow-lg shadow-primary/10'
+            data-block='EmailCodeCard'
+        >
             <CardHeader className='gap-3'>
                 {withIdentity && (
                     <IdentityTag
@@ -108,6 +111,12 @@ export const EmailCodeCard = ({
                     />
                 )}
                 <div>
+                    <div className='mb-1.5 flex items-center gap-2' data-block='StepEyebrow'>
+                        <span className='font-mono text-[0.65rem] font-medium tracking-[0.2em] text-primary uppercase'>
+                            Paso {step === 'email' ? '1' : '2'} de 2
+                        </span>
+                        <span aria-hidden className='h-px flex-1 bg-border' />
+                    </div>
                     <CardTitle className='text-base'>
                         {step === 'email' ? title : codeTitle}
                     </CardTitle>
@@ -132,6 +141,7 @@ export const EmailCodeCard = ({
                                     value={email}
                                     onChange={event => setEmail(event.target.value)}
                                     aria-invalid={!!error}
+                                    className='h-11 sm:h-10'
                                 />
                                 <FieldError>{error}</FieldError>
                             </Field>
@@ -140,7 +150,7 @@ export const EmailCodeCard = ({
                 ) : (
                     <form id={`${formId}-code`} onSubmit={handleVerifyCode}>
                         <FieldGroup>
-                            <Field data-invalid={!!error}>
+                            <Field data-invalid={!!error} className='gap-4'>
                                 <FieldLabel
                                     htmlFor={`${formId}-code-input`}
                                     className='justify-center'
@@ -153,7 +163,7 @@ export const EmailCodeCard = ({
                                     value={code}
                                     onChange={setCode}
                                     aria-invalid={!!error}
-                                    containerClassName='justify-center gap-6 sm:gap-7'
+                                    containerClassName='justify-center gap-5 sm:gap-7'
                                 >
                                     <InputOTPGroup>
                                         <InputOTPSlot index={0} />
@@ -190,7 +200,7 @@ export const EmailCodeCard = ({
                 <Button
                     type='submit'
                     form={step === 'email' ? `${formId}-email` : `${formId}-code`}
-                    className='w-full'
+                    className='h-11 w-full sm:h-10'
                     disabled={isPending || (step === 'code' && code.length < 6)}
                 >
                     {isPending && <Spinner data-icon='inline-start' />}

@@ -8,6 +8,10 @@ import {
     PrinterIcon,
     DownloadSimpleIcon,
     PaperPlaneTiltIcon,
+    QrCodeIcon,
+    CheckIcon,
+    ArrowUpIcon,
+    PackageIcon,
 } from '@phosphor-icons/react/ssr';
 import { pdf } from '@react-pdf/renderer';
 import { moveQuery, packedInMoveQuery } from '@/queries/moves';
@@ -16,35 +20,56 @@ import { LabelDocument } from '@/components/moves/label-document';
 import { generateQrDataUrl } from '@/helpers/qr';
 import { getItemIcon } from '@/helpers/item';
 import { getLocationIcon } from '@/helpers/location';
+import { cn } from '@/helpers/utils';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 const AI_SUMMARY_MIN_CHILDREN = 4;
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='MoveLabelsLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='MoveLabelsLoading'
+    >
+        <Skeleton className='h-24 w-full rounded-2xl' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-14 w-full rounded-lg' />
+            <Skeleton className='h-14 w-full rounded-lg' />
+            <Skeleton className='h-14 w-full rounded-lg' />
+        </div>
     </div>
 );
 
 // Same button-root + stopPropagation-on-checkbox shape as ItemListRow/
 // LocationListItem — without it, a click on the checkbox glyph bubbles to
 // the row's own click handler and double-toggles (net: nothing happens).
+// Checked rows pick up a flourish tint so the selection state reads as
+// "already on the tape" rather than a plain checkbox list.
 const SelectableRow = ({ icon, name, checked, onToggle, note }) => (
     <button
         type='button'
         onClick={onToggle}
-        className='flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted'
+        className={cn(
+            'flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
+            checked && 'border-flourish/40 bg-flourish/5',
+        )}
+        data-block='LabelSelectableRow'
     >
         <span onClick={event => event.stopPropagation()}>
             <Checkbox checked={checked} onCheckedChange={onToggle} />
         </span>
-        <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+        <span
+            className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-md text-foreground [&_svg]:size-4',
+                checked ? 'bg-flourish/15 text-flourish' : 'bg-muted',
+            )}
+        >
             <DynamicIcon icon={icon} />
         </span>
         <span className='min-w-0 flex-1'>
@@ -53,6 +78,111 @@ const SelectableRow = ({ icon, name, checked, onToggle, note }) => (
         </span>
     </button>
 );
+
+// Top-of-page progress affordance for the 3-step wizard — purely visual,
+// mirrors the `step` state already driving which panel renders below.
+const WIZARD_STEPS = [
+    { key: 'select', label: 'Elegir' },
+    { key: 'confirm', label: 'Confirmar' },
+    { key: 'result', label: 'Generar' },
+];
+
+const StepIndicator = ({ step, className }) => {
+    const activeIndex = WIZARD_STEPS.findIndex(candidate => candidate.key === step);
+    return (
+        <div className={cn('flex items-center', className)} data-block='LabelWizardSteps'>
+            {WIZARD_STEPS.map((wizardStep, index) => (
+                <div key={wizardStep.key} className='flex flex-1 items-center last:flex-none'>
+                    <div className='flex flex-col items-center gap-1'>
+                        <span
+                            className={cn(
+                                'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 [&_svg]:size-3',
+                                index < activeIndex &&
+                                    'bg-flourish text-flourish-foreground ring-flourish/50',
+                                index === activeIndex &&
+                                    'bg-card text-flourish shadow-xs shadow-black/10 ring-flourish',
+                                index > activeIndex &&
+                                    'bg-card/70 text-muted-foreground ring-foreground/10',
+                            )}
+                        >
+                            {index < activeIndex ? <CheckIcon weight='bold' /> : index + 1}
+                        </span>
+                        <span className='text-[0.65rem] font-medium text-muted-foreground'>
+                            {wizardStep.label}
+                        </span>
+                    </div>
+                    {index < WIZARD_STEPS.length - 1 && (
+                        <span
+                            className={cn(
+                                'mx-2 h-px flex-1',
+                                index < activeIndex ? 'bg-flourish' : 'bg-foreground/10',
+                            )}
+                        />
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// A mocked-up, deliberately print-styled (white/black, not theme tokens —
+// same reasoning as label-document.jsx, since this represents literal paper)
+// label card — gives a sense of the real PDF's layout (QR + name + fragile/
+// up icons) before the real QR is generated, which only happens on submit.
+const LabelPreviewCard = ({ name, isFragile, className, style }) => (
+    <div
+        className={cn(
+            'flex w-36 shrink-0 flex-col gap-2 rounded-sm border border-black/15 bg-white p-2.5 shadow-md shadow-black/25',
+            className,
+        )}
+        style={style}
+    >
+        <div className='flex items-start gap-2'>
+            <span className='flex size-11 shrink-0 items-center justify-center rounded-xs border border-dashed border-black/20 bg-black/5'>
+                <QrCodeIcon weight='light' className='size-6 text-black/35' />
+            </span>
+            <p className='min-w-0 flex-1 truncate text-[0.7rem] leading-tight font-bold text-black'>
+                {name}
+            </p>
+        </div>
+        <div className='flex items-center gap-1.5 border-t border-black/10 pt-1.5'>
+            {isFragile && (
+                <span className='text-[0.55rem] font-bold tracking-wide text-red-600'>FRÁGIL</span>
+            )}
+            <ArrowUpIcon weight='bold' className='ml-auto size-3 text-black/60' />
+        </div>
+    </div>
+);
+
+// Small fanned-out stack, like a handful of printed tags — representative,
+// not exhaustive (caps at 3 + a count), just to give a feel for the batch
+// about to be generated, before/while the real PDF is being built.
+const LabelPreviewStack = ({ labels }) => {
+    if (labels.length === 0) return null;
+    const preview = labels.slice(0, 3);
+
+    return (
+        <div className='flex flex-col items-center gap-2' data-block='LabelPreviewStack'>
+            <div className='relative h-28 w-36'>
+                {preview.map((label, index) => (
+                    <LabelPreviewCard
+                        key={label.id}
+                        name={label.name}
+                        isFragile={label.isFragile}
+                        className='absolute inset-x-0 top-0'
+                        style={{
+                            transform: `rotate(${(index - (preview.length - 1) / 2) * 6}deg) translateY(${index * 6}px)`,
+                            zIndex: index,
+                        }}
+                    />
+                ))}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+                {labels.length} etiqueta{labels.length === 1 ? '' : 's'}
+            </p>
+        </div>
+    );
+};
 
 export default function MoveLabelsPage({ params }) {
     const { id } = use(params);
@@ -208,30 +338,63 @@ export default function MoveLabelsPage({ params }) {
 
     const isEmpty = packed.items.length === 0 && packed.locations.length === 0;
 
+    // Same shape as handleGeneratePdf's confirmed{Items,Locations}, minus the
+    // async QR — just enough to render the mocked preview stack below.
+    const previewLabels = [
+        ...packed.locations
+            .filter(location => confirmedLocationIds.has(location.id))
+            .map(location => ({
+                id: location.id,
+                name: location.name,
+                isFragile: location.is_fragile,
+            })),
+        ...packed.items
+            .filter(item => confirmedItemIds.has(item.id))
+            .map(item => ({ id: item.id, name: item.name, isFragile: item.is_fragile })),
+    ];
+
     return (
         <div
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='MoveLabelsPage'
         >
-            <div className='flex items-center gap-2'>
-                <Button size='icon-sm' variant='outline' render={<Link href={`/move/${id}`} />}>
-                    <CaretLeftIcon />
-                </Button>
-                <div className='min-w-0'>
-                    <h1 className='truncate font-heading text-lg leading-tight font-medium'>
-                        Etiquetas — {move.name}
-                    </h1>
-                    <p className='truncate text-xs text-muted-foreground'>
-                        {step === 'select' && 'Paso 1: elige qué va en las etiquetas'}
-                        {step === 'confirm' && 'Paso 2: confirma cuáles llevan etiqueta impresa'}
-                        {step === 'result' && 'Listo'}
-                    </p>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='MoveLabelsHero'
+            >
+                <div className='flex items-center gap-3'>
+                    <Button
+                        size='icon-sm'
+                        variant='outline'
+                        className='shrink-0 bg-card'
+                        render={<Link href={`/move/${id}`} />}
+                    >
+                        <CaretLeftIcon />
+                    </Button>
+                    <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-4.5'>
+                        <PrinterIcon />
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                        <h1 className='truncate font-heading text-lg leading-tight font-semibold tracking-tight'>
+                            Etiquetas — {move.name}
+                        </h1>
+                        <p className='truncate text-xs text-muted-foreground'>
+                            {step === 'select' && 'Paso 1: elige qué va en las etiquetas'}
+                            {step === 'confirm' &&
+                                'Paso 2: confirma cuáles llevan etiqueta impresa'}
+                            {step === 'result' && 'Listo'}
+                        </p>
+                    </div>
                 </div>
+                {!isEmpty && <StepIndicator step={step} className='mt-4' />}
             </div>
 
             {isEmpty ? (
                 <Empty className='flex-1' data-block='MoveLabelsEmpty'>
                     <EmptyHeader>
+                        <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
+                            <PackageIcon />
+                        </EmptyMedia>
                         <EmptyTitle>Nada empacado todavía</EmptyTitle>
                         <EmptyDescription>
                             Empaca algo en esta mudanza antes de generar etiquetas.
@@ -273,6 +436,7 @@ export default function MoveLabelsPage({ params }) {
 
                     {step === 'confirm' && (
                         <>
+                            <LabelPreviewStack labels={previewLabels} />
                             <div className='flex flex-col gap-2'>
                                 {packed.locations
                                     .filter(location => selectedLocationIds.has(location.id))
@@ -338,6 +502,16 @@ export default function MoveLabelsPage({ params }) {
                         <div className='flex flex-col gap-4'>
                             {/* eslint-disable-next-line jsx-a11y/iframe-has-title */}
                             <iframe ref={$printFrame} src={pdfUrl} className='hidden' />
+
+                            <div
+                                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                                data-block='MoveLabelsResultHero'
+                            >
+                                <LabelPreviewStack labels={previewLabels} />
+                                <p className='mt-2 text-center text-sm font-medium'>
+                                    Listas para imprimir
+                                </p>
+                            </div>
 
                             <div className='flex flex-col gap-2 rounded-lg border p-3'>
                                 <Button onClick={handlePrint}>

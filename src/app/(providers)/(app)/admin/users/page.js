@@ -9,6 +9,8 @@ import {
     CaretLeftIcon,
     CaretRightIcon,
     ShieldCheckIcon,
+    UsersIcon,
+    WarningCircleIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/services/supabase';
@@ -18,7 +20,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/ui/table';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { cn } from '@/helpers/utils';
 
 const PER_PAGE = 20;
@@ -52,8 +56,13 @@ const useAdminUsers = ({ page, search, sortBy, sortDir }) =>
         },
     });
 
+const HEAD_CLASS = 'text-xs font-semibold tracking-wide text-muted-foreground uppercase';
+
 const SortableHead = ({ label, sortKey, sortBy, sortDir, onSort }) => (
-    <TableHead className='cursor-pointer select-none' onClick={() => onSort(sortKey)}>
+    <TableHead
+        className={cn(HEAD_CLASS, 'cursor-pointer select-none hover:text-foreground')}
+        onClick={() => onSort(sortKey)}
+    >
         <span className='flex items-center gap-1'>
             {label}
             {sortBy === sortKey &&
@@ -64,6 +73,33 @@ const SortableHead = ({ label, sortKey, sortBy, sortDir, onSort }) => (
                 ))}
         </span>
     </TableHead>
+);
+
+const TableSkeletonRows = ({ rows = 6 }) => (
+    <>
+        {Array.from({ length: rows }).map((_, index) => (
+            <TableRow key={index} className='hover:bg-transparent'>
+                <TableCell>
+                    <span className='flex items-center gap-2'>
+                        <Skeleton className='size-6 shrink-0 rounded-full' />
+                        <Skeleton className='h-4 w-24 rounded' />
+                    </span>
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-32 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-8 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='h-4 w-20 rounded' />
+                </TableCell>
+                <TableCell>
+                    <Skeleton className='size-6 rounded' />
+                </TableCell>
+            </TableRow>
+        ))}
+    </>
 );
 
 export default function AdminUsersPage() {
@@ -108,9 +144,39 @@ export default function AdminUsersPage() {
 
     const total = data?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const adminsOnPage = data?.rows?.filter(profile => profile.is_super_admin).length ?? 0;
 
     return (
         <div className='flex flex-col gap-4' data-block='AdminUsersPage'>
+            <div
+                className='grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-6'
+                data-block='AdminUsersStats'
+            >
+                {isPending ? (
+                    <>
+                        <Skeleton className='h-16 w-full rounded-xl sm:w-40' />
+                        <Skeleton className='h-16 w-full rounded-xl sm:w-40' />
+                    </>
+                ) : (
+                    <>
+                        <div className='rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'>
+                            <Stat
+                                icon={UsersIcon}
+                                value={total}
+                                label={search ? 'resultados' : 'usuarios en total'}
+                            />
+                        </div>
+                        <div className='rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'>
+                            <Stat
+                                icon={ShieldCheckIcon}
+                                value={adminsOnPage}
+                                label='admins en esta página'
+                            />
+                        </div>
+                    </>
+                )}
+            </div>
+
             <InputGroup className='max-w-xs'>
                 <InputGroupAddon>
                     <MagnifyingGlassIcon />
@@ -125,9 +191,9 @@ export default function AdminUsersPage() {
                 />
             </InputGroup>
 
-            <div className='overflow-hidden rounded-lg border'>
+            <div className='overflow-hidden rounded-xl border bg-card shadow-xs ring-1 ring-foreground/5'>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className='bg-muted/30'>
                         <TableRow>
                             <SortableHead
                                 label='Nombre'
@@ -136,8 +202,8 @@ export default function AdminUsersPage() {
                                 sortDir={sortDir}
                                 onSort={handleSort}
                             />
-                            <TableHead>Correo</TableHead>
-                            <TableHead>Espacios</TableHead>
+                            <TableHead className={HEAD_CLASS}>Correo</TableHead>
+                            <TableHead className={HEAD_CLASS}>Espacios</TableHead>
                             <SortableHead
                                 label='Creado'
                                 sortKey='created_at'
@@ -145,37 +211,55 @@ export default function AdminUsersPage() {
                                 sortDir={sortDir}
                                 onSort={handleSort}
                             />
-                            <TableHead>Admin</TableHead>
+                            <TableHead className={HEAD_CLASS}>Admin</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isPending ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className='py-8 text-center'>
-                                    <Spinner className='mx-auto size-5' />
-                                </TableCell>
-                            </TableRow>
+                            <TableSkeletonRows />
                         ) : isError ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={5}
-                                    className='py-8 text-center text-muted-foreground'
-                                >
-                                    Ocurrió un error al cargar los usuarios.
+                            <TableRow className='hover:bg-transparent'>
+                                <TableCell colSpan={5} className='p-0'>
+                                    <Empty className='p-6 sm:p-10' data-block='AdminUsersError'>
+                                        <EmptyHeader>
+                                            <EmptyMedia
+                                                variant='icon'
+                                                className='bg-destructive/10 text-destructive'
+                                            >
+                                                <WarningCircleIcon />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Error al cargar</EmptyTitle>
+                                            <EmptyDescription>
+                                                Ocurrió un error al cargar los usuarios.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </TableCell>
                             </TableRow>
                         ) : data.rows.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={5}
-                                    className='py-8 text-center text-muted-foreground'
-                                >
-                                    Sin resultados.
+                            <TableRow className='hover:bg-transparent'>
+                                <TableCell colSpan={5} className='p-0'>
+                                    <Empty className='p-6 sm:p-10' data-block='AdminUsersEmpty'>
+                                        <EmptyHeader>
+                                            <EmptyMedia
+                                                variant='icon'
+                                                className='bg-primary/10 text-primary'
+                                            >
+                                                <UsersIcon />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Sin usuarios</EmptyTitle>
+                                            <EmptyDescription>
+                                                {search
+                                                    ? 'No hay resultados para tu búsqueda.'
+                                                    : 'Todavía no se ha registrado ningún usuario.'}
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             data.rows.map(profile => (
-                                <TableRow key={profile.uuid}>
+                                <TableRow key={profile.uuid} className='[&>td]:py-3'>
                                     <TableCell>
                                         <span className='flex items-center gap-2'>
                                             <Avatar

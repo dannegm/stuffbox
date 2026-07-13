@@ -20,6 +20,7 @@ import { getLocationIcon } from '@/helpers/location';
 import { workspacesQuery } from '@/queries/workspaces';
 import { locationChildrenQuery, locationAncestorsQuery } from '@/queries/locations';
 import { itemQuery } from '@/queries/items';
+import { cn } from '@/helpers/utils';
 
 // One level of rooms under each house — enough for quick jumps from the
 // sidebar, not a full tree (that's what the location browser itself is for).
@@ -37,22 +38,36 @@ const HouseNavItem = ({ house, workspaceId, isActiveHouse, activeRoomId }) => {
                 isActive={isActiveHouse}
                 render={<Link href={`/location/${house.id}`} />}
             >
-                <DynamicIcon icon={getLocationIcon(house)} />
+                <span
+                    className={cn(
+                        'flex size-6 shrink-0 items-center justify-center rounded-md transition-colors',
+                        'group-data-[collapsible=icon]:size-4 group-data-[collapsible=icon]:rounded-none group-data-[collapsible=icon]:bg-transparent',
+                        { 'bg-sidebar-primary/12 text-sidebar-primary': isActiveHouse },
+                    )}
+                >
+                    <DynamicIcon icon={getLocationIcon(house)} />
+                </span>
                 <span className='truncate'>{house.name}</span>
             </SidebarMenuButton>
             {isActiveHouse && rooms?.length > 0 && (
                 <SidebarMenuSub>
-                    {rooms.map(room => (
-                        <SidebarMenuSubItem key={room.id}>
-                            <SidebarMenuSubButton
-                                isActive={room.id === activeRoomId}
-                                render={<Link href={`/location/${room.id}`} />}
-                            >
-                                <DynamicIcon icon={getLocationIcon(room)} />
-                                <span className='truncate'>{room.name}</span>
-                            </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                    ))}
+                    {rooms.map(room => {
+                        const isActiveRoom = room.id === activeRoomId;
+                        return (
+                            <SidebarMenuSubItem key={room.id}>
+                                <SidebarMenuSubButton
+                                    isActive={isActiveRoom}
+                                    render={<Link href={`/location/${room.id}`} />}
+                                >
+                                    <DynamicIcon
+                                        icon={getLocationIcon(room)}
+                                        className={cn({ 'text-sidebar-primary': isActiveRoom })}
+                                    />
+                                    <span className='truncate'>{room.name}</span>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                        );
+                    })}
                 </SidebarMenuSub>
             )}
         </SidebarMenuItem>

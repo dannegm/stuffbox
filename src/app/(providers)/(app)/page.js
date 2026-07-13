@@ -9,10 +9,13 @@ import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='HomeLoading'>
-        <Spinner className='size-6' />
+    <div className='flex flex-1 flex-col gap-2 p-4' data-block='HomeLoading'>
+        <Skeleton className='h-16 w-full rounded-xl' />
+        <Skeleton className='h-16 w-full rounded-xl' />
     </div>
 );
 
@@ -36,7 +39,7 @@ export default function Home() {
         return (
             <Empty className='flex-1' data-block='WorkspacesEmpty'>
                 <EmptyHeader>
-                    <EmptyMedia variant='icon'>
+                    <EmptyMedia variant='icon' className='bg-primary/10 text-primary'>
                         <HouseIcon />
                     </EmptyMedia>
                     <EmptyTitle>Sin espacios todavía</EmptyTitle>
@@ -52,10 +55,18 @@ export default function Home() {
                 <Link
                     key={workspace.id}
                     href={`/workspace/${workspace.id}`}
-                    className='flex items-center justify-between gap-2 rounded-lg border p-4 text-sm transition-colors hover:bg-muted'
+                    className='group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-card p-4 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
                 >
-                    {workspace.name}
-                    <CaretRightIcon className='size-4 text-muted-foreground' />
+                    <span
+                        aria-hidden
+                        className='absolute inset-y-0 left-0 w-1 bg-(--ws-color)'
+                        style={{ '--ws-color': resolveWorkspaceColor(workspace) }}
+                    />
+                    <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg]:size-4'>
+                        <HouseIcon />
+                    </span>
+                    <span className='min-w-0 flex-1 truncate font-medium'>{workspace.name}</span>
+                    <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5' />
                 </Link>
             ))}
         </div>

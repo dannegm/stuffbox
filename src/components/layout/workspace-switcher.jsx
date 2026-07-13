@@ -28,12 +28,27 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/ui/sidebar';
 import { workspacesQuery, createWorkspaceMutation } from '@/queries/workspaces';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { useAuth } from '@/providers/auth-provider';
+import { cn } from '@/helpers/utils';
 
-const WorkspaceBullet = ({ workspace }) => (
+// A small colored square with the workspace's initial — same icon-square
+// language as `Stat`, just tinted per-workspace instead of neutral. Replaces
+// the old plain color dot with something that reads as an identity, not just
+// a status light.
+const WorkspaceAvatar = ({ workspace, size = 'default', className }) => (
     <span
-        className='size-2.5 shrink-0 rounded-full bg-(--bullet-color)'
-        style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
-    />
+        className={cn(
+            'flex shrink-0 items-center justify-center rounded-md bg-(--workspace-color) font-heading font-semibold text-white',
+            {
+                'size-8 text-xs group-data-[collapsible=icon]:size-6 group-data-[collapsible=icon]:text-[0.65rem]':
+                    size === 'default',
+                'size-6 text-xs': size === 'sm',
+            },
+            className,
+        )}
+        style={{ '--workspace-color': resolveWorkspaceColor(workspace) }}
+    >
+        {workspace?.name?.charAt(0)?.toUpperCase() ?? '?'}
+    </span>
 );
 
 const CREATE_WORKSPACE_FORM_ID = 'create-workspace-form';
@@ -119,8 +134,10 @@ export const WorkspaceSwitcher = () => {
                     <DropdownMenuTrigger render={<SidebarMenuButton size='lg' />}>
                         {current ? (
                             <>
-                                <WorkspaceBullet workspace={current} />
-                                <span className='truncate font-medium'>{current.name}</span>
+                                <WorkspaceAvatar workspace={current} />
+                                <span className='truncate font-heading font-medium'>
+                                    {current.name}
+                                </span>
                             </>
                         ) : (
                             <span className='text-muted-foreground'>Sin espacio</span>
@@ -134,13 +151,15 @@ export const WorkspaceSwitcher = () => {
                                 key={workspace.id}
                                 render={<Link href={`/workspace/${workspace.id}`} />}
                             >
-                                <WorkspaceBullet workspace={workspace} />
+                                <WorkspaceAvatar workspace={workspace} size='sm' />
                                 <span className='truncate'>{workspace.name}</span>
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setCreateOpen(true)}>
-                            <PlusIcon />
+                            <span className='flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground'>
+                                <PlusIcon />
+                            </span>
                             Crear nuevo
                         </DropdownMenuItem>
                     </DropdownMenuContent>

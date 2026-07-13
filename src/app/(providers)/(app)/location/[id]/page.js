@@ -14,6 +14,9 @@ import {
     CheckSquareIcon,
     XIcon,
     ArrowUpIcon,
+    FolderIcon,
+    StackIcon,
+    CurrencyDollarIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -47,6 +50,8 @@ import { FALLBACK_LOCATION_ICON, FALLBACK_ITEM_ICON } from '@/constants/location
 import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
@@ -58,8 +63,14 @@ import {
 } from '@/ui/dropdown-menu';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='LocationLoading'>
-        <Spinner className='size-6' />
+    <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationLoading'>
+        <Skeleton className='h-6 w-2/3 rounded' />
+        <Skeleton className='h-16 w-full rounded-xl' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-14 w-full rounded-lg' />
+            <Skeleton className='h-14 w-full rounded-lg' />
+            <Skeleton className='h-14 w-full rounded-lg' />
+        </div>
     </div>
 );
 
@@ -368,7 +379,9 @@ export default function LocationPage({ params }) {
             )}
             data-block='LocationPage'
         >
-            {location.active_move_id && <PackedTapeTop />}
+            {location.active_move_id && (
+                <PackedTapeTop moveId={location.active_move_id} moveName={packedMove?.name} />
+            )}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={ancestors ?? []}
@@ -376,146 +389,164 @@ export default function LocationPage({ params }) {
                 currentIcon={getLocationIcon(location)}
             />
 
-            <div className='flex items-center justify-between gap-2'>
-                <div className='flex min-w-0 items-center gap-2'>
-                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='LocationHero'
+            >
+                <div className='flex min-w-0 items-center gap-3'>
+                    <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-foreground shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
                         <DynamicIcon icon={getLocationIcon(location)} />
                     </span>
                     <div className='min-w-0'>
-                        <h1 className='truncate font-heading text-lg leading-tight font-medium'>
+                        <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
                             {location.name}
                         </h1>
                         <p className='truncate text-xs text-muted-foreground capitalize'>
                             {location.type}
-                            {location.is_container && totalPrice > 0 && (
-                                <> · ${Number(totalPrice).toLocaleString('es-MX')}</>
-                            )}
                         </p>
                     </div>
                 </div>
-                <div className='flex shrink-0 flex-wrap items-center justify-end gap-2'>
-                    {selectionMode ? (
-                        <>
-                            <span className='text-xs text-muted-foreground'>
-                                {selectedCount} seleccionado(s)
-                            </span>
+                {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
+                    <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
+                        {children.length > 0 && (
+                            <Stat icon={FolderIcon} value={children.length} label='dentro' />
+                        )}
+                        {items.length > 0 && (
+                            <Stat icon={StackIcon} value={items.length} label='items' />
+                        )}
+                        {location.is_container && totalPrice > 0 && (
+                            <Stat
+                                icon={CurrencyDollarIcon}
+                                value={`$${Number(totalPrice).toLocaleString('es-MX')}`}
+                                label='valor total'
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className='flex flex-wrap items-center justify-end gap-2'>
+                {selectionMode ? (
+                    <>
+                        <span className='text-xs text-muted-foreground'>
+                            {selectedCount} seleccionado(s)
+                        </span>
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPickerMode('transfer')}
+                        >
+                            <ArrowsLeftRightIcon data-icon='inline-start' />
+                            Transferir
+                        </Button>
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPackOpen(true)}
+                        >
+                            <PackageIcon data-icon='inline-start' />
+                            Empacar
+                        </Button>
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPickerMode('unpack')}
+                        >
+                            <PackageIcon data-icon='inline-start' />
+                            Desempacar
+                        </Button>
+                        <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
+                            <XIcon data-icon='inline-start' />
+                            Cancelar
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        {location.parent_id && (
                             <Button
                                 size='sm'
                                 variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPickerMode('transfer')}
+                                disabled={isTransferring}
+                                onClick={() => setTransferOpen(true)}
                             >
-                                <ArrowsLeftRightIcon data-icon='inline-start' />
+                                {isTransferring ? (
+                                    <Spinner data-icon='inline-start' />
+                                ) : (
+                                    <ArrowsLeftRightIcon data-icon='inline-start' />
+                                )}
                                 Transferir
                             </Button>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPackOpen(true)}
-                            >
-                                <PackageIcon data-icon='inline-start' />
-                                Empacar
-                            </Button>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPickerMode('unpack')}
-                            >
-                                <PackageIcon data-icon='inline-start' />
-                                Desempacar
-                            </Button>
-                            <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
-                                <XIcon data-icon='inline-start' />
-                                Cancelar
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            {location.parent_id && (
+                        )}
+                        {location.is_container &&
+                            (location.active_move_id ? (
                                 <Button
                                     size='sm'
                                     variant='outline'
-                                    disabled={isTransferring}
-                                    onClick={() => setTransferOpen(true)}
+                                    onClick={() => setUnpackOpen(true)}
                                 >
-                                    {isTransferring ? (
-                                        <Spinner data-icon='inline-start' />
-                                    ) : (
-                                        <ArrowsLeftRightIcon data-icon='inline-start' />
-                                    )}
-                                    Transferir
+                                    <PackageIcon data-icon='inline-start' />
+                                    Desempacar{packedMove ? `: ${packedMove.name}` : ''}
                                 </Button>
-                            )}
-                            {location.is_container &&
-                                (location.active_move_id ? (
-                                    <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => setUnpackOpen(true)}
-                                    >
-                                        <PackageIcon data-icon='inline-start' />
-                                        Desempacar{packedMove ? `: ${packedMove.name}` : ''}
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => setPackDialogOpen(true)}
-                                    >
-                                        <PackageIcon data-icon='inline-start' />
-                                        Empacar
-                                    </Button>
-                                ))}
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                render={<Link href={`/item/new?location=${id}`} />}
-                            >
+                            ) : (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={() => setPackDialogOpen(true)}
+                                >
+                                    <PackageIcon data-icon='inline-start' />
+                                    Empacar
+                                </Button>
+                            ))}
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            render={<Link href={`/item/new?location=${id}`} />}
+                        >
+                            <PlusIcon data-icon='inline-start' />
+                            Item
+                        </Button>
+                        <CreateLocationDialog
+                            workspaceId={location.workspace_id}
+                            parentId={id}
+                            title='Agregar dentro'
+                        >
+                            <Button size='sm' variant='outline'>
                                 <PlusIcon data-icon='inline-start' />
-                                Item
+                                Location
                             </Button>
-                            <CreateLocationDialog
-                                workspaceId={location.workspace_id}
-                                parentId={id}
-                                title='Agregar dentro'
+                        </CreateLocationDialog>
+                        {!isEmpty && (
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() => setSelectionMode(true)}
                             >
-                                <Button size='sm' variant='outline'>
-                                    <PlusIcon data-icon='inline-start' />
-                                    Location
-                                </Button>
-                            </CreateLocationDialog>
-                            {!isEmpty && (
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={() => setSelectionMode(true)}
-                                >
-                                    <CheckSquareIcon data-icon='inline-start' />
-                                    Seleccionar
-                                </Button>
-                            )}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
-                                    render={<Button size='icon-sm' variant='outline' />}
-                                >
-                                    <DotsThreeVerticalIcon />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='end'>
-                                    <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                                        <PencilSimpleIcon />
-                                        Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem variant='destructive' onClick={handleDelete}>
-                                        <TrashIcon />
-                                        Eliminar
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </>
-                    )}
-                </div>
+                                <CheckSquareIcon data-icon='inline-start' />
+                                Seleccionar
+                            </Button>
+                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={<Button size='icon-sm' variant='outline' />}
+                            >
+                                <DotsThreeVerticalIcon />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align='end'>
+                                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                                    <PencilSimpleIcon />
+                                    Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                    <TrashIcon />
+                                    Eliminar
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </>
+                )}
             </div>
 
             <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />

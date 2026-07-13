@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
+import { SignOutIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { profileQuery, updateProfileMutation } from '@/queries/profiles';
 import { generateName } from '@/helpers/identity';
@@ -13,18 +14,42 @@ import { Field, FieldGroup, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
-import { Separator } from '@/ui/separator';
+import { Skeleton } from '@/ui/skeleton';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='ProfileLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 p-4'
+        data-block='ProfileLoading'
+    >
+        <Skeleton className='h-7 w-32 rounded' />
+        <Skeleton className='h-28 w-full rounded-lg' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-9 w-full rounded-md' />
+            <Skeleton className='h-9 w-24 rounded-md' />
+        </div>
+        <Skeleton className='h-28 w-full rounded-xl' />
+    </div>
+);
+
+// A plain labeled card — the recurring shape for every section below the
+// identity tag (preferences, session) so they read as one grouped page
+// instead of loose stacked blocks.
+const SectionCard = ({ label, children, className }) => (
+    <div
+        className='flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+        data-block='ProfileSectionCard'
+    >
+        <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+            {label}
+        </h2>
+        <div className={className}>{children}</div>
     </div>
 );
 
 export default function ProfilePage() {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { user, isLoading: isAuthLoading } = useAuth();
+    const { user, isLoading: isAuthLoading, signOut } = useAuth();
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -66,7 +91,14 @@ export default function ProfilePage() {
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 p-4'
             data-block='ProfilePage'
         >
-            <h1 className='font-heading text-lg font-medium'>Tu perfil</h1>
+            <div className='min-w-0'>
+                <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                    Cuenta
+                </p>
+                <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
+                    Tu perfil
+                </h1>
+            </div>
 
             <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
                 <IdentityTag
@@ -91,12 +123,22 @@ export default function ProfilePage() {
                 </Button>
             </form>
 
-            <Separator />
-
-            <div className='flex flex-col gap-2'>
-                <h2 className='text-sm font-medium text-muted-foreground'>Preferencias</h2>
+            <SectionCard label='Preferencias'>
                 <ThemeToggle />
-            </div>
+            </SectionCard>
+
+            <SectionCard
+                label='Sesión'
+                className='flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between'
+            >
+                <p className='text-sm text-muted-foreground'>
+                    Cierra tu sesión en este dispositivo.
+                </p>
+                <Button variant='outline' onClick={() => signOut()} className='w-full sm:w-auto'>
+                    <SignOutIcon data-icon='inline-start' />
+                    Cerrar sesión
+                </Button>
+            </SectionCard>
         </div>
     );
 }

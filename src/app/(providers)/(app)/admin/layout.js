@@ -4,10 +4,17 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldCheckIcon, HouseIcon, UsersIcon, GearIcon } from '@phosphor-icons/react/ssr';
+import {
+    ShieldCheckIcon,
+    HouseIcon,
+    UsersIcon,
+    GearIcon,
+    ArrowLeftIcon,
+} from '@phosphor-icons/react/ssr';
 import { useIsAdmin } from '@/hooks/use-admin';
 import { supabase } from '@/services/supabase';
-import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
 import { cn } from '@/helpers/utils';
 
 const useAdminCount = table => ({
@@ -25,18 +32,37 @@ const NavTab = ({ href, icon: Icon, label, count, active }) => (
     <Link
         href={href}
         className={cn(
-            'flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted',
-            active ? 'bg-muted text-foreground' : 'text-muted-foreground',
+            'flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            active
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         )}
     >
         <Icon className='size-4' />
         {label}
         {count != null && (
-            <span className='rounded-md bg-background px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground'>
+            <span
+                className={cn(
+                    'rounded-md px-1.5 py-0.5 text-xs tabular-nums',
+                    active ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+                )}
+            >
                 {count}
             </span>
         )}
     </Link>
+);
+
+const Loading = () => (
+    <div className='flex flex-1 flex-col gap-4 p-4' data-block='AdminLoading'>
+        <Skeleton className='h-32 w-full rounded-2xl' />
+        <div className='flex gap-1'>
+            <Skeleton className='h-8 w-28 rounded-lg' />
+            <Skeleton className='h-8 w-24 rounded-lg' />
+            <Skeleton className='h-8 w-24 rounded-lg' />
+        </div>
+        <Skeleton className='h-48 w-full rounded-lg' />
+    </div>
 );
 
 // Every table already has a "requesting_user_is_admin()" RLS policy (see
@@ -53,47 +79,65 @@ export default function AdminLayout({ children }) {
         if (!isLoading && !isAdmin) router.replace('/');
     }, [isLoading, isAdmin, router]);
 
-    if (isLoading || !isAdmin) {
-        return (
-            <div className='flex flex-1 items-center justify-center' data-block='AdminLoading'>
-                <Spinner className='size-6' />
-            </div>
-        );
-    }
+    if (isLoading || !isAdmin) return <Loading />;
 
     return (
-        <div className='flex flex-1 flex-col' data-block='AdminLayout'>
-            <div className='flex flex-col gap-3 border-b p-4'>
-                <div className='flex items-center gap-2'>
-                    <ShieldCheckIcon className='size-4 text-primary' />
-                    <span className='text-xs font-semibold tracking-widest text-muted-foreground uppercase'>
-                        Admin
+        <div className='flex flex-1 flex-col gap-4 p-4' data-block='AdminLayout'>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10 sm:p-5'
+                data-block='AdminHero'
+            >
+                <Link
+                    href='/'
+                    className='mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+                >
+                    <ArrowLeftIcon className='size-3.5' />
+                    Volver al inicio
+                </Link>
+                <div className='flex items-center gap-3'>
+                    <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-5'>
+                        <ShieldCheckIcon weight='fill' />
                     </span>
+                    <div className='min-w-0'>
+                        <h1 className='font-heading text-xl font-semibold tracking-tight sm:text-2xl'>
+                            Admin
+                        </h1>
+                        <p className='truncate text-xs text-muted-foreground sm:text-sm'>
+                            Workspaces, usuarios y ajustes globales de stuffbox
+                        </p>
+                    </div>
                 </div>
-                <div className='flex gap-1'>
-                    <NavTab
-                        href='/admin/workspaces'
-                        icon={HouseIcon}
-                        label='Workspaces'
-                        count={workspacesCount}
-                        active={pathname.startsWith('/admin/workspaces')}
-                    />
-                    <NavTab
-                        href='/admin/users'
-                        icon={UsersIcon}
-                        label='Usuarios'
-                        count={usersCount}
-                        active={pathname.startsWith('/admin/users')}
-                    />
-                    <NavTab
-                        href='/admin/settings'
-                        icon={GearIcon}
-                        label='Ajustes'
-                        active={pathname.startsWith('/admin/settings')}
-                    />
+
+                <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
+                    <Stat icon={HouseIcon} value={workspacesCount ?? 0} label='workspaces' />
+                    <Stat icon={UsersIcon} value={usersCount ?? 0} label='usuarios' />
                 </div>
             </div>
-            <div className='flex-1 p-4'>{children}</div>
+
+            <div className='flex gap-1 overflow-x-auto' data-block='AdminNav'>
+                <NavTab
+                    href='/admin/workspaces'
+                    icon={HouseIcon}
+                    label='Workspaces'
+                    count={workspacesCount}
+                    active={pathname.startsWith('/admin/workspaces')}
+                />
+                <NavTab
+                    href='/admin/users'
+                    icon={UsersIcon}
+                    label='Usuarios'
+                    count={usersCount}
+                    active={pathname.startsWith('/admin/users')}
+                />
+                <NavTab
+                    href='/admin/settings'
+                    icon={GearIcon}
+                    label='Ajustes'
+                    active={pathname.startsWith('/admin/settings')}
+                />
+            </div>
+
+            <div className='flex-1'>{children}</div>
         </div>
     );
 }

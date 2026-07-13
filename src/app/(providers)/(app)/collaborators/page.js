@@ -9,6 +9,9 @@ import {
     TrashIcon,
     SignOutIcon,
     CrownSimpleIcon,
+    UsersIcon,
+    LinkSimpleIcon,
+    CheckIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
@@ -20,9 +23,13 @@ import {
     removeWorkspaceMemberMutation,
 } from '@/queries/collaborators';
 import { getAvatarUrl } from '@/helpers/avatar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
+import { resolveWorkspaceColor } from '@/helpers/workspace-color';
+import { Avatar, AvatarFallback, AvatarImage, AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
+import { Stat } from '@/ui/stat';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -45,8 +52,15 @@ const EXPIRY_OPTIONS = [
 ];
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='CollaboratorsLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='CollaboratorsLoading'
+    >
+        <Skeleton className='h-28 w-full rounded-2xl' />
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-16 w-full rounded-xl' />
+            <Skeleton className='h-16 w-full rounded-xl' />
+        </div>
     </div>
 );
 
@@ -122,6 +136,10 @@ const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
     );
 };
 
+// The copy action gets real weight here (a full-width primary button, not a
+// plain link) — this row is often the entire "how do I invite someone" UI
+// for a workspace, so the CTA should read as one, not as an afterthought
+// next to the link text.
 const InviteRow = ({ invite, onDelete }) => {
     const [copied, setCopied] = useState(false);
     const link = `${APP_URL}/invite/${invite.token}`;
@@ -136,25 +154,44 @@ const InviteRow = ({ invite, onDelete }) => {
     };
 
     return (
-        <div className='flex items-center gap-3 rounded-lg border p-3 text-sm'>
-            <div className='min-w-0 flex-1'>
-                <p className='truncate font-mono text-xs'>{link}</p>
-                <p className='truncate text-xs text-muted-foreground'>
-                    {invite.uses_count}/{invite.max_uses} usos ·{' '}
-                    {isActive
-                        ? `expira ${new Date(invite.expires_at).toLocaleDateString('es-MX')}`
-                        : isExpired
-                          ? 'expirado'
-                          : 'agotado'}
-                </p>
+        <div
+            className='flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'
+            data-block='InviteRow'
+        >
+            <div className='flex items-center gap-3'>
+                <span className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-flourish/15 text-flourish [&_svg]:size-4'>
+                    <LinkSimpleIcon />
+                </span>
+                <div className='min-w-0 flex-1'>
+                    <p className='truncate font-mono text-xs'>{link}</p>
+                    <p className='truncate text-xs text-muted-foreground'>
+                        {invite.uses_count}/{invite.max_uses} usos ·{' '}
+                        {isActive
+                            ? `expira ${new Date(invite.expires_at).toLocaleDateString('es-MX')}`
+                            : isExpired
+                              ? 'expirado'
+                              : 'agotado'}
+                    </p>
+                </div>
             </div>
-            <Button size='sm' variant='outline' onClick={handleCopy}>
-                <CopyIcon data-icon='inline-start' />
-                {copied ? 'Copiado' : 'Copiar'}
-            </Button>
-            <Button size='icon-sm' variant='outline' onClick={() => onDelete(invite.id)}>
-                <TrashIcon />
-            </Button>
+            <div className='flex items-center gap-2'>
+                <Button size='sm' onClick={handleCopy} className='flex-1'>
+                    {copied ? (
+                        <CheckIcon data-icon='inline-start' />
+                    ) : (
+                        <CopyIcon data-icon='inline-start' />
+                    )}
+                    {copied ? 'Copiado' : 'Copiar enlace'}
+                </Button>
+                <Button
+                    size='icon-sm'
+                    variant='outline'
+                    onClick={() => onDelete(invite.id)}
+                    aria-label='Eliminar invitación'
+                >
+                    <TrashIcon />
+                </Button>
+            </div>
         </div>
     );
 };
@@ -162,7 +199,10 @@ const InviteRow = ({ invite, onDelete }) => {
 const MemberRow = ({ member, isOwnerRow, isSelf, canRemove, onRemove }) => {
     const profile = member.profiles;
     return (
-        <div className='flex items-center gap-3 rounded-lg border p-3 text-sm'>
+        <div
+            className='flex items-center gap-3 rounded-xl border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5'
+            data-block='MemberRow'
+        >
             <Avatar
                 className='size-9 bg-(--profile-color)'
                 style={{ '--profile-color': profile.color }}
@@ -180,9 +220,19 @@ const MemberRow = ({ member, isOwnerRow, isSelf, canRemove, onRemove }) => {
                 </p>
                 <p className='truncate text-xs text-muted-foreground'>{profile.email}</p>
             </div>
-            {isOwnerRow && <CrownSimpleIcon className='size-4 shrink-0 text-muted-foreground' />}
+            {isOwnerRow && (
+                <span className='flex shrink-0 items-center gap-1 rounded-full bg-flourish/15 px-2 py-0.5 text-xs font-medium text-flourish'>
+                    <CrownSimpleIcon className='size-3' weight='fill' />
+                    <span className='hidden sm:inline'>Dueño</span>
+                </span>
+            )}
             {canRemove && (
-                <Button size='icon-sm' variant='outline' onClick={onRemove}>
+                <Button
+                    size='icon-sm'
+                    variant='outline'
+                    onClick={onRemove}
+                    aria-label={isSelf ? 'Salir del espacio' : 'Quitar miembro'}
+                >
                     {isSelf ? <SignOutIcon /> : <TrashIcon />}
                 </Button>
             )}
@@ -256,18 +306,72 @@ export default function CollaboratorsPage() {
     }
 
     const isOwner = workspace.owner_id === user.id;
+    const workspaceColor = resolveWorkspaceColor(workspace);
 
     return (
         <div
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='CollaboratorsPage'
         >
-            <h1 className='truncate font-heading text-lg font-medium'>
-                Colaboradores — {workspace.name}
-            </h1>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-5 ring-1 ring-foreground/10'
+                data-block='CollaboratorsHero'
+            >
+                <span
+                    aria-hidden
+                    className='absolute inset-x-0 top-0 h-1 bg-(--ws-color)'
+                    style={{ '--ws-color': workspaceColor }}
+                />
+                <div className='flex items-start justify-between gap-2'>
+                    <div className='min-w-0'>
+                        <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                            Colaboradores
+                        </p>
+                        <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
+                            {workspace.name}
+                        </h1>
+                    </div>
+                    {isOwner && (
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            className='shrink-0'
+                            onClick={() => setInviteDialogOpen(true)}
+                        >
+                            <PlusIcon data-icon='inline-start' />
+                            Invitar
+                        </Button>
+                    )}
+                </div>
+
+                <div className='mt-5 flex flex-wrap items-center gap-x-6 gap-y-3'>
+                    <Stat icon={UsersIcon} value={members.length} label='colaboradores' />
+                    <AvatarGroup className='ml-auto'>
+                        {members.slice(0, 4).map(member => (
+                            <Avatar key={member.user_id} size='sm'>
+                                <AvatarImage
+                                    src={getAvatarUrl(
+                                        member.profiles?.avatar_seed,
+                                        member.profiles?.gender,
+                                    )}
+                                    alt={member.profiles?.name ?? ''}
+                                />
+                                <AvatarFallback>
+                                    {member.profiles?.name?.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                        ))}
+                        {members.length > 4 && (
+                            <AvatarGroupCount>+{members.length - 4}</AvatarGroupCount>
+                        )}
+                    </AvatarGroup>
+                </div>
+            </div>
 
             <div className='flex flex-col gap-2'>
-                <h2 className='text-sm font-medium text-muted-foreground'>Miembros</h2>
+                <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                    Miembros
+                </h2>
                 {members.map(member => (
                     <MemberRow
                         key={member.user_id}
@@ -287,15 +391,21 @@ export default function CollaboratorsPage() {
             {isOwner && (
                 <>
                     <Separator />
-                    <div className='flex items-center justify-between gap-2'>
-                        <h2 className='text-sm font-medium text-muted-foreground'>Invitaciones</h2>
-                        <Button size='sm' onClick={() => setInviteDialogOpen(true)}>
-                            <PlusIcon data-icon='inline-start' />
-                            Generar enlace
-                        </Button>
-                    </div>
+                    <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                        Invitaciones
+                    </h2>
                     {invites.length === 0 ? (
-                        <p className='text-sm text-muted-foreground'>Sin invitaciones activas.</p>
+                        <Empty className='py-8' data-block='InvitesEmpty'>
+                            <EmptyHeader>
+                                <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
+                                    <LinkSimpleIcon />
+                                </EmptyMedia>
+                                <EmptyTitle>Sin invitaciones activas</EmptyTitle>
+                                <EmptyDescription>
+                                    Genera un enlace para invitar a alguien a este espacio.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     ) : (
                         <div className='flex flex-col gap-2'>
                             {invites.map(invite => (

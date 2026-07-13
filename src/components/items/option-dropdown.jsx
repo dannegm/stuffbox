@@ -2,6 +2,7 @@
 
 import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldLabel } from '@/ui/field';
+import { cn } from '@/helpers/utils';
 
 const UNSET = 'Sin especificar';
 
@@ -19,7 +20,19 @@ export const OptionDropdown = ({ label, value, onChange, options = [] }) => (
             getLabel={option => option.value}
             searchPlaceholder={`Buscar ${label.toLowerCase()}`}
             renderOption={option => (
-                <span className={option.value === UNSET ? 'text-muted-foreground' : ''}>
+                <span
+                    className={cn(
+                        'flex items-center gap-2',
+                        option.value === UNSET && 'text-muted-foreground',
+                    )}
+                >
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'size-1.5 shrink-0 rounded-full',
+                            option.value === UNSET ? 'bg-muted-foreground/40' : 'bg-primary/60',
+                        )}
+                    />
                     {option.value}
                 </span>
             )}

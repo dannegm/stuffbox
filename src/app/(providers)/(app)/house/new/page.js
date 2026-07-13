@@ -59,7 +59,24 @@ export default function NewHousePage() {
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='NewHousePage'
         >
-            <h1 className='font-heading text-lg font-medium'>Nueva casa</h1>
+            <div
+                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='NewHouseHero'
+            >
+                <div className='flex items-center gap-3'>
+                    <span className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-card/80 text-primary shadow-xs ring-1 ring-foreground/10 [&_svg]:size-5'>
+                        <DynamicIcon icon={previewIcon} />
+                    </span>
+                    <div className='min-w-0'>
+                        <h1 className='truncate font-heading text-xl font-semibold tracking-tight'>
+                            Nueva casa
+                        </h1>
+                        <p className='text-sm text-muted-foreground'>
+                            Registra tu primer espacio para empezar a organizar tu inventario.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
                 <FieldGroup>
@@ -70,7 +87,7 @@ export default function NewHousePage() {
                                 <button
                                     type='button'
                                     aria-label='Elegir ícono'
-                                    className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-foreground transition-colors hover:bg-muted [&_svg]:size-4'
+                                    className='flex size-9 shrink-0 items-center justify-center rounded-md border border-dashed border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/15 [&_svg]:size-4'
                                 >
                                     <DynamicIcon icon={previewIcon} />
                                 </button>

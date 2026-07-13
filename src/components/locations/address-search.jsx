@@ -44,7 +44,7 @@ export const AddressSearch = ({ onSelect, className }) => {
 
     return (
         <div ref={$container} className={cn('relative', className)} data-block='AddressSearch'>
-            <InputGroup className='bg-popover shadow-md'>
+            <InputGroup className='bg-popover/95 shadow-md shadow-black/10 ring-1 ring-foreground/10 backdrop-blur-sm'>
                 <InputGroupAddon>
                     {isFetching ? (
                         <SpinnerIcon weight='bold' className='size-4 animate-spin' />
@@ -64,7 +64,7 @@ export const AddressSearch = ({ onSelect, className }) => {
             </InputGroup>
 
             {showDropdown && (
-                <div className='absolute top-full right-0 left-0 z-10 mt-1 max-h-64 overflow-y-auto rounded-md bg-popover p-1 shadow-md ring-1 ring-foreground/10'>
+                <div className='absolute top-full right-0 left-0 z-10 mt-1 max-h-64 overflow-y-auto rounded-md bg-popover/95 p-1 shadow-md shadow-black/10 ring-1 ring-foreground/10 backdrop-blur-sm'>
                     {!results?.length ? (
                         <p className='p-3 text-center text-sm text-muted-foreground'>
                             {isFetching ? 'Buscando…' : 'Sin resultados.'}
@@ -75,7 +75,7 @@ export const AddressSearch = ({ onSelect, className }) => {
                                 key={`${result.lat},${result.lng}`}
                                 type='button'
                                 onClick={() => handleSelect(result)}
-                                className='w-full truncate rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted'
+                                className='w-full truncate rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
                             >
                                 {result.label}
                             </button>

@@ -19,7 +19,10 @@ export const ProfileMenu = () => {
     if (!profile) return null;
 
     return (
-        <div className='flex items-center gap-2 p-2' data-block='ProfileMenu'>
+        <div
+            className='flex items-center gap-2 rounded-lg bg-sidebar-accent/50 p-2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0'
+            data-block='ProfileMenu'
+        >
             <Avatar
                 className='size-8 shrink-0 bg-(--profile-color)'
                 style={{ '--profile-color': profile.color }}
@@ -31,7 +34,7 @@ export const ProfileMenu = () => {
                 <AvatarFallback>{profile.name.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className='min-w-0 flex-1'>
-                <p className='truncate text-sm font-medium'>{profile.name}</p>
+                <p className='truncate font-heading text-sm font-semibold'>{profile.name}</p>
                 <p className='truncate text-xs text-muted-foreground'>{profile.email}</p>
             </div>
             <Tooltip>

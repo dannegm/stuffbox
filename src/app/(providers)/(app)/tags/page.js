@@ -10,13 +10,24 @@ import { tagsQuery, deleteTagMutation } from '@/queries/tags';
 import { TagDialog } from '@/components/tags/tag-dialog';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 
 const Loading = () => (
-    <div className='flex flex-1 items-center justify-center' data-block='TagsLoading'>
-        <Spinner className='size-6' />
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='TagsLoading'
+    >
+        <div className='flex items-center justify-between gap-2'>
+            <Skeleton className='h-7 w-20 rounded' />
+            <Skeleton className='h-9 w-28 rounded-md' />
+        </div>
+        <div className='flex flex-col gap-2'>
+            <Skeleton className='h-14 w-full rounded-xl' />
+            <Skeleton className='h-14 w-full rounded-xl' />
+            <Skeleton className='h-14 w-full rounded-xl' />
+        </div>
     </div>
 );
 
@@ -74,7 +85,7 @@ export default function TagsPage() {
             data-block='TagsPage'
         >
             <div className='flex items-center justify-between gap-2'>
-                <h1 className='font-heading text-lg font-medium'>Tags</h1>
+                <h1 className='font-heading text-xl font-semibold tracking-tight'>Tags</h1>
                 <Button size='sm' onClick={handleCreate}>
                     <PlusIcon data-icon='inline-start' />
                     Nuevo tag
@@ -84,7 +95,7 @@ export default function TagsPage() {
             {tags.length === 0 ? (
                 <Empty className='flex-1' data-block='TagsEmpty'>
                     <EmptyHeader>
-                        <EmptyMedia variant='icon'>
+                        <EmptyMedia variant='icon' className='bg-primary/10 text-primary'>
                             <DynamicIcon icon={FALLBACK_TAG_ICON} />
                         </EmptyMedia>
                         <EmptyTitle>Sin tags todavía</EmptyTitle>
@@ -98,15 +109,24 @@ export default function TagsPage() {
                     {tags.map(tag => (
                         <div
                             key={tag.id}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm'
+                            className='group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
+                            style={{ '--tag-color': tag.color }}
                         >
                             <span
-                                className='flex size-9 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) [&_svg]:size-4'
-                                style={{ '--tag-color': tag.color }}
-                            >
+                                aria-hidden
+                                className='absolute inset-y-0 left-0 w-1 bg-(--tag-color)'
+                            />
+                            <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-(--tag-color)/15 text-(--tag-color) [&_svg]:size-4.5'>
                                 <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
                             </span>
-                            <span className='min-w-0 flex-1 truncate font-medium'>{tag.name}</span>
+                            <span className='min-w-0 flex-1'>
+                                <span className='block truncate font-medium'>{tag.name}</span>
+                                {tag.sku && (
+                                    <span className='block truncate text-xs text-muted-foreground'>
+                                        {tag.sku}
+                                    </span>
+                                )}
+                            </span>
                             <Button size='icon-sm' variant='ghost' onClick={() => handleEdit(tag)}>
                                 <PencilSimpleIcon />
                             </Button>
