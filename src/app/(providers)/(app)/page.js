@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Home01Icon } from '@hugeicons/core-free-icons';
+import { Home01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
@@ -26,7 +27,11 @@ export default function Home() {
 
     const { data: workspaces, isPending } = useQuery(workspacesQuery({ enabled: !!user }));
 
-    if (isAuthLoading || !user || isPending) return <Loading />;
+    useEffect(() => {
+        if (workspaces?.length === 1) router.replace(`/workspace/${workspaces[0].id}`);
+    }, [workspaces, router]);
+
+    if (isAuthLoading || !user || isPending || workspaces?.length === 1) return <Loading />;
 
     if (!workspaces?.length) {
         return (
@@ -45,9 +50,17 @@ export default function Home() {
     return (
         <div className='flex flex-col gap-2 p-4' data-block='WorkspacesList'>
             {workspaces.map(workspace => (
-                <div key={workspace.id} className='rounded-lg border p-4 text-sm'>
+                <Link
+                    key={workspace.id}
+                    href={`/workspace/${workspace.id}`}
+                    className='flex items-center justify-between gap-2 rounded-lg border p-4 text-sm transition-colors hover:bg-muted'
+                >
                     {workspace.name}
-                </div>
+                    <HugeiconsIcon
+                        icon={ArrowRight01Icon}
+                        className='size-4 text-muted-foreground'
+                    />
+                </Link>
             ))}
         </div>
     );

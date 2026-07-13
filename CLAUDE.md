@@ -51,7 +51,7 @@ Effectively an SPA: Next.js (latest, App Router) is the bundler + host; **Vercel
 
 ## Stack
 
-Plain JavaScript (JSX) — **no TypeScript, ever**; convert any `.tsx` registry block to `.jsx` on install. Tailwind v4 (CSS-based `@theme` config, no `tailwind.config.js`). shadcn/ui on **Base UI** (`@base-ui/react`), not Radix. Icons: Lucide (+lucide-lab) resolved via a `DynamicIcon` component from `icon` jsonb `{library, name}`. Maps: mapcn (`@mapcn/map`, MapLibre) + hosted MapTiler style; land routes via OpenRouteService, air routes via geodesic arc (`@turf/turf`). Storage: Cloudflare R2, direct-from-client upload via presigned URL. Avatars: DiceBear, style `micah`. AI summaries: Vercel AI SDK (`ai` + `@openrouter/ai-sdk-provider`) against OpenRouter, model set via `OPENROUTER_MODEL`.
+Plain JavaScript (JSX) — **no TypeScript, ever**; convert any `.tsx` registry block to `.jsx` on install. Tailwind v4 (CSS-based `@theme` config, no `tailwind.config.js`). shadcn/ui on **Base UI** (`@base-ui/react`), not Radix. Icons: multi-library — Hugeicons (`@hugeicons/react` + `@hugeicons/core-free-icons`, library code `huge`) is the primary set already used across UI primitives (buttons, spinner, identity tag), plus Lucide (`lucide-react`, code `lucide`) and Lucide Lab (`@lucide/lab`, code `lucide-lab`) for anything ported from pinia/bins. All three resolved via one `DynamicIcon` component (`src/ui/dynamic-icon.jsx`) from `icon` jsonb `{library, name}` — dispatches on `library` to the matching renderer. Default per-type icons (locations, etc.) live in `src/constants/location-icons.js`, keyed on Hugeicons names. Maps: mapcn (`@mapcn/map`, MapLibre) + hosted MapTiler style; land routes via OpenRouteService, air routes via geodesic arc (`@turf/turf`). Storage: Cloudflare R2, direct-from-client upload via presigned URL. Avatars: DiceBear, style `micah`. AI summaries: Vercel AI SDK (`ai` + `@openrouter/ai-sdk-provider`) against OpenRouter, model set via `OPENROUTER_MODEL`.
 
 ### Code conventions (shared across all Danne reference projects — follow exactly)
 
@@ -92,6 +92,14 @@ Sets `data-browser`/`data-os`/`data-device`/`data-touch` on `<html>` once (detec
 ### JsonViewer (from pinia, `src/ui/json-viewer.jsx`)
 
 Debug-mode payload inspector — wraps `@microlink/react-json-view` in the shadcn `ScrollArea`. Use it to inspect raw payloads (query results, mutation variables, webhook bodies) behind the `debug` setting, not as a general-purpose data display.
+
+### UI primitives & patterns (decided while building the location browser + sidebar)
+
+- **Dropdowns over native `<select>`** — use `DropdownMenu` (`src/ui/dropdown-menu.jsx`, Base UI `@base-ui/react/menu`) for any choice list (type pickers, theme toggle, workspace switcher). Never a bare `<select>`.
+- **Tooltips over `title` attrs** — use `Tooltip`/`TooltipTrigger`/`TooltipContent` (`src/ui/tooltip.jsx`) for icon-only affordances. `TooltipProvider` is mounted once, globally, in `src/providers/providers.jsx` — don't wrap it locally per usage.
+- **`ResponsiveDialog`** (`src/ui/responsive-dialog.jsx`) — one API (`ResponsiveDialog(Trigger|Content|Header|Title|Description|Footer|Close)`) that renders a centered `Dialog` on desktop and a bottom `Drawer` (vaul, `src/ui/drawer.jsx`) on mobile via `useIsMobile()` (`src/hooks/use-mobile.js`, 768px breakpoint). Use this instead of `Popover` for anything that's really a form (e.g. "agregar casa/dentro" — see `CreateLocationDialog`). `Popover` stays for lightweight, non-form pickers (color swatch, icon grid). Trigger/Close take a `render` element (Base UI convention) even under the Drawer branch, which internally translates to vaul's `asChild`.
+- **Sidebar** (`src/ui/sidebar.jsx`, ported from `../bins/src/ui/sidebar.jsx` — full shadcn Sidebar primitive suite: provider, mobile `Sheet` fallback, collapsible-icon mode, keyboard shortcut). The app composition lives in `src/components/layout/`: `app-sidebar.jsx` (workspace switcher header, Casas/Mudanzas/Ajustes nav, theme toggle + profile card footer), `workspace-switcher.jsx` (`DropdownMenu` of workspaces with a color-bullet dot per workspace — color is a client-side stable hash for now, `src/helpers/workspace-color.js`, until `workspaces.color` exists in the DB — plus a "crear nuevo" item that opens a sibling `ResponsiveDialog`, not nested inside the menu item, to avoid the menu-close/dialog-open race), `theme-toggle.jsx`, `profile-menu.jsx`.
+- Icon-chrome inside ported primitives (dialog/sheet close X, sidebar panel toggle) uses Hugeicons (`Cancel01Icon`, `SidebarLeftIcon`) per the primary icon-set decision, even though the upstream bins versions use `lucide-react` for that chrome.
 
 ### Account provisioning
 

@@ -90,6 +90,13 @@ export const ensureAccountProvisioned = async (supabase, user) => {
         user_id: user.id,
     });
 
+    await seedWorkspaceOptionLists(supabase, workspaceId);
+};
+
+// Shared by the auto-provisioned first workspace above and by
+// createWorkspaceMutation (src/queries/workspaces.js) when the user creates
+// an additional one from the sidebar switcher.
+export const seedWorkspaceOptionLists = async (supabase, workspaceId) => {
     await supabase.from('option_lists').insert([
         ...CONDITION_OPTIONS.map((value, index) => ({
             workspace_id: workspaceId,

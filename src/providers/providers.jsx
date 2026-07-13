@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { createProviders } from '@/helpers/providers';
+import { TooltipProvider } from '@/ui/tooltip';
 import { QueryProvider } from './query-provider';
 import { BusProvider } from './bus-provider';
 import { DeviceProvider } from './device-provider';
@@ -29,6 +30,7 @@ const AppProviders = createProviders([
     [DebugProvider],
     [ThemeProvider],
     [AuthProvider],
+    [TooltipProvider],
 ]);
 
 export const Providers = ({ children }) => (

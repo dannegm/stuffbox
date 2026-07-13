@@ -66,9 +66,9 @@ return children
 - **URL state:** nuqs (filters, sort, pagination, panel state).
 - **Styling:** Tailwind CSS v4, CSS-based config (`@theme`, no `tailwind.config.js`).
 - **UI primitives:** shadcn/ui on **Base UI** (`@base-ui/react`), not Radix. Check `src/ui/` + registry before writing custom.
-- **Icons:** Lucide (+ Lucide-lab). `icon` jsonb `{ library, name }` resolved via a `DynamicIcon` component (like pinia).
-- **Maps:** mapcn (`@mapcn/map`, MapLibre) — check mapcn's `llms.txt` inventory before building map features. Basemap via hosted MapTiler style.
-- **Directions:** OpenRouteService (land routes), plain `fetch`. Air routes = geodesic arc via `@turf/turf` (or mapcn `Arcs`), pure math, no API.
+- **Icons:** multi-library — Hugeicons (`@hugeicons/react` + `@hugeicons/core-free-icons`, code `huge`) is the primary set (already used across UI primitives before the location browser existed), plus Lucide (`lucide-react`, code `lucide`) and Lucide Lab (`@lucide/lab`, code `lucide-lab`) for anything ported as-is from pinia/bins. `icon` jsonb `{ library, name }` resolved via one `DynamicIcon` component (`src/ui/dynamic-icon.jsx`, extended from pinia's lucide-only version) that dispatches on `library`.
+- **Maps:** `@mapcn/map` doesn't exist as an npm package (checked — 404 on the registry); pinia's `src/ui/map.jsx` is the real thing, a hand-built MapLibre wrapper (context + `Map`/`MapMarker`/`MapControls`/`MapRoute`/`MapArc`/etc.), presumably itself sourced from a "mapcn" copy-paste registry rather than a published package. `src/ui/map.jsx` here is a **trimmed** port (`Map`, `useMap`, `MapMarker`, `MarkerContent`, `MapControls` zoom+locate only — enough for the house-creation lat/lng picker); port the rest (`MapRoute`, `MapArc`, popups) from pinia the same way once Moves needs route rendering. Basemap via hosted MapTiler style (`src/constants/map-defaults.js`, `NEXT_PUBLIC_MAPTILER_KEY`).
+- **Directions:** OpenRouteService (land routes), plain `fetch`. Air routes = geodesic arc via `@turf/turf` (or a ported `MapArc`, see pinia), pure math, no API.
 - **Storage:** Cloudflare R2 (S3-compatible), direct-from-client upload via presigned URL (presign is the one Route Handler that needs the secret).
 - **Auth:** `@supabase/ssr`. **First Danne project with real accounts** — no prior login pattern to copy, but it's standard Supabase.
 - **Avatars:** DiceBear, style **`micah`** (human-like, unlike bins' abstract `rings` — this is why `gender` is a real field here).
@@ -116,7 +116,7 @@ One schema per project. **Updated id strategy (decided during initial `db.sql` w
 
 ### `locations` (generic unbounded tree — house/room/closet/shelf/drawer/warehouse/box are all nodes; box = `type='box'`; multiple roots = multiple houses; boxes can nest)
 
-`id` PK · `workspace_id` (cascade) · `parent_id` → locations self (nullable, cascade) · `name` · `type` (free text) · `icon` jsonb `{library,name}` · `lat`,`lng` double (nullable; meaningful on roots for routes) · `active_move_id` → moves (nullable; set when packed) · `ai_summary` text (nullable, cached, regenerable) · timestamps
+`id` PK · `workspace_id` (cascade) · `parent_id` → locations self (nullable, cascade) · `name` · `type` (free text) · `icon` jsonb `{library,name}` · `address` text (nullable, human-readable, separate from lat/lng) · `lat`,`lng` double (nullable; meaningful on roots for routes) · `active_move_id` → moves (nullable; set when packed) · `ai_summary` text (nullable, cached, regenerable) · timestamps
 
 ### `items`
 
@@ -262,21 +262,24 @@ Deep links from QR: `src/app/i/[id]` → item, `src/app/l/[id]` → location (th
 ## 11. Routes (App Router, `src/app/` — Next's `src/` dir convention, everything including routes lives under `src/`)
 
 ```
-src/app/layout.js            # ONLY server component: minimal <html><body>
-src/app/(providers)          # 'use client' ClientComponent wrapper + all providers (mounted-gate)
-src/app/page.js              # dashboard: default workspace → default house
-src/app/login/page.js        # returning user only — no identity tag, just email + code
-src/app/register/page.js     # new account — editable identity tag (name/avatar) + email + code
-src/app/invite/[token]/page.js  # read-only landing; identity tag if no session, else just "Unirse"
-src/app/workspace/[id]/page.js  # workspace / house browser (core view)
-src/app/location/[id]/page.js   # location contents + transfer UI
-src/app/item/[id]/page.js       # item detail
-src/app/moves/page.js           # move list
-src/app/move/[id]/page.js       # move planner: map + route + pack/unpack + label builder
-src/app/settings/page.js        # stacked sections + side nav
-src/app/admin/page.js           # redirect → /admin/workspaces
-src/app/admin/workspaces/page.js
-src/app/admin/users/page.js
+src/app/layout.js                       # ONLY server component: minimal <html><body>
+src/app/(providers)/layout.js           # 'use client' ClientComponent wrapper + all providers (mounted-gate)
+src/app/(providers)/(auth)/             # route group, no sidebar — login/register/invite
+  login/page.js                        # returning user only — no identity tag, just email + code
+  register/page.js                     # new account — editable identity tag (name/avatar) + email + code
+  invite/[token]/page.js                # read-only landing; identity tag if no session, else just "Unirse"
+src/app/(providers)/(app)/layout.js     # SidebarProvider + AppSidebar + SidebarInset — the authenticated shell
+  page.js                              # dashboard: single workspace → auto-redirect; multiple → picker list
+  workspace/[id]/page.js                # workspace / house browser (core view)
+  location/[id]/page.js                 # location contents + transfer UI
+  house/new/page.js                     # dedicated route (not a dialog) — name/type/icon/address/lat+lng map picker for a root location; child locations (room/box/etc.) still use CreateLocationDialog
+  item/[id]/page.js                     # item detail
+  moves/page.js                         # move list (placeholder until the Moves feature lands)
+  move/[id]/page.js                     # move planner: map + route + pack/unpack + label builder
+  settings/page.js                      # stacked sections + side nav (placeholder until the Settings feature lands)
+  admin/page.js                         # redirect → /admin/workspaces
+  admin/workspaces/page.js
+  admin/users/page.js
 src/app/i/[id]/page.js          # QR deep link → item redirect
 src/app/l/[id]/page.js          # QR deep link → location redirect
 src/app/api/uploads/presign/route.js
@@ -286,7 +289,7 @@ src/app/api/labels/email/route.js
 src/proxy.js                 # Supabase session refresh (Next's proxy convention, formerly middleware.js)
 ```
 
-Design language: shadcn/Base-UI minimalist baseline, with **"modern skeuomorphism"** reserved for the pack/unpack moment (a box that opens/closes as the packing affordance) — everything else flat and quiet (frontend-design skill's "one signature element"). Default entity icons (Lucide, editable): house→`Home`, room→`DoorOpen`, box→`Box`, shelf/library→`Library`, closet→`Shirt`, drawer→`Archive`, warehouse→`Warehouse`, kitchen→`UtensilsCrossed`, bathroom→`Bath`, office→`Briefcase`, garage→`Car`; fallbacks: location→`Folder`, item→`Package2`, tag→`Tag`.
+Design language: shadcn/Base-UI minimalist baseline, with **"modern skeuomorphism"** reserved for the pack/unpack moment (a box that opens/closes as the packing affordance) — everything else flat and quiet (frontend-design skill's "one signature element"). Default entity icons (Hugeicons, editable, `src/constants/location-icons.js`): house→`House03Icon`, room→`DoorOpenIcon`, box→`Package01Icon`, shelf/library→`LibraryIcon`, closet→`ShirtIcon`, drawer→`Archive01Icon`, warehouse→`WarehouseIcon`, kitchen→`KitchenUtensilsIcon`, bathroom→`BathtubIcon`, office→`Briefcase03Icon`, garage→`GarageIcon`; fallbacks: location→`Folder01Icon`, item→`Package02Icon`, tag→`DiscountTagIcon`.
 
 ---
 
@@ -302,7 +305,7 @@ Design language: shadcn/Base-UI minimalist baseline, with **"modern skeuomorphis
 ## 13. Dependencies
 
 **New:** `@react-pdf/renderer`, `qrcode`, `react-easy-crop`, `@turf/turf` (or mapcn `Arcs`), `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` (Route Handler side), `resend`, `ai` (Vercel AI SDK) + `@openrouter/ai-sdk-provider`, DiceBear, `@microlink/react-json-view` (debug-mode payload inspector, ported from pinia).
-**Standard:** `next`, `@base-ui/react`, `@tanstack/react-query`, `nuqs`, `tailwindcss` v4, `@mapcn/map` + `maplibre-gl`, `@supabase/supabase-js` + `@supabase/ssr`, `lucide-react` + `@lucide/lab`, `nanoid`, `shadcn`, `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`. **No `react-i18next`.**
+**Standard:** `next`, `@base-ui/react`, `@tanstack/react-query`, `nuqs`, `tailwindcss` v4, `maplibre-gl` (no `@mapcn/map` — doesn't exist as a package, see §3), `@supabase/supabase-js` + `@supabase/ssr`, `@hugeicons/react` + `@hugeicons/core-free-icons` (primary icon set), `lucide-react` + `@lucide/lab` (secondary, for ported pinia/bins pieces), `vaul` (Drawer, mobile half of `ResponsiveDialog`), `nanoid`, `shadcn`, `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`. **No `react-i18next`.**
 
 ## 14. Env vars
 
