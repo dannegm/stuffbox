@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useQueryState, parseAsInteger, parseAsString, parseAsStringEnum } from 'nuqs';
 import {
@@ -175,7 +176,10 @@ export default function AdminWorkspacesPage() {
                             data.rows.map(workspace => (
                                 <TableRow key={workspace.id}>
                                     <TableCell>
-                                        <span className='flex items-center gap-2'>
+                                        <Link
+                                            href={`/workspace/${workspace.id}`}
+                                            className='flex items-center gap-2 hover:underline'
+                                        >
                                             <span
                                                 className='size-2.5 shrink-0 rounded-full bg-(--workspace-color)'
                                                 style={{
@@ -184,7 +188,7 @@ export default function AdminWorkspacesPage() {
                                                 }}
                                             />
                                             {workspace.name}
-                                        </span>
+                                        </Link>
                                     </TableCell>
                                     <TableCell className='text-muted-foreground'>
                                         {workspace.profiles?.name ?? '—'}
