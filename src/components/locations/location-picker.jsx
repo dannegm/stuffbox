@@ -81,7 +81,7 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
                     ))}
                 </div>
 
-                <ScrollArea className='h-64 px-4 sm:px-0'>
+                <ScrollArea className='h-[fit-content(16rem)] px-4 sm:px-0'>
                     {isPending ? (
                         <div className='flex items-center justify-center py-8'>
                             <Spinner className='size-5' />

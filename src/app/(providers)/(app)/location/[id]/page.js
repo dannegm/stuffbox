@@ -20,6 +20,8 @@ import {
     deleteLocationMutation,
     packLocationMutation,
     unpackLocationMutation,
+    locationTotalPriceQuery,
+    locationCountsQuery,
 } from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
 import { moveQuery } from '@/queries/moves';
@@ -80,6 +82,14 @@ export default function LocationPage({ params }) {
     );
     const { data: packedMove } = useQuery(
         moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
+    );
+    const { data: totalPrice } = useQuery(
+        locationTotalPriceQuery(id, { enabled: !!location?.is_container }),
+    );
+    const { data: childCounts } = useQuery(
+        locationCountsQuery(children?.map(child => child.id) ?? [], {
+            enabled: !!children?.length,
+        }),
     );
 
     const { mutate: pack } = useMutation(
@@ -160,11 +170,14 @@ export default function LocationPage({ params }) {
                         </h1>
                         <p className='truncate text-xs text-muted-foreground capitalize'>
                             {location.type}
+                            {location.is_container && totalPrice > 0 && (
+                                <> · ${Number(totalPrice).toLocaleString('es-MX')}</>
+                            )}
                         </p>
                     </div>
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
-                    {location.type === 'box' &&
+                    {location.is_container &&
                         (location.active_move_id ? (
                             <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
                                 <PackageIcon data-icon='inline-start' />
@@ -247,7 +260,11 @@ export default function LocationPage({ params }) {
                     {children.length > 0 && (
                         <div className='flex flex-col gap-2'>
                             {children.map(child => (
-                                <LocationListItem key={child.id} location={child} />
+                                <LocationListItem
+                                    key={child.id}
+                                    location={child}
+                                    counts={childCounts?.[child.id]}
+                                />
                             ))}
                         </div>
                     )}

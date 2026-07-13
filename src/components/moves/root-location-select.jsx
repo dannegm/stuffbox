@@ -24,6 +24,7 @@ export const RootLocationSelect = ({ workspaceId, value, onChange, placeholder, 
             getLabel={option => option.name}
             placeholder={placeholder}
             searchPlaceholder='Buscar casa'
+            emptyLabel='Sin casas todavía — crea una primero.'
             renderOption={option => (
                 <>
                     <DynamicIcon icon={getLocationIcon(option)} />

@@ -43,3 +43,9 @@ export const LOCATION_TYPE_PRESETS = Object.keys(DEFAULT_LOCATION_ICONS).filter(
 // Root-level locations only offer these two — a room/box/etc. can't be a
 // tree root, so they're excluded from the house-creation type picker.
 export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse'];
+
+// Types that default locations.is_container to true (item-like fields —
+// description, fragile, orientation, sentimental value, photos — only show
+// for containers). A room/house can still be flagged manually later; there's
+// just no UI for that yet since it wasn't asked for.
+export const CONTAINER_TYPES = ['box', 'shelf', 'toolbox', 'baggage'];

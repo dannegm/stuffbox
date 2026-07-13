@@ -117,7 +117,12 @@ One schema per project. **Updated id strategy (decided during initial `db.sql` w
 
 ### `locations` (generic unbounded tree — house/room/closet/shelf/drawer/warehouse/box are all nodes; box = `type='box'`; multiple roots = multiple houses; boxes can nest)
 
-`id` PK · `workspace_id` (cascade) · `parent_id` → locations self (nullable, cascade) · `name` · `type` (free text) · `icon` jsonb `{library,name}` · `lat`,`lng` double (nullable; meaningful on roots for routes) · `active_move_id` → moves (nullable; set when packed) · `ai_summary` text (nullable, cached, regenerable) · timestamps
+`id` PK · `workspace_id` (cascade) · `parent_id` → locations self (nullable, cascade) · `name` · `type` (free text — includes `box`/`shelf`/`toolbox`/`baggage` among the presets) · `icon` jsonb `{library,name}` · `lat`,`lng` double (nullable; meaningful on roots for routes) · `active_move_id` → moves (nullable; set when packed) · `ai_summary` text (nullable, cached, regenerable) · `is_container` bool default false (app-derived from `type` at create/edit time, not DB-enforced — defaults true for box/shelf/toolbox/baggage; gates whether the fields below + photos + pack/unpack show in the UI) · `description` (nullable) · `is_fragile` bool default false · `storage_orientation` (ref → option_lists, nullable) · `sentimental_value` smallint 1–5 (nullable, hearts) · timestamps
+A location's total price is never stored — `stuffbox.location_total_price(location_id)` (RPC) recursively sums `purchase_price` across every item in its subtree (nested boxes included, any depth), shown only when `is_container`.
+
+### `location_photos` (square-masked at render, never physically cropped — same shape as `item_photos`)
+
+`id` PK · `location_id` → locations (cascade) · `r2_key` (`{workspace_id}/uploads/{photo_id}.jpg`) · `crop_x` float 0 · `crop_y` float 0 · `zoom` float 1 · `order` int 0 · `created_at`
 
 ### `items`
 
@@ -274,8 +279,8 @@ src/app/(providers)/(app)/layout.js     # SidebarProvider + AppSidebar + Sidebar
   workspace/[id]/page.js                # workspace / house browser (core view)
   location/[id]/page.js                 # location contents + transfer UI
   house/new/page.js                     # dedicated route (not a dialog) — name/type/icon/lat+lng map picker for a root location; child locations (room/box/etc.) still use CreateLocationDialog
-  item/new/page.js                      # create item (MVP field set: name/description/quantity/condition/orientation/fragile/icon — no photos/tags/serial/price/acquired-date/sentimental-value yet, "guardar y crear otro" toggle)
-  item/[id]/page.js                     # item detail (read-only for now — no edit/delete yet)
+  item/new/page.js                      # create item (name/description/quantity/sku/price/condition/orientation/photos/tags/fragile/icon — no serial/acquired-date/sentimental-value yet, "guardar y crear otro" toggle)
+  item/[id]/page.js                     # item detail (full edit/delete, transfer, pack/unpack)
   moves/page.js                         # move list + create dialog
   move/[id]/page.js                     # move planner: map + route, pack/unpack (label builder not built yet)
   settings/page.js                      # stacked sections + side nav (placeholder until the Settings feature lands)

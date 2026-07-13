@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { supabase } from '@/services/supabase';
+import { isContainerType } from '@/helpers/location';
 
 export const locationQuery = (id, opts = {}) => ({
     queryKey: ['location', id],
@@ -22,7 +23,7 @@ export const locationChildrenQuery = ({ workspaceId, parentId = null }, opts = {
     queryFn: async () => {
         let query = supabase()
             .from('locations')
-            .select('*')
+            .select('*, location_photos(r2_key, order)')
             .eq('workspace_id', workspaceId)
             .order('name');
         query = parentId ? query.eq('parent_id', parentId) : query.is('parent_id', null);
@@ -30,6 +31,29 @@ export const locationChildrenQuery = ({ workspaceId, parentId = null }, opts = {
         if (error) throw error;
         return data;
     },
+    ...opts,
+});
+
+// Direct (non-recursive) child-location and item counts for a batch of
+// locations — used by LocationListItem's summary line. A separate query
+// from locationChildrenQuery so the other consumers of that one (HousesNav,
+// LocationPicker, RootLocationSelect) don't pay for counts they never show.
+export const locationCountsQuery = (locationIds = [], opts = {}) => ({
+    queryKey: ['location-counts', locationIds],
+    queryFn: async () => {
+        const [childLocationsRes, itemsRes] = await Promise.all([
+            supabase().from('locations').select('parent_id').in('parent_id', locationIds),
+            supabase().from('items').select('location_id').in('location_id', locationIds),
+        ]);
+        if (childLocationsRes.error) throw childLocationsRes.error;
+        if (itemsRes.error) throw itemsRes.error;
+
+        const counts = Object.fromEntries(locationIds.map(id => [id, { locations: 0, items: 0 }]));
+        for (const row of childLocationsRes.data) counts[row.parent_id].locations += 1;
+        for (const row of itemsRes.data) counts[row.location_id].items += 1;
+        return counts;
+    },
+    enabled: locationIds.length > 0,
     ...opts,
 });
 
@@ -78,6 +102,7 @@ export const createLocationMutation = (opts = {}) => ({
                 icon,
                 lat,
                 lng,
+                is_container: isContainerType(type),
             })
             .select()
             .single();
@@ -88,16 +113,47 @@ export const createLocationMutation = (opts = {}) => ({
 });
 
 export const updateLocationMutation = (opts = {}) => ({
-    mutationFn: async ({ id, name, type }) => {
+    mutationFn: async ({
+        id,
+        name,
+        type,
+        icon = null,
+        description = null,
+        isFragile = false,
+        storageOrientation = null,
+        sentimentalValue = null,
+    }) => {
         const { data, error } = await supabase()
             .from('locations')
-            .update({ name, type })
+            .update({
+                name,
+                type,
+                icon,
+                is_container: isContainerType(type),
+                description,
+                is_fragile: isFragile,
+                storage_orientation: storageOrientation,
+                sentimental_value: sentimentalValue,
+            })
             .eq('id', id)
             .select()
             .single();
         if (error) throw error;
         return data;
     },
+    ...opts,
+});
+
+export const locationTotalPriceQuery = (locationId, opts = {}) => ({
+    queryKey: ['location-total-price', locationId],
+    queryFn: async () => {
+        const { data, error } = await supabase().rpc('location_total_price', {
+            p_location_id: locationId,
+        });
+        if (error) throw error;
+        return data;
+    },
+    enabled: !!locationId,
     ...opts,
 });
 

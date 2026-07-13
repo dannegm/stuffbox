@@ -97,6 +97,11 @@ create table stuffbox.locations (
   lng             double precision,
   active_move_id  text,                                   -- set when packed; FK added below
   ai_summary      text,                                   -- cached, regenerable
+  is_container    boolean not null default false,          -- defaults true for box/shelf/toolbox/baggage (app-derived from type, not DB-enforced)
+  description     text,
+  is_fragile      boolean not null default false,
+  storage_orientation text,                                -- ref option_lists(field='orientation'), no hard FK
+  sentimental_value   smallint,                             -- 1-5, hearts
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
@@ -159,6 +164,20 @@ create table stuffbox.item_photos (
 );
 
 -- id is a plain uuid — never routed by itself
+-- Square-masked at render, never physically cropped — same shape as
+-- item_photos, just hanging off a location (container-type only, by
+-- convention, not DB-enforced) instead of an item.
+create table stuffbox.location_photos (
+  id          uuid primary key default gen_random_uuid(),
+  location_id text not null references stuffbox.locations(id) on delete cascade,
+  r2_key      text not null,
+  crop_x      float not null default 0,
+  crop_y      float not null default 0,
+  zoom        float not null default 1,
+  "order"     int not null default 0,
+  created_at  timestamptz not null default now()
+);
+
 create table stuffbox.tags (
   id          uuid primary key default gen_random_uuid(),
   workspace_id text not null references stuffbox.workspaces(id) on delete cascade,
@@ -239,6 +258,7 @@ alter table stuffbox.locations          enable row level security;
 alter table stuffbox.moves              enable row level security;
 alter table stuffbox.items              enable row level security;
 alter table stuffbox.item_photos        enable row level security;
+alter table stuffbox.location_photos    enable row level security;
 alter table stuffbox.tags               enable row level security;
 alter table stuffbox.item_tags          enable row level security;
 alter table stuffbox.option_lists       enable row level security;
@@ -404,6 +424,27 @@ create policy "item_photos: admin full access"
   using (stuffbox.requesting_user_is_admin())
   with check (stuffbox.requesting_user_is_admin());
 
+-- location_photos (no workspace_id column — scoped through locations)
+create policy "location_photos: member access"
+  on stuffbox.location_photos for all
+  using (
+    exists (
+      select 1 from stuffbox.locations l
+      where l.id = location_id and stuffbox.is_workspace_member(l.workspace_id, auth.uid())
+    )
+  )
+  with check (
+    exists (
+      select 1 from stuffbox.locations l
+      where l.id = location_id and stuffbox.is_workspace_member(l.workspace_id, auth.uid())
+    )
+  );
+
+create policy "location_photos: admin full access"
+  on stuffbox.location_photos for all
+  using (stuffbox.requesting_user_is_admin())
+  with check (stuffbox.requesting_user_is_admin());
+
 -- tags
 create policy "tags: member access"
   on stuffbox.tags for all
@@ -544,6 +585,34 @@ grant execute on function stuffbox.claim_workspace_invite(text) to authenticated
 
 
 -- -----------------------------------------------------------------------------
+-- Location price rollup
+-- -----------------------------------------------------------------------------
+-- Recursive sum of purchase_price across every item in a location's subtree
+-- (nested boxes included, any depth). Plain invoker rights (no security
+-- definer) — the underlying RLS on locations/items already scopes this to
+-- what the caller can see, so an out-of-workspace id just sums to 0 instead
+-- of leaking anything.
+
+create or replace function stuffbox.location_total_price(p_location_id text)
+returns numeric
+language sql
+stable
+as $$
+  with recursive subtree as (
+    select id from stuffbox.locations where id = p_location_id
+    union all
+    select l.id from stuffbox.locations l
+    join subtree s on l.parent_id = s.id
+  )
+  select coalesce(sum(i.purchase_price), 0)
+  from stuffbox.items i
+  where i.location_id in (select id from subtree);
+$$;
+
+grant execute on function stuffbox.location_total_price(text) to authenticated;
+
+
+-- -----------------------------------------------------------------------------
 -- Triggers
 -- -----------------------------------------------------------------------------
 -- Account provisioning (profile + workspace + owner membership + seeded
@@ -610,6 +679,7 @@ create index if not exists idx_items_workspace_id             on stuffbox.items 
 create index if not exists idx_items_location_id              on stuffbox.items (location_id);
 create index if not exists idx_items_active_move_id           on stuffbox.items (active_move_id);
 create index if not exists idx_item_photos_item_id            on stuffbox.item_photos (item_id);
+create index if not exists idx_location_photos_location_id    on stuffbox.location_photos (location_id);
 create index if not exists idx_tags_workspace_id              on stuffbox.tags (workspace_id);
 create index if not exists idx_option_lists_workspace_field   on stuffbox.option_lists (workspace_id, field);
 create index if not exists idx_movement_log_workspace_id      on stuffbox.movement_log (workspace_id);

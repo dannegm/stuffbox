@@ -13,7 +13,7 @@ import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
-import { ItemPhotoGallery } from '@/components/items/item-photo-gallery';
+import { PhotoGallery } from '@/ui/photo-gallery';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';
@@ -53,6 +53,7 @@ export default function NewItemPage() {
     const [isFragile, setIsFragile] = useState(false);
     const [icon, setIcon] = useState(null);
     const [sku, setSku] = useState('');
+    const [purchasePrice, setPurchasePrice] = useState('');
     const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
 
@@ -65,6 +66,7 @@ export default function NewItemPage() {
         setIsFragile(false);
         setIcon(null);
         setSku('');
+        setPurchasePrice('');
         setTagIds([]);
     };
 
@@ -94,6 +96,7 @@ export default function NewItemPage() {
             isFragile,
             icon: icon ?? FALLBACK_ITEM_ICON,
             sku: sku.trim() || null,
+            purchasePrice: purchasePrice === '' ? null : Number(purchasePrice),
         };
     };
 
@@ -194,8 +197,21 @@ export default function NewItemPage() {
                     </Field>
 
                     <Field>
+                        <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
+                        <Input
+                            id='item-price'
+                            type='number'
+                            min={0}
+                            step='0.01'
+                            value={purchasePrice}
+                            onChange={event => setPurchasePrice(event.target.value)}
+                            placeholder='Opcional'
+                        />
+                    </Field>
+
+                    <Field>
                         <FieldLabel>Fotos</FieldLabel>
-                        <ItemPhotoGallery
+                        <PhotoGallery
                             photos={itemPhotos.photos}
                             pending={itemPhotos.pending}
                             isProcessing={itemPhotos.isProcessing}

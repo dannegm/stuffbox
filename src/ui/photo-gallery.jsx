@@ -8,17 +8,14 @@ const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 
 const photoSrc = photo => photo.previewUrl ?? `${R2_PUBLIC_URL}/${photo.r2_key}`;
 
-export const ItemPhotoGallery = ({
-    photos = [],
-    pending = [],
-    isProcessing,
-    onAddFiles,
-    onRemove,
-}) => {
+// Shared by item and location photo galleries — `pending` (uploaded but not
+// yet persisted to a row) only applies to the item flow, where photos can be
+// added before the item itself exists; pass an empty array otherwise.
+export const PhotoGallery = ({ photos = [], pending = [], isProcessing, onAddFiles, onRemove }) => {
     const all = [...photos, ...pending];
 
     return (
-        <div className='flex flex-wrap gap-2' data-block='ItemPhotoGallery'>
+        <div className='flex flex-wrap gap-2' data-block='PhotoGallery'>
             {all.map(photo => (
                 <div
                     key={photo.id ?? photo.r2Key}

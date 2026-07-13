@@ -37,6 +37,7 @@ export const createItemMutation = (opts = {}) => ({
         isFragile = false,
         icon = null,
         sku = null,
+        purchasePrice = null,
     }) => {
         const { data, error } = await supabase()
             .from('items')
@@ -52,6 +53,7 @@ export const createItemMutation = (opts = {}) => ({
                 is_fragile: isFragile,
                 icon,
                 sku,
+                purchase_price: purchasePrice,
             })
             .select()
             .single();
@@ -72,6 +74,7 @@ export const updateItemMutation = (opts = {}) => ({
         isFragile = false,
         icon = null,
         sku = null,
+        purchasePrice = null,
     }) => {
         const { data, error } = await supabase()
             .from('items')
@@ -84,6 +87,7 @@ export const updateItemMutation = (opts = {}) => ({
                 is_fragile: isFragile,
                 icon,
                 sku,
+                purchase_price: purchasePrice,
             })
             .eq('id', id)
             .select()

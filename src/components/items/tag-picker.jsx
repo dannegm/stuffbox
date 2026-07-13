@@ -59,7 +59,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                         placeholder='Buscar tag'
                     />
                 </InputGroup>
-                <ScrollArea className='h-48'>
+                <ScrollArea className='h-[fit-content(12rem)]'>
                     <div className='flex flex-col gap-0.5 p-0.5'>
                         {results.map(tag => (
                             <button

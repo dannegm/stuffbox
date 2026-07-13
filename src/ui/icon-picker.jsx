@@ -108,7 +108,7 @@ export const IconPicker = ({ value, onChange, children }) => {
 
                     {LIBRARIES.map(lib => (
                         <TabsContent key={lib.value} value={lib.value}>
-                            <ScrollArea className='h-64'>
+                            <ScrollArea className='h-[fit-content(16rem)]'>
                                 <IconGrid library={lib} query={query} onSelect={handleSelect} />
                             </ScrollArea>
                         </TabsContent>

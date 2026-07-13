@@ -23,6 +23,13 @@ import { locationChildrenQuery } from '@/queries/locations';
 const HouseNavItem = ({ house, workspaceId, pathname }) => {
     const { data: rooms } = useQuery(locationChildrenQuery({ workspaceId, parentId: house.id }));
 
+    // Collapsed unless we're actually browsing this house (its own page or
+    // one of its direct rooms) — otherwise every house would permanently
+    // expand its rooms, defeating the point of a quick-jump sidebar.
+    const isInHouse =
+        pathname === `/location/${house.id}` ||
+        rooms?.some(room => pathname === `/location/${room.id}`);
+
     return (
         <SidebarMenuItem>
             <SidebarMenuButton
@@ -33,7 +40,7 @@ const HouseNavItem = ({ house, workspaceId, pathname }) => {
                 <DynamicIcon icon={getLocationIcon(house)} />
                 <span className='truncate'>{house.name}</span>
             </SidebarMenuButton>
-            {rooms?.length > 0 && (
+            {isInHouse && rooms?.length > 0 && (
                 <SidebarMenuSub>
                     {rooms.map(room => (
                         <SidebarMenuSubItem key={room.id}>
