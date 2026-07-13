@@ -2,8 +2,7 @@
 
 import * as React from 'react';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { TickIcon } from '@hugeicons/core-free-icons';
+import { CheckIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
 
@@ -81,7 +80,7 @@ function DropdownMenuCheckboxItem({ className, children, checked, ...props }) {
         >
             <span className='pointer-events-none absolute left-2 flex size-3.5 items-center justify-center'>
                 <MenuPrimitive.CheckboxItemIndicator>
-                    <HugeiconsIcon icon={TickIcon} className='size-4' />
+                    <CheckIcon className='size-4' />
                 </MenuPrimitive.CheckboxItemIndicator>
             </span>
             {children}
@@ -113,9 +112,12 @@ function DropdownMenuRadioItem({ className, children, ...props }) {
     );
 }
 
+// Plain div, not Menu.GroupLabel — that part requires a <Menu.Group> ancestor
+// (throws otherwise), but this is used as a standalone section heading with
+// no associated group semantics.
 function DropdownMenuLabel({ className, inset, ...props }) {
     return (
-        <MenuPrimitive.GroupLabel
+        <div
             data-slot='dropdown-menu-label'
             data-inset={inset}
             className={cn(

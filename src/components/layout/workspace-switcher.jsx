@@ -4,8 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon, UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import { PlusIcon, CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -126,10 +125,7 @@ export const WorkspaceSwitcher = () => {
                         ) : (
                             <span className='text-muted-foreground'>Sin espacio</span>
                         )}
-                        <HugeiconsIcon
-                            icon={UnfoldMoreIcon}
-                            className='ml-auto text-muted-foreground'
-                        />
+                        <CaretUpDownIcon className='ml-auto text-muted-foreground' />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className='w-64' side='bottom' align='start'>
                         <DropdownMenuLabel>Espacios</DropdownMenuLabel>
@@ -144,7 +140,7 @@ export const WorkspaceSwitcher = () => {
                         ))}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setCreateOpen(true)}>
-                            <HugeiconsIcon icon={Add01Icon} />
+                            <PlusIcon />
                             Crear nuevo
                         </DropdownMenuItem>
                     </DropdownMenuContent>

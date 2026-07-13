@@ -1,12 +1,10 @@
 import { cn } from '@/helpers/utils';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Loading03Icon } from '@hugeicons/core-free-icons';
+import { SpinnerIcon } from '@phosphor-icons/react/ssr';
 
 function Spinner({ className, ...props }) {
     return (
-        <HugeiconsIcon
-            icon={Loading03Icon}
-            strokeWidth={2}
+        <SpinnerIcon
+            weight='bold'
             data-slot='spinner'
             role='status'
             aria-label='Loading'

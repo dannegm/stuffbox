@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import { CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { createLocationMutation } from '@/queries/locations';
 import {
@@ -18,7 +17,7 @@ import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
-import { HouseIconPicker } from '@/components/locations/house-icon-picker';
+import { IconPicker } from '@/ui/icon-picker';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
 import { DEFAULT_LOCATION_ICONS, ROOT_LOCATION_TYPE_PRESETS } from '@/constants/location-icons';
 
@@ -75,7 +74,7 @@ export default function NewHousePage() {
                     <Field>
                         <FieldLabel htmlFor='house-name'>Nombre</FieldLabel>
                         <div className='flex items-center gap-2'>
-                            <HouseIconPicker value={icon} onChange={setIcon}>
+                            <IconPicker value={icon} onChange={setIcon}>
                                 <button
                                     type='button'
                                     aria-label='Elegir ícono'
@@ -83,7 +82,7 @@ export default function NewHousePage() {
                                 >
                                     <DynamicIcon icon={previewIcon} />
                                 </button>
-                            </HouseIconPicker>
+                            </IconPicker>
                             <Input
                                 id='house-name'
                                 autoFocus
@@ -108,10 +107,7 @@ export default function NewHousePage() {
                                 }
                             >
                                 {type}
-                                <HugeiconsIcon
-                                    icon={UnfoldMoreIcon}
-                                    className='text-muted-foreground'
-                                />
+                                <CaretUpDownIcon className='text-muted-foreground' />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className='w-56'>
                                 {ROOT_LOCATION_TYPE_PRESETS.map(preset => (

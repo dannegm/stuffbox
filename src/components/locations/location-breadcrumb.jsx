@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { cn } from '@/helpers/utils';
 
 const Crumb = ({ href, children, current = false }) => (
     <span className='flex items-center gap-1'>
-        <HugeiconsIcon icon={ArrowRight01Icon} className='size-3.5 shrink-0' />
+        <CaretRightIcon className='size-3.5 shrink-0' />
         {current ? (
             <span className='truncate font-medium text-foreground'>{children}</span>
         ) : (

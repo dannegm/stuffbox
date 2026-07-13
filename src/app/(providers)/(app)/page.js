@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Home01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HouseIcon, CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
@@ -38,7 +37,7 @@ export default function Home() {
             <Empty className='flex-1' data-block='WorkspacesEmpty'>
                 <EmptyHeader>
                     <EmptyMedia variant='icon'>
-                        <HugeiconsIcon icon={Home01Icon} />
+                        <HouseIcon />
                     </EmptyMedia>
                     <EmptyTitle>Sin espacios todavía</EmptyTitle>
                     <EmptyDescription>Tu espacio se está preparando.</EmptyDescription>
@@ -56,10 +55,7 @@ export default function Home() {
                     className='flex items-center justify-between gap-2 rounded-lg border p-4 text-sm transition-colors hover:bg-muted'
                 >
                     {workspace.name}
-                    <HugeiconsIcon
-                        icon={ArrowRight01Icon}
-                        className='size-4 text-muted-foreground'
-                    />
+                    <CaretRightIcon className='size-4 text-muted-foreground' />
                 </Link>
             ))}
         </div>

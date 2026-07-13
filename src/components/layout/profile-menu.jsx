@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Logout01Icon, Settings02Icon, UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import { SignOutIcon, GearIcon, CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -38,7 +37,7 @@ export const ProfileMenu = () => {
                     <AvatarFallback>{profile.name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <span className='min-w-0 flex-1 truncate'>{profile.name}</span>
-                <HugeiconsIcon icon={UnfoldMoreIcon} className='ml-auto text-muted-foreground' />
+                <CaretUpDownIcon className='ml-auto text-muted-foreground' />
             </DropdownMenuTrigger>
             <DropdownMenuContent side='right' align='end' className='w-56'>
                 <DropdownMenuLabel className='truncate font-normal text-foreground'>
@@ -46,12 +45,12 @@ export const ProfileMenu = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem render={<Link href='/settings' />}>
-                    <HugeiconsIcon icon={Settings02Icon} />
+                    <GearIcon />
                     Ajustes
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant='destructive' onClick={() => signOut()}>
-                    <HugeiconsIcon icon={Logout01Icon} />
+                    <SignOutIcon />
                     Cerrar sesión
                 </DropdownMenuItem>
             </DropdownMenuContent>

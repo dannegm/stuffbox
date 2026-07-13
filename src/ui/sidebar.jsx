@@ -3,8 +3,7 @@ import * as React from 'react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { cva } from 'class-variance-authority';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { SidebarLeftIcon } from '@hugeicons/core-free-icons';
+import { SidebarIcon } from '@phosphor-icons/react/ssr';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
@@ -223,7 +222,7 @@ function SidebarTrigger({ className, onClick, ...props }) {
             }}
             {...props}
         >
-            <HugeiconsIcon icon={SidebarLeftIcon} />
+            <SidebarIcon />
             <span className='sr-only'>Mostrar/ocultar barra lateral</span>
         </Button>
     );

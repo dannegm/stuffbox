@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import { CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -91,10 +90,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                                         <DynamicIcon icon={DEFAULT_LOCATION_ICONS[type]} />
                                         {type}
                                     </span>
-                                    <HugeiconsIcon
-                                        icon={UnfoldMoreIcon}
-                                        className='text-muted-foreground'
-                                    />
+                                    <CaretUpDownIcon className='text-muted-foreground' />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className='w-56'>
                                     {LOCATION_TYPE_PRESETS.map(preset => (

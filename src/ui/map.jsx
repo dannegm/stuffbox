@@ -14,13 +14,7 @@ import {
     useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { HugeiconsIcon } from '@hugeicons/react';
-import {
-    Add01Icon,
-    MinusSignIcon,
-    GpsSignal01Icon,
-    Loading03Icon,
-} from '@hugeicons/core-free-icons';
+import { PlusIcon, MinusIcon, NavigationArrowIcon, SpinnerIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
 
@@ -61,10 +55,7 @@ function useMap() {
 function DefaultLoader() {
     return (
         <div className='absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-xs'>
-            <HugeiconsIcon
-                icon={Loading03Icon}
-                className='size-5 animate-spin text-muted-foreground'
-            />
+            <SpinnerIcon weight='bold' className='size-5 animate-spin text-muted-foreground' />
         </div>
     );
 }
@@ -328,10 +319,10 @@ function MapControls({
             {showZoom && (
                 <ControlGroup>
                     <ControlButton onClick={handleZoomIn} label='Acercar'>
-                        <HugeiconsIcon icon={Add01Icon} className='size-4' />
+                        <PlusIcon className='size-4' />
                     </ControlButton>
                     <ControlButton onClick={handleZoomOut} label='Alejar'>
-                        <HugeiconsIcon icon={MinusSignIcon} className='size-4' />
+                        <MinusIcon className='size-4' />
                     </ControlButton>
                 </ControlGroup>
             )}
@@ -342,10 +333,11 @@ function MapControls({
                         label='Usar mi ubicación'
                         disabled={waitingForLocation}
                     >
-                        <HugeiconsIcon
-                            icon={waitingForLocation ? Loading03Icon : GpsSignal01Icon}
-                            className={cn('size-4', waitingForLocation && 'animate-spin')}
-                        />
+                        {waitingForLocation ? (
+                            <SpinnerIcon weight='bold' className='size-4 animate-spin' />
+                        ) : (
+                            <NavigationArrowIcon className='size-4' />
+                        )}
                     </ControlButton>
                 </ControlGroup>
             )}

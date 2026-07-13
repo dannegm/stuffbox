@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 
@@ -19,6 +18,6 @@ export const LocationListItem = ({ location }) => (
                 {location.type}
             </span>
         </span>
-        <HugeiconsIcon icon={ArrowRight01Icon} className='size-4 shrink-0 text-muted-foreground' />
+        <CaretRightIcon className='size-4 shrink-0 text-muted-foreground' />
     </Link>
 );

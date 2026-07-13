@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Color from 'color';
 import { Slider } from '@base-ui/react/slider';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ColorPickerIcon } from '@hugeicons/core-free-icons';
+import { EyedropperIcon } from '@phosphor-icons/react/ssr';
 import { Button } from '@/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
 import { cn } from '@/helpers/utils';
@@ -217,7 +216,7 @@ export const ColorSelector = ({ value = '#6366f1', onChange, className }) => {
                         className='size-8 shrink-0'
                         onClick={handleEyeDropper}
                     >
-                        <HugeiconsIcon icon={ColorPickerIcon} className='size-3.5' />
+                        <EyedropperIcon className='size-3.5' />
                     </Button>
                 )}
                 <ColorFormatInput

@@ -4,8 +4,7 @@ import { use, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon } from '@hugeicons/core-free-icons';
+import { PlusIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
 import { locationChildrenQuery } from '@/queries/locations';
@@ -49,7 +48,7 @@ export default function WorkspacePage({ params }) {
                     variant='outline'
                     render={<Link href={`/house/new?workspace=${id}`} />}
                 >
-                    <HugeiconsIcon icon={Add01Icon} data-icon='inline-start' />
+                    <PlusIcon data-icon='inline-start' />
                     Agregar casa
                 </Button>
             </div>

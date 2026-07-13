@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { XIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
@@ -59,7 +58,7 @@ function DialogContent({ className, children, showCloseButton = true, ...props }
                             />
                         }
                     >
-                        <HugeiconsIcon icon={Cancel01Icon} />
+                        <XIcon />
                         <span className='sr-only'>Cerrar</span>
                     </DialogPrimitive.Close>
                 )}

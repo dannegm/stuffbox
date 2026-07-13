@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { House03Icon, PackageMovingIcon, Settings02Icon } from '@hugeicons/core-free-icons';
+import { HouseIcon, TruckIcon, GearIcon } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
     SidebarContent,
@@ -20,9 +19,9 @@ import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
 
 const NAV_ITEMS = [
-    { href: '/', label: 'Casas', icon: House03Icon, match: /^\/$|^\/(workspace|location)(\/|$)/ },
-    { href: '/moves', label: 'Mudanzas', icon: PackageMovingIcon, match: /^\/moves(\/|$)/ },
-    { href: '/settings', label: 'Ajustes', icon: Settings02Icon, match: /^\/settings(\/|$)/ },
+    { href: '/', label: 'Casas', icon: HouseIcon, match: /^\/$|^\/(workspace|location)(\/|$)/ },
+    { href: '/moves', label: 'Mudanzas', icon: TruckIcon, match: /^\/moves(\/|$)/ },
+    { href: '/settings', label: 'Ajustes', icon: GearIcon, match: /^\/settings(\/|$)/ },
 ];
 
 export const AppSidebar = () => {
@@ -43,7 +42,7 @@ export const AppSidebar = () => {
                                     isActive={item.match.test(pathname)}
                                     render={<Link href={item.href} />}
                                 >
-                                    <HugeiconsIcon icon={item.icon} />
+                                    <item.icon />
                                     <span>{item.label}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

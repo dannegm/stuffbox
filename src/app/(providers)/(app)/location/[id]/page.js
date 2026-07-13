@@ -3,8 +3,7 @@
 import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon } from '@hugeicons/core-free-icons';
+import { PlusIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
 import { locationQuery, locationChildrenQuery, locationAncestorsQuery } from '@/queries/locations';
@@ -94,7 +93,7 @@ export default function LocationPage({ params }) {
                     title='Agregar dentro'
                 >
                     <Button size='sm' variant='outline'>
-                        <HugeiconsIcon icon={Add01Icon} data-icon='inline-start' />
+                        <PlusIcon data-icon='inline-start' />
                         Agregar
                     </Button>
                 </CreateLocationDialog>

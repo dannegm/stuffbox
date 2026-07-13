@@ -1,10 +1,9 @@
-import { HugeiconsIcon } from '@hugeicons/react';
 import {
-    DicesIcon,
-    Refresh01Icon,
-    MaleSymbolIcon,
-    FemaleSymbolIcon,
-} from '@hugeicons/core-free-icons';
+    DiceFiveIcon,
+    ArrowClockwiseIcon,
+    GenderMaleIcon,
+    GenderFemaleIcon,
+} from '@phosphor-icons/react/ssr';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
 import { ColorPicker } from '@/ui/color-picker';
 import { getAvatarUrl } from '@/helpers/avatar';
@@ -13,8 +12,8 @@ import { cn } from '@/helpers/utils';
 const GenderToggle = ({ gender, onChange }) => (
     <div className='flex items-center gap-1 rounded-full bg-muted p-1' data-block='GenderToggle'>
         {[
-            { value: 'male', icon: MaleSymbolIcon, label: 'Masculino' },
-            { value: 'female', icon: FemaleSymbolIcon, label: 'Femenino' },
+            { value: 'male', icon: GenderMaleIcon, label: 'Masculino' },
+            { value: 'female', icon: GenderFemaleIcon, label: 'Femenino' },
         ].map(option => (
             <button
                 key={option.value}
@@ -29,7 +28,7 @@ const GenderToggle = ({ gender, onChange }) => (
                         : 'text-muted-foreground',
                 )}
             >
-                <HugeiconsIcon icon={option.icon} strokeWidth={2.5} />
+                <option.icon weight='bold' />
             </button>
         ))}
     </div>
@@ -81,7 +80,7 @@ export const IdentityTag = ({
                 aria-label='Probar otro avatar'
                 className='absolute -right-1.5 -bottom-1.5 flex size-6 items-center justify-center rounded-full bg-rose-500 text-primary-foreground ring-2 ring-card transition-transform hover:scale-110 active:scale-95 [&_svg]:size-4'
             >
-                <HugeiconsIcon icon={DicesIcon} strokeWidth={2} />
+                <DiceFiveIcon weight='bold' />
             </button>
         </div>
 
@@ -109,7 +108,7 @@ export const IdentityTag = ({
                     aria-label='Probar otro nombre'
                     className='flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-transform hover:scale-110 hover:text-foreground active:scale-95 [&_svg]:size-3.5'
                 >
-                    <HugeiconsIcon icon={Refresh01Icon} strokeWidth={2} />
+                    <ArrowClockwiseIcon weight='bold' />
                 </button>
             </div>
         </div>
