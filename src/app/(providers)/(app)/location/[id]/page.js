@@ -114,7 +114,7 @@ export default function LocationPage({ params }) {
     const { mutate: transfer, isPending: isTransferring } = useMutation(
         transferLocationMutation({
             onSuccess: updated => {
-                const previousParentId = location.parent_id;
+                const previousParentId = location?.parent_id;
                 queryClient.setQueryData(['location', id], updated);
                 queryClient.invalidateQueries({
                     queryKey: ['locations', updated.workspace_id, previousParentId],
