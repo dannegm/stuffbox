@@ -10,6 +10,9 @@ import {
     PencilSimpleIcon,
     TrashIcon,
     PackageIcon,
+    ArrowsLeftRightIcon,
+    CheckSquareIcon,
+    XIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -18,12 +21,14 @@ import {
     locationChildrenQuery,
     locationAncestorsQuery,
     deleteLocationMutation,
+    transferLocationMutation,
     packLocationMutation,
     unpackLocationMutation,
     locationTotalPriceQuery,
     locationCountsQuery,
 } from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
+import { bulkTransferMutation, bulkPackMutation, bulkUnpackMutation } from '@/queries/bulk';
 import { moveQuery } from '@/queries/moves';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
@@ -38,6 +43,7 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Separator } from '@/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -59,6 +65,12 @@ export default function LocationPage({ params }) {
     const [editOpen, setEditOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedItemIds, setSelectedItemIds] = useState(new Set());
+    const [selectedLocationIds, setSelectedLocationIds] = useState(new Set());
+    const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
+    const [bulkPackOpen, setBulkPackOpen] = useState(false);
+    const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -112,6 +124,75 @@ export default function LocationPage({ params }) {
     const handlePack = moveId => pack({ id, moveId });
     const handleUnpack = newParentId => unpack({ id, parentId: newParentId });
 
+    const toggleItemSelection = itemId =>
+        setSelectedItemIds(current => {
+            const next = new Set(current);
+            next.has(itemId) ? next.delete(itemId) : next.add(itemId);
+            return next;
+        });
+
+    const toggleLocationSelection = locationId =>
+        setSelectedLocationIds(current => {
+            const next = new Set(current);
+            next.has(locationId) ? next.delete(locationId) : next.add(locationId);
+            return next;
+        });
+
+    const exitSelectionMode = () => {
+        setSelectionMode(false);
+        setSelectedItemIds(new Set());
+        setSelectedLocationIds(new Set());
+    };
+
+    const invalidateListing = () => {
+        queryClient.invalidateQueries({ queryKey: ['items', 'by-location', id] });
+        queryClient.invalidateQueries({ queryKey: ['locations', location?.workspace_id, id] });
+        queryClient.invalidateQueries({ queryKey: ['location-counts'] });
+    };
+
+    const { mutate: bulkTransfer } = useMutation(
+        bulkTransferMutation({
+            onSuccess: () => {
+                invalidateListing();
+                exitSelectionMode();
+            },
+        }),
+    );
+    const { mutate: bulkPack } = useMutation(
+        bulkPackMutation({
+            onSuccess: () => {
+                invalidateListing();
+                exitSelectionMode();
+            },
+        }),
+    );
+    const { mutate: bulkUnpack } = useMutation(
+        bulkUnpackMutation({
+            onSuccess: () => {
+                invalidateListing();
+                exitSelectionMode();
+            },
+        }),
+    );
+
+    const selectedCount = selectedItemIds.size + selectedLocationIds.size;
+
+    const handleBulkPickerSelect = destinationId => {
+        const payload = {
+            itemIds: [...selectedItemIds],
+            locationIds: [...selectedLocationIds],
+            destinationId,
+        };
+        if (bulkPickerMode === 'transfer') bulkTransfer(payload);
+        else if (bulkPickerMode === 'unpack') bulkUnpack(payload);
+        setBulkPickerMode(null);
+    };
+
+    const handleBulkPack = moveId => {
+        bulkPack({ itemIds: [...selectedItemIds], locationIds: [...selectedLocationIds], moveId });
+        setBulkPackOpen(false);
+    };
+
     const { mutate: destroy } = useMutation(
         deleteLocationMutation({
             onSuccess: () => {
@@ -150,6 +231,15 @@ export default function LocationPage({ params }) {
 
     const isEmpty = children.length === 0 && items.length === 0;
 
+    const matchesPackFilter = entity => {
+        if (packFilter === 'packed') return !!entity.active_move_id;
+        if (packFilter === 'unpacked') return !entity.active_move_id;
+        return true;
+    };
+    const filteredChildren = children.filter(matchesPackFilter);
+    const filteredItems = items.filter(matchesPackFilter);
+    const hasFilteredResults = filteredChildren.length > 0 || filteredItems.length > 0;
+
     return (
         <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationPage'>
             <LocationBreadcrumb
@@ -176,56 +266,113 @@ export default function LocationPage({ params }) {
                         </p>
                     </div>
                 </div>
-                <div className='flex shrink-0 items-center gap-2'>
-                    {location.is_container &&
-                        (location.active_move_id ? (
-                            <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
-                                <PackageIcon data-icon='inline-start' />
-                                Desempacar{packedMove ? `: ${packedMove.name}` : ''}
-                            </Button>
-                        ) : (
+                <div className='flex shrink-0 flex-wrap items-center justify-end gap-2'>
+                    {selectionMode ? (
+                        <>
+                            <span className='text-xs text-muted-foreground'>
+                                {selectedCount} seleccionado(s)
+                            </span>
                             <Button
                                 size='sm'
                                 variant='outline'
-                                onClick={() => setPackDialogOpen(true)}
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPickerMode('transfer')}
+                            >
+                                <ArrowsLeftRightIcon data-icon='inline-start' />
+                                Transferir
+                            </Button>
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPackOpen(true)}
                             >
                                 <PackageIcon data-icon='inline-start' />
                                 Empacar
                             </Button>
-                        ))}
-                    <Button
-                        size='sm'
-                        variant='outline'
-                        render={<Link href={`/item/new?location=${id}`} />}
-                    >
-                        <PlusIcon data-icon='inline-start' />
-                        Item
-                    </Button>
-                    <CreateLocationDialog
-                        workspaceId={location.workspace_id}
-                        parentId={id}
-                        title='Agregar dentro'
-                    >
-                        <Button size='sm' variant='outline'>
-                            <PlusIcon data-icon='inline-start' />
-                            Location
-                        </Button>
-                    </CreateLocationDialog>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button size='icon-sm' variant='outline' />}>
-                            <DotsThreeVerticalIcon />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end'>
-                            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                                <PencilSimpleIcon />
-                                Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem variant='destructive' onClick={handleDelete}>
-                                <TrashIcon />
-                                Eliminar
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPickerMode('unpack')}
+                            >
+                                <PackageIcon data-icon='inline-start' />
+                                Desempacar
+                            </Button>
+                            <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
+                                <XIcon data-icon='inline-start' />
+                                Cancelar
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            {location.is_container &&
+                                (location.active_move_id ? (
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setUnpackOpen(true)}
+                                    >
+                                        <PackageIcon data-icon='inline-start' />
+                                        Desempacar{packedMove ? `: ${packedMove.name}` : ''}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setPackDialogOpen(true)}
+                                    >
+                                        <PackageIcon data-icon='inline-start' />
+                                        Empacar
+                                    </Button>
+                                ))}
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                render={<Link href={`/item/new?location=${id}`} />}
+                            >
+                                <PlusIcon data-icon='inline-start' />
+                                Item
+                            </Button>
+                            <CreateLocationDialog
+                                workspaceId={location.workspace_id}
+                                parentId={id}
+                                title='Agregar dentro'
+                            >
+                                <Button size='sm' variant='outline'>
+                                    <PlusIcon data-icon='inline-start' />
+                                    Location
+                                </Button>
+                            </CreateLocationDialog>
+                            {!isEmpty && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={() => setSelectionMode(true)}
+                                >
+                                    <CheckSquareIcon data-icon='inline-start' />
+                                    Seleccionar
+                                </Button>
+                            )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    render={<Button size='icon-sm' variant='outline' />}
+                                >
+                                    <DotsThreeVerticalIcon />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='end'>
+                                    <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                                        <PencilSimpleIcon />
+                                        Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                        <TrashIcon />
+                                        Eliminar
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -245,6 +392,20 @@ export default function LocationPage({ params }) {
                 onSelect={handlePack}
             />
 
+            <LocationPicker
+                open={bulkPickerMode !== null}
+                onOpenChange={open => !open && setBulkPickerMode(null)}
+                workspaceId={location.workspace_id}
+                onSelect={handleBulkPickerSelect}
+            />
+
+            <PackIntoMoveDialog
+                workspaceId={location.workspace_id}
+                open={bulkPackOpen}
+                onOpenChange={setBulkPackOpen}
+                onSelect={handleBulkPack}
+            />
+
             {isEmpty ? (
                 <Empty className='flex-1' data-block='LocationEmpty'>
                     <EmptyHeader>
@@ -257,24 +418,47 @@ export default function LocationPage({ params }) {
                 </Empty>
             ) : (
                 <div className='flex flex-col gap-4'>
-                    {children.length > 0 && (
+                    <Tabs value={packFilter} onValueChange={setPackFilter}>
+                        <TabsList>
+                            <TabsTrigger value='all'>Todos</TabsTrigger>
+                            <TabsTrigger value='packed'>Empacado</TabsTrigger>
+                            <TabsTrigger value='unpacked'>Sin empacar</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
+                    {!hasFilteredResults && (
+                        <p className='py-6 text-center text-sm text-muted-foreground'>
+                            Nada que coincida con este filtro.
+                        </p>
+                    )}
+
+                    {filteredChildren.length > 0 && (
                         <div className='flex flex-col gap-2'>
-                            {children.map(child => (
+                            {filteredChildren.map(child => (
                                 <LocationListItem
                                     key={child.id}
                                     location={child}
                                     counts={childCounts?.[child.id]}
+                                    selectable={selectionMode}
+                                    selected={selectedLocationIds.has(child.id)}
+                                    onToggle={toggleLocationSelection}
                                 />
                             ))}
                         </div>
                     )}
 
-                    {children.length > 0 && items.length > 0 && <Separator />}
+                    {filteredChildren.length > 0 && filteredItems.length > 0 && <Separator />}
 
-                    {items.length > 0 && (
+                    {filteredItems.length > 0 && (
                         <div className='flex flex-col gap-2'>
-                            {items.map(item => (
-                                <ItemListRow key={item.id} item={item} />
+                            {filteredItems.map(item => (
+                                <ItemListRow
+                                    key={item.id}
+                                    item={item}
+                                    selectable={selectionMode}
+                                    selected={selectedItemIds.has(item.id)}
+                                    onToggle={toggleItemSelection}
+                                />
                             ))}
                         </div>
                     )}

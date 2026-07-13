@@ -157,6 +157,23 @@ export const locationTotalPriceQuery = (locationId, opts = {}) => ({
     ...opts,
 });
 
+// One of the three pack/unpack/transfer operations from the plan (§6) —
+// transfer = set parent_id, leave active_move_id untouched. Available on any
+// location (not just containers) — a room can move to a different house too.
+export const transferLocationMutation = (opts = {}) => ({
+    mutationFn: async ({ id, parentId }) => {
+        const { data, error } = await supabase()
+            .from('locations')
+            .update({ parent_id: parentId })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
 // Pack a box = set active_move_id, parent_id untouched (§6) — same shape as
 // packItemMutation, just this table's position column is parent_id not
 // location_id.

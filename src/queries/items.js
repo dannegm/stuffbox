@@ -6,7 +6,9 @@ export const itemsAtLocationQuery = (locationId, opts = {}) => ({
     queryFn: async () => {
         const { data, error } = await supabase()
             .from('items')
-            .select('id, name, quantity, icon, item_photos(r2_key, order), item_tags(tags(icon))')
+            .select(
+                'id, name, quantity, icon, active_move_id, item_photos(r2_key, order), item_tags(tags(icon))',
+            )
             .eq('location_id', locationId)
             .order('name');
         if (error) throw error;
