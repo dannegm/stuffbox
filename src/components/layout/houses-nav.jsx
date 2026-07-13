@@ -16,36 +16,33 @@ import {
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { workspacesQuery } from '@/queries/workspaces';
-import { locationChildrenQuery } from '@/queries/locations';
+import { locationChildrenQuery, locationAncestorsQuery } from '@/queries/locations';
 
 // One level of rooms under each house — enough for quick jumps from the
 // sidebar, not a full tree (that's what the location browser itself is for).
-const HouseNavItem = ({ house, workspaceId, pathname }) => {
+// `isActiveHouse`/`activeRoomId` come from walking the *current* location's
+// full parent chain up to its root (see HousesNav below), so this expands
+// and highlights correctly no matter how deep we are (a box inside a room
+// inside the house still resolves back to the right house + room).
+const HouseNavItem = ({ house, workspaceId, isActiveHouse, activeRoomId }) => {
     const { data: rooms } = useQuery(locationChildrenQuery({ workspaceId, parentId: house.id }));
-
-    // Collapsed unless we're actually browsing this house (its own page or
-    // one of its direct rooms) — otherwise every house would permanently
-    // expand its rooms, defeating the point of a quick-jump sidebar.
-    const isInHouse =
-        pathname === `/location/${house.id}` ||
-        rooms?.some(room => pathname === `/location/${room.id}`);
 
     return (
         <SidebarMenuItem>
             <SidebarMenuButton
                 tooltip={house.name}
-                isActive={pathname === `/location/${house.id}`}
+                isActive={isActiveHouse}
                 render={<Link href={`/location/${house.id}`} />}
             >
                 <DynamicIcon icon={getLocationIcon(house)} />
                 <span className='truncate'>{house.name}</span>
             </SidebarMenuButton>
-            {isInHouse && rooms?.length > 0 && (
+            {isActiveHouse && rooms?.length > 0 && (
                 <SidebarMenuSub>
                     {rooms.map(room => (
                         <SidebarMenuSubItem key={room.id}>
                             <SidebarMenuSubButton
-                                isActive={pathname === `/location/${room.id}`}
+                                isActive={room.id === activeRoomId}
                                 render={<Link href={`/location/${room.id}`} />}
                             >
                                 <DynamicIcon icon={getLocationIcon(room)} />
@@ -73,6 +70,18 @@ export const HousesNav = () => {
         ),
     );
 
+    // Full root-to-current chain for whatever location page is currently
+    // open. locationAncestorsQuery walks parent_id up from whatever id you
+    // give it — passing the *current* location's own id (not its parent_id)
+    // means the returned array includes that location itself, root-first:
+    // [house, room, ...deeper] regardless of how many levels down we are.
+    const activeLocationId = pathname.match(/^\/location\/([^/]+)/)?.[1];
+    const { data: activeChain } = useQuery(
+        locationAncestorsQuery(activeLocationId, { enabled: !!activeLocationId }),
+    );
+    const activeHouseId = activeChain?.[0]?.id;
+    const activeRoomId = activeChain?.length > 1 ? activeChain[1].id : undefined;
+
     if (!workspace || !houses?.length) return null;
 
     return (
@@ -84,7 +93,8 @@ export const HousesNav = () => {
                         key={house.id}
                         house={house}
                         workspaceId={workspace.id}
-                        pathname={pathname}
+                        isActiveHouse={house.id === activeHouseId}
+                        activeRoomId={activeRoomId}
                     />
                 ))}
             </SidebarMenu>

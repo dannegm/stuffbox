@@ -105,7 +105,7 @@ One schema per project. **Updated id strategy (decided during initial `db.sql` w
 
 ### `workspaces` (collaboration container; auto-created per user on signup)
 
-`id` PK · `name` · `owner_id` → profiles.uuid · timestamps
+`id` PK · `name` · `color` (nullable, owner-editable; falls back to a client-side hash until set) · `owner_id` → profiles.uuid · timestamps
 
 ### `workspace_members`
 
@@ -325,6 +325,7 @@ NEXT_PUBLIC_MAPTILER_KEY=
 NEXT_PUBLIC_NTFY_TOPIC=          # optional
 NEXT_PUBLIC_R2_PUBLIC_URL=       # bucket needs R2 public access (or a custom domain) enabled — no trailing slash
 NEXT_PUBLIC_STUFFBOX_MAX_IMAGE_DIMENSION=2000  # image pipeline runs client-side, so this must be NEXT_PUBLIC_
+NEXT_PUBLIC_APP_URL=              # absolute base url for QR codes on printed labels (/i/[id], /l/[id]) — no trailing slash
 # server-only (Route Handlers)
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=

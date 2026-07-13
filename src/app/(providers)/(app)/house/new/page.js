@@ -106,7 +106,11 @@ export default function NewHousePage() {
 
                     <Field data-invalid={!!error}>
                         <FieldLabel>Ubicación en el mapa</FieldLabel>
-                        <LocationMapPicker value={coords} onChange={setCoords} />
+                        <LocationMapPicker
+                            value={coords}
+                            onChange={setCoords}
+                            workspaceId={workspaceId}
+                        />
                         <FieldError>{error}</FieldError>
                     </Field>
                 </FieldGroup>

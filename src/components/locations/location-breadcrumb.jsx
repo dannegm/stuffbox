@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
-import { getWorkspaceColor } from '@/helpers/workspace-color';
+import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { cn } from '@/helpers/utils';
 
 // Icon lives inside the same color-carrying element as the text (not a
@@ -49,7 +49,7 @@ export const LocationBreadcrumb = ({
         >
             <span
                 className='size-2 shrink-0 rounded-full bg-(--bullet-color)'
-                style={{ '--bullet-color': getWorkspaceColor(workspace.id) }}
+                style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
             />
             {workspace.name}
         </Link>

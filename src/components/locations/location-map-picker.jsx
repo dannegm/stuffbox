@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Map, MapControls, MapMarker, MarkerContent, useMap } from '@/ui/map';
 import { AddressSearch } from '@/components/locations/address-search';
 import { MarkerPin } from '@/components/locations/marker-pin';
 import { FOCUS_ZOOM } from '@/constants/map-defaults';
 import { useSettings } from '@/hooks/use-settings';
 import { useResolvedTheme } from '@/hooks/use-resolved-theme';
+import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { cn } from '@/helpers/utils';
 
 const CDMX_VIEWPORT = { center: [-99.1332, 19.4326], zoom: 14 };
@@ -40,9 +42,16 @@ const FlyTo = ({ target }) => {
 };
 
 // Search an address (autocomplete), click to drop a pin, drag to adjust, or
-// "usar mi ubicación".
-export const LocationMapPicker = ({ value, onChange, className }) => {
-    const [mapDefaultViewport] = useSettings('mapDefaultViewport', CDMX_VIEWPORT);
+// "usar mi ubicación". `workspaceId` is optional — when given, the
+// workspace's own configured center (Ajustes → editar espacio → "Centrar
+// mapa") wins over the local per-device default, so every member creating a
+// house lands somewhere near the others' instead of always CDMX.
+export const LocationMapPicker = ({ value, onChange, className, workspaceId }) => {
+    const [localDefaultViewport] = useSettings('mapDefaultViewport', CDMX_VIEWPORT);
+    const { data: workspaceDefaultViewport } = useQuery(
+        workspaceSettingQuery(workspaceId, 'mapDefaultViewport', { enabled: !!workspaceId }),
+    );
+    const mapDefaultViewport = workspaceDefaultViewport ?? localDefaultViewport;
     const resolvedTheme = useResolvedTheme();
     const [flyTarget, setFlyTarget] = useState(null);
     const [isDragging, setIsDragging] = useState(false);

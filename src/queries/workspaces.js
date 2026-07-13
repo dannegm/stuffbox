@@ -52,3 +52,31 @@ export const createWorkspaceMutation = (opts = {}) => ({
     },
     ...opts,
 });
+
+export const updateWorkspaceMutation = (opts = {}) => ({
+    mutationFn: async ({ id, name, color }) => {
+        const { data, error } = await supabase()
+            .from('workspaces')
+            .update({ name, color })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
+// Admin-only in practice — regular owners have no delete UI for their own
+// workspace yet (deferred), this is reachable only from /admin/workspaces,
+// which the RLS "admin full access" policy on every table already permits.
+// Cascades to everything hanging off workspace_id (locations, items, moves,
+// tags, ...) per db.sql's `on delete cascade`.
+export const deleteWorkspaceMutation = (opts = {}) => ({
+    mutationFn: async id => {
+        const { error } = await supabase().from('workspaces').delete().eq('id', id);
+        if (error) throw error;
+        return id;
+    },
+    ...opts,
+});

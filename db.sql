@@ -55,6 +55,7 @@ create table stuffbox.profiles (
 create table stuffbox.workspaces (
   id          text primary key,
   name        text not null,
+  color       text,                                 -- nullable; falls back to a client-side hash (workspace-color.js) until set
   owner_id    uuid not null references stuffbox.profiles(uuid),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()

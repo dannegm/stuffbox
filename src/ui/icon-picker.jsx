@@ -41,7 +41,7 @@ const IconGrid = ({ library, query, onSelect }) => {
     }
 
     return (
-        <div className='grid grid-cols-6 gap-1 p-1'>
+        <div className='grid grid-cols-8 gap-1 p-1'>
             {results.map(icon => (
                 <Tooltip key={icon.name}>
                     <TooltipTrigger
@@ -52,7 +52,7 @@ const IconGrid = ({ library, query, onSelect }) => {
                                 onClick={() =>
                                     onSelect({ library: library.value, name: icon.name })
                                 }
-                                className="flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted [&_svg:not([class*='size-'])]:size-4"
+                                className='flex size-10 items-center justify-center rounded-md text-foreground bg-muted/30 hover:bg-muted hover:scale-150 [&_svg]:size-5 transition-all'
                             />
                         }
                     >
@@ -108,7 +108,7 @@ export const IconPicker = ({ value, onChange, children }) => {
 
                     {LIBRARIES.map(lib => (
                         <TabsContent key={lib.value} value={lib.value}>
-                            <ScrollArea className='h-[fit-content(16rem)]'>
+                            <ScrollArea className='h-[fit-content(16rem)] max-h-96 overflow-auto'>
                                 <IconGrid library={lib} query={query} onSelect={handleSelect} />
                             </ScrollArea>
                         </TabsContent>

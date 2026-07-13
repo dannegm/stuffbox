@@ -1,9 +1,15 @@
 'use client';
 
 import { use, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { TrashIcon, ArrowsLeftRightIcon, PackageIcon } from '@phosphor-icons/react/ssr';
+import {
+    TrashIcon,
+    ArrowsLeftRightIcon,
+    PackageIcon,
+    PrinterIcon,
+} from '@phosphor-icons/react/ssr';
 import {
     moveQuery,
     updateMoveMutation,
@@ -100,6 +106,16 @@ export default function MovePage({ params }) {
                     </p>
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
+                    {!isEmpty && (
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            render={<Link href={`/move/${id}/labels`} />}
+                        >
+                            <PrinterIcon data-icon='inline-start' />
+                            Etiquetas
+                        </Button>
+                    )}
                     <SelectSearch
                         options={MOVE_STATUSES}
                         value={move.status}

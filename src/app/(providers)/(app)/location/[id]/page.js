@@ -13,6 +13,7 @@ import {
     ArrowsLeftRightIcon,
     CheckSquareIcon,
     XIcon,
+    ArrowUpIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -271,23 +272,42 @@ export default function LocationPage({ params }) {
     const handleLocationDragLeave = target =>
         setDragOverLocationId(current => (current === target.id ? null : current));
 
-    const handleLocationDrop = async (event, target) => {
-        setDragOverLocationId(null);
+    const dropOntoDestination = async (event, destinationId) => {
         const raw = event.dataTransfer.getData(DRAG_MIME);
         if (!raw) return;
         const { type, ids } = JSON.parse(raw);
 
         if (type === 'items') {
-            bulkTransfer({ itemIds: ids, locationIds: [], destinationId: target.id });
+            bulkTransfer({ itemIds: ids, locationIds: [], destinationId });
             return;
         }
 
-        if (ids.includes(target.id)) return;
-        if (!(await isDestinationSafe(target.id, ids))) {
+        if (ids.includes(destinationId)) return;
+        if (!(await isDestinationSafe(destinationId, ids))) {
             window.alert('No puedes soltar ahí — es la misma location o algo que ya contiene.');
             return;
         }
-        bulkTransfer({ itemIds: [], locationIds: ids, destinationId: target.id });
+        bulkTransfer({ itemIds: [], locationIds: ids, destinationId });
+    };
+
+    const handleLocationDrop = (event, target) => {
+        setDragOverLocationId(null);
+        dropOntoDestination(event, target.id);
+    };
+
+    // Special drop zone (left column, desktop split view only): dropping an
+    // item/location here un-nests it — it becomes a sibling of the current
+    // location instead of a child, i.e. moves to this location's own parent.
+    // Never shown at a root (no parent to move to).
+    const MOVE_OUT_TARGET = '__move_out__';
+
+    const handleMoveOutDragOver = () => setDragOverLocationId(MOVE_OUT_TARGET);
+    const handleMoveOutDragLeave = () =>
+        setDragOverLocationId(current => (current === MOVE_OUT_TARGET ? null : current));
+
+    const handleMoveOutDrop = event => {
+        setDragOverLocationId(null);
+        dropOntoDestination(event, location.parent_id);
     };
 
     const { mutate: destroy } = useMutation(
@@ -336,6 +356,7 @@ export default function LocationPage({ params }) {
     const filteredChildren = children.filter(matchesPackFilter);
     const filteredItems = items.filter(matchesPackFilter);
     const hasFilteredResults = filteredChildren.length > 0 || filteredItems.length > 0;
+    const parentName = ancestors?.[ancestors.length - 1]?.name;
 
     return (
         <div
@@ -557,6 +578,32 @@ export default function LocationPage({ params }) {
                         // available height, even when empty or nearly empty.
                         <div className='flex min-h-0 flex-1 gap-4'>
                             <div className='flex min-w-0 flex-[2] flex-col gap-2 overflow-y-auto'>
+                                {location.parent_id && (
+                                    <div
+                                        data-block='MoveOutDropZone'
+                                        className={cn(
+                                            'flex items-center gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors',
+                                            dragOverLocationId === MOVE_OUT_TARGET &&
+                                                'border-primary bg-primary/10 text-foreground ring-2 ring-primary/40',
+                                        )}
+                                        onDragOver={event => {
+                                            event.preventDefault();
+                                            handleMoveOutDragOver();
+                                        }}
+                                        onDragLeave={handleMoveOutDragLeave}
+                                        onDrop={event => {
+                                            event.preventDefault();
+                                            handleMoveOutDrop(event);
+                                        }}
+                                    >
+                                        <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted [&_svg]:size-4'>
+                                            <ArrowUpIcon />
+                                        </span>
+                                        <span className='min-w-0 flex-1 truncate'>
+                                            Sacar a {parentName ?? 'nivel anterior'}
+                                        </span>
+                                    </div>
+                                )}
                                 {filteredChildren.length > 0 ? (
                                     filteredChildren.map(child => (
                                         <LocationListItem

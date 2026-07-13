@@ -26,13 +26,13 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/ui/sidebar';
 import { workspacesQuery, createWorkspaceMutation } from '@/queries/workspaces';
-import { getWorkspaceColor } from '@/helpers/workspace-color';
+import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { useAuth } from '@/providers/auth-provider';
 
-const WorkspaceBullet = ({ workspaceId }) => (
+const WorkspaceBullet = ({ workspace }) => (
     <span
         className='size-2.5 shrink-0 rounded-full bg-(--bullet-color)'
-        style={{ '--bullet-color': getWorkspaceColor(workspaceId) }}
+        style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
     />
 );
 
@@ -119,7 +119,7 @@ export const WorkspaceSwitcher = () => {
                     <DropdownMenuTrigger render={<SidebarMenuButton size='lg' />}>
                         {current ? (
                             <>
-                                <WorkspaceBullet workspaceId={current.id} />
+                                <WorkspaceBullet workspace={current} />
                                 <span className='truncate font-medium'>{current.name}</span>
                             </>
                         ) : (
@@ -134,7 +134,7 @@ export const WorkspaceSwitcher = () => {
                                 key={workspace.id}
                                 render={<Link href={`/workspace/${workspace.id}`} />}
                             >
-                                <WorkspaceBullet workspaceId={workspace.id} />
+                                <WorkspaceBullet workspace={workspace} />
                                 <span className='truncate'>{workspace.name}</span>
                             </DropdownMenuItem>
                         ))}

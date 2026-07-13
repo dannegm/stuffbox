@@ -4,7 +4,7 @@ import { use, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon } from '@phosphor-icons/react/ssr';
+import { PlusIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
 import { locationChildrenQuery } from '@/queries/locations';
@@ -43,14 +43,23 @@ export default function WorkspacePage({ params }) {
         <div className='flex flex-1 flex-col gap-4 p-4' data-block='WorkspacePage'>
             <div className='flex items-center justify-between gap-2'>
                 <h1 className='truncate font-heading text-lg font-medium'>{workspace.name}</h1>
-                <Button
-                    size='sm'
-                    variant='outline'
-                    render={<Link href={`/house/new?workspace=${id}`} />}
-                >
-                    <PlusIcon data-icon='inline-start' />
-                    Agregar casa
-                </Button>
+                <div className='flex shrink-0 items-center gap-2'>
+                    <Button
+                        size='icon-sm'
+                        variant='outline'
+                        render={<Link href={`/workspace/${id}/settings`} />}
+                    >
+                        <PencilSimpleIcon />
+                    </Button>
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        render={<Link href={`/house/new?workspace=${id}`} />}
+                    >
+                        <PlusIcon data-icon='inline-start' />
+                        Agregar casa
+                    </Button>
+                </div>
             </div>
 
             {houses.length === 0 ? (
