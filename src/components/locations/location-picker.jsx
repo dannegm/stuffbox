@@ -41,7 +41,7 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
         setStack([...stack, { id: location.id, name: location.name }]);
     const handleBreadcrumbClick = index => setStack(stack.slice(0, index + 1));
     const handleConfirm = () => {
-        onSelect(current.id);
+        onSelect(current?.id);
         onOpenChange(false);
     };
 
