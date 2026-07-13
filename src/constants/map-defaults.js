@@ -1,16 +1,5 @@
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
-
-// No specific location to default to (personal households are anywhere) —
-// a broad low-zoom view plus the map's own "usar mi ubicación" control lets
-// people jump straight to their real position instead of guessing a city.
-export const DEFAULT_VIEWPORT = {
-    center: [0, 20],
-    zoom: 1.5,
-};
-
+// The first-open default viewport lives in local settings, not here — see
+// `mapDefaultViewport` in src/constants/default-settings.js. Basemap style
+// comes from Map's own defaults (Carto positron/dark-matter) — see
+// src/ui/map.jsx's `defaultStyles` — not a custom MapTiler style.
 export const FOCUS_ZOOM = 16;
-
-export const MAP_STYLES = {
-    light: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-    dark: `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`,
-};

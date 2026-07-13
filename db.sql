@@ -93,7 +93,6 @@ create table stuffbox.locations (
   name            text not null,
   type            text not null,                         -- free text
   icon            jsonb,                                  -- {library, name}
-  address         text,                                   -- free-text, human-readable; separate from lat/lng
   lat             double precision,                       -- meaningful on roots for routes
   lng             double precision,
   active_move_id  text,                                   -- set when packed; FK added below

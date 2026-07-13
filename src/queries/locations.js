@@ -64,7 +64,6 @@ export const createLocationMutation = (opts = {}) => ({
         name,
         type,
         icon = null,
-        address = null,
         lat = null,
         lng = null,
     }) => {
@@ -77,7 +76,6 @@ export const createLocationMutation = (opts = {}) => ({
                 name,
                 type,
                 icon,
-                address,
                 lat,
                 lng,
             })

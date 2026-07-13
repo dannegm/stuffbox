@@ -34,7 +34,6 @@ export default function NewHousePage() {
     const [name, setName] = useState('');
     const [type, setType] = useState('house');
     const [icon, setIcon] = useState(null);
-    const [address, setAddress] = useState('');
     const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
 
@@ -54,7 +53,6 @@ export default function NewHousePage() {
             name: name.trim(),
             type,
             icon: icon ?? DEFAULT_LOCATION_ICONS[type],
-            address: address.trim() || null,
             lat: coords?.lat ?? null,
             lng: coords?.lng ?? null,
         });
@@ -122,16 +120,6 @@ export default function NewHousePage() {
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel htmlFor='house-address'>Dirección</FieldLabel>
-                        <Input
-                            id='house-address'
-                            value={address}
-                            onChange={event => setAddress(event.target.value)}
-                            placeholder='Referencia libre, ej. calle y número'
-                        />
                     </Field>
 
                     <Field data-invalid={!!error}>
