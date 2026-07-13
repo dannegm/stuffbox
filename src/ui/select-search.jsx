@@ -15,7 +15,7 @@ const SEARCH_THRESHOLD = 10;
 // 14rem (percentage heights don't resolve against max-height, only against
 // an explicit/definite height) — fit-content gives it a real definite height
 // that's still capped, so short lists shrink and long lists scroll.
-const LIST_HEIGHT = 'h-[fit-content(14rem)]';
+const LIST_HEIGHT = 'h-[fit-content(14rem)] max-h-56 overflow-auto';
 
 // A searchable option list in a Popover, modeled on pinia's CategorySelect
 // (src/components/categories/category-select.jsx) — generalized so every

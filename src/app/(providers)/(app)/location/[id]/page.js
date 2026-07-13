@@ -26,6 +26,7 @@ import {
     unpackLocationMutation,
     locationTotalPriceQuery,
     locationCountsQuery,
+    getLocationDescendantIds,
 } from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
 import { bulkTransferMutation, bulkPackMutation, bulkUnpackMutation } from '@/queries/bulk';
@@ -63,6 +64,7 @@ export default function LocationPage({ params }) {
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
     const [editOpen, setEditOpen] = useState(false);
+    const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
     const [selectionMode, setSelectionMode] = useState(false);
@@ -104,6 +106,21 @@ export default function LocationPage({ params }) {
         }),
     );
 
+    const { mutate: transfer, isPending: isTransferring } = useMutation(
+        transferLocationMutation({
+            onSuccess: updated => {
+                const previousParentId = location.parent_id;
+                queryClient.setQueryData(['location', id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, previousParentId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, updated.parent_id],
+                });
+            },
+        }),
+    );
+
     const { mutate: pack } = useMutation(
         packLocationMutation({
             onSuccess: updated => queryClient.setQueryData(['location', id], updated),
@@ -121,8 +138,36 @@ export default function LocationPage({ params }) {
         }),
     );
 
+    // A location can nest locations, so (unlike items) transferring/unpacking
+    // one can create a parent_id cycle if the destination is itself or one of
+    // its own descendants — that would hang ancestor walks and the price RPC.
+    const isDestinationSafe = async (destinationId, movingLocationIds) => {
+        if (movingLocationIds.includes(destinationId)) return false;
+        const descendantSets = await Promise.all(movingLocationIds.map(getLocationDescendantIds));
+        return !descendantSets.some(set => set.includes(destinationId));
+    };
+
+    const handleTransfer = async newParentId => {
+        if (!(await isDestinationSafe(newParentId, [id]))) {
+            window.alert(
+                'No puedes mover esta location dentro de sí misma o de algo que contiene.',
+            );
+            return;
+        }
+        transfer({ id, parentId: newParentId });
+    };
+
     const handlePack = moveId => pack({ id, moveId });
-    const handleUnpack = newParentId => unpack({ id, parentId: newParentId });
+
+    const handleUnpack = async newParentId => {
+        if (!(await isDestinationSafe(newParentId, [id]))) {
+            window.alert(
+                'No puedes desempacar esta caja dentro de sí misma o de algo que contiene.',
+            );
+            return;
+        }
+        unpack({ id, parentId: newParentId });
+    };
 
     const toggleItemSelection = itemId =>
         setSelectedItemIds(current => {
@@ -177,12 +222,14 @@ export default function LocationPage({ params }) {
 
     const selectedCount = selectedItemIds.size + selectedLocationIds.size;
 
-    const handleBulkPickerSelect = destinationId => {
-        const payload = {
-            itemIds: [...selectedItemIds],
-            locationIds: [...selectedLocationIds],
-            destinationId,
-        };
+    const handleBulkPickerSelect = async destinationId => {
+        const locationIds = [...selectedLocationIds];
+        if (locationIds.length > 0 && !(await isDestinationSafe(destinationId, locationIds))) {
+            window.alert('No puedes mover la selección dentro de sí misma o de algo que contiene.');
+            setBulkPickerMode(null);
+            return;
+        }
+        const payload = { itemIds: [...selectedItemIds], locationIds, destinationId };
         if (bulkPickerMode === 'transfer') bulkTransfer(payload);
         else if (bulkPickerMode === 'unpack') bulkUnpack(payload);
         setBulkPickerMode(null);
@@ -306,6 +353,21 @@ export default function LocationPage({ params }) {
                         </>
                     ) : (
                         <>
+                            {location.parent_id && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    disabled={isTransferring}
+                                    onClick={() => setTransferOpen(true)}
+                                >
+                                    {isTransferring ? (
+                                        <Spinner data-icon='inline-start' />
+                                    ) : (
+                                        <ArrowsLeftRightIcon data-icon='inline-start' />
+                                    )}
+                                    Transferir
+                                </Button>
+                            )}
                             {location.is_container &&
                                 (location.active_move_id ? (
                                     <Button
@@ -377,6 +439,13 @@ export default function LocationPage({ params }) {
             </div>
 
             <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />
+
+            <LocationPicker
+                open={transferOpen}
+                onOpenChange={setTransferOpen}
+                workspaceId={location.workspace_id}
+                onSelect={handleTransfer}
+            />
 
             <LocationPicker
                 open={unpackOpen}

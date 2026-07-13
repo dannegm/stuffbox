@@ -57,6 +57,25 @@ export const locationCountsQuery = (locationIds = [], opts = {}) => ({
     ...opts,
 });
 
+// Every descendant id (any depth) of a location — used to block picking a
+// destination inside your own subtree when transferring/unpacking, which
+// would otherwise create a parent_id cycle (infinite loop for ancestor
+// walks and the price RPC's recursive CTE).
+export const getLocationDescendantIds = async locationId => {
+    const descendants = [];
+    let frontier = [locationId];
+    while (frontier.length > 0) {
+        const { data, error } = await supabase()
+            .from('locations')
+            .select('id')
+            .in('parent_id', frontier);
+        if (error) throw error;
+        frontier = data.map(row => row.id);
+        descendants.push(...frontier);
+    }
+    return descendants;
+};
+
 // Walks parent_id up to the root, one round-trip per level — trees are
 // shallow in practice (house > room > shelf > box), so this beats adding a
 // recursive-CTE RPC just for a breadcrumb.
