@@ -621,10 +621,14 @@ grant execute on function stuffbox.location_total_price(text) to authenticated;
 -- that's a mutationFn's job if/when it's actually needed. What's left is only
 -- the audit log, which has to hold regardless of which code path wrote the row.
 
--- movement_log: written on item location/move changes, never by app logic
+-- movement_log: written on item location/move changes, never by app logic.
+-- security definer — movement_log has no member INSERT policy on purpose
+-- (read-only for members), so the trigger itself needs elevated rights to
+-- write the audit row regardless of the calling user's own grants.
 create or replace function stuffbox.log_item_movement()
 returns trigger
 language plpgsql
+security definer
 as $$
 begin
   if NEW.location_id is distinct from OLD.location_id
@@ -643,9 +647,11 @@ create trigger on_item_location_change
   for each row execute function stuffbox.log_item_movement();
 
 -- movement_log: written on location parent/move changes (transfer/pack/unpack)
+-- security definer — same reason as log_item_movement() above.
 create or replace function stuffbox.log_location_movement()
 returns trigger
 language plpgsql
+security definer
 as $$
 begin
   if NEW.parent_id is distinct from OLD.parent_id

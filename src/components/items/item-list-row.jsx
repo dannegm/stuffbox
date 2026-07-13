@@ -7,19 +7,33 @@ import { cn } from '@/helpers/utils';
 
 // `selectable` swaps the row from a navigating Link to a toggle button —
 // tapping anywhere in the row selects it instead of opening the item, same
-// as bulk-select on mobile file pickers.
-export const ItemListRow = ({ item, selectable = false, selected = false, onToggle }) => {
+// as bulk-select on mobile file pickers. `draggable`/`onDragStart` are for
+// the desktop-only split view's drag-to-transfer (never set on mobile).
+export const ItemListRow = ({
+    item,
+    selectable = false,
+    selected = false,
+    onToggle,
+    draggable = false,
+    onDragStart,
+}) => {
     const photoUrl = getItemPhotoUrl(item);
 
     const className = cn(
         'flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
+        draggable && 'cursor-grab active:cursor-grabbing',
     );
 
     const content = (
         <>
             {selectable && (
-                <Checkbox checked={selected} onCheckedChange={() => onToggle(item.id)} />
+                // The row itself is a button with the same onToggle click handler —
+                // without stopping propagation, clicking the checkbox bubbles up and
+                // fires both, toggling twice (i.e. visually doing nothing).
+                <span onClick={event => event.stopPropagation()}>
+                    <Checkbox checked={selected} onCheckedChange={() => onToggle(item.id)} />
+                </span>
             )}
             <span className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
                 {photoUrl ? (
@@ -44,6 +58,8 @@ export const ItemListRow = ({ item, selectable = false, selected = false, onTogg
                 data-block='ItemListRow'
                 className={className}
                 onClick={() => onToggle(item.id)}
+                draggable={draggable}
+                onDragStart={event => onDragStart?.(event, item)}
             >
                 {content}
             </button>
@@ -51,7 +67,13 @@ export const ItemListRow = ({ item, selectable = false, selected = false, onTogg
     }
 
     return (
-        <Link href={`/item/${item.id}`} data-block='ItemListRow' className={className}>
+        <Link
+            href={`/item/${item.id}`}
+            data-block='ItemListRow'
+            className={className}
+            draggable={draggable}
+            onDragStart={event => onDragStart?.(event, item)}
+        >
             {content}
         </Link>
     );

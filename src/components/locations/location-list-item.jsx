@@ -8,13 +8,22 @@ import { cn } from '@/helpers/utils';
 // `counts` = { locations, items } — direct/root-level only, not recursive.
 // Omitted entirely when both are 0 rather than showing "0 location(s)".
 // `selectable` swaps the row from a navigating Link to a toggle button, same
-// as ItemListRow.
+// as ItemListRow. `draggable`/`onDragStart` and the `onDragOver`/`onDragLeave`/
+// `onDrop`/`isDragOver` pair are for the desktop-only split view — a location
+// row is both a drag source (move it into another location) and a drop
+// target (items or other locations dropped onto it transfer here).
 export const LocationListItem = ({
     location,
     counts,
     selectable = false,
     selected = false,
     onToggle,
+    draggable = false,
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    isDragOver = false,
 }) => {
     const photoUrl = getLocationPhotoUrl(location);
     const summary = [
@@ -27,12 +36,18 @@ export const LocationListItem = ({
     const className = cn(
         'flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
+        draggable && 'cursor-grab active:cursor-grabbing',
+        isDragOver && 'border-primary bg-primary/10 ring-2 ring-primary/40',
     );
 
     const content = (
         <>
             {selectable && (
-                <Checkbox checked={selected} onCheckedChange={() => onToggle(location.id)} />
+                // Same fix as ItemListRow — stop the click from bubbling to the
+                // row's own button, which shares this exact toggle handler.
+                <span onClick={event => event.stopPropagation()}>
+                    <Checkbox checked={selected} onCheckedChange={() => onToggle(location.id)} />
+                </span>
             )}
             <span className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
                 {photoUrl ? (
@@ -53,6 +68,18 @@ export const LocationListItem = ({
         </>
     );
 
+    const dropProps = {
+        onDragOver: event => {
+            event.preventDefault();
+            onDragOver?.(location);
+        },
+        onDragLeave: () => onDragLeave?.(location),
+        onDrop: event => {
+            event.preventDefault();
+            onDrop?.(event, location);
+        },
+    };
+
     if (selectable) {
         return (
             <button
@@ -60,6 +87,9 @@ export const LocationListItem = ({
                 data-block='LocationListItem'
                 className={className}
                 onClick={() => onToggle(location.id)}
+                draggable={draggable}
+                onDragStart={event => onDragStart?.(event, location)}
+                {...dropProps}
             >
                 {content}
             </button>
@@ -67,7 +97,14 @@ export const LocationListItem = ({
     }
 
     return (
-        <Link href={`/location/${location.id}`} data-block='LocationListItem' className={className}>
+        <Link
+            href={`/location/${location.id}`}
+            data-block='LocationListItem'
+            className={className}
+            draggable={draggable}
+            onDragStart={event => onDragStart?.(event, location)}
+            {...dropProps}
+        >
             {content}
         </Link>
     );

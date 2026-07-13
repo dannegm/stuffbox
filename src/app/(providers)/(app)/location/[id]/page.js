@@ -31,6 +31,7 @@ import {
 import { itemsAtLocationQuery } from '@/queries/items';
 import { bulkTransferMutation, bulkPackMutation, bulkUnpackMutation } from '@/queries/bulk';
 import { moveQuery } from '@/queries/moves';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
@@ -40,6 +41,7 @@ import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
+import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
@@ -73,6 +75,8 @@ export default function LocationPage({ params }) {
     const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
     const [bulkPackOpen, setBulkPackOpen] = useState(false);
     const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
+    const [dragOverLocationId, setDragOverLocationId] = useState(null);
+    const isDesktop = !useIsMobile();
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -240,6 +244,52 @@ export default function LocationPage({ params }) {
         setBulkPackOpen(false);
     };
 
+    // Desktop-only split view drag-and-drop (see ItemListRow/LocationListItem).
+    // Dragging a row that's part of the active selection moves the whole
+    // selection; otherwise just that one row — same convention as Finder.
+    const DRAG_MIME = 'application/x-stuffbox-drag';
+
+    const handleItemDragStart = (event, draggedItem) => {
+        const ids =
+            selectionMode && selectedItemIds.has(draggedItem.id)
+                ? [...selectedItemIds]
+                : [draggedItem.id];
+        event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ type: 'items', ids }));
+        event.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleLocationDragStart = (event, draggedLocation) => {
+        const ids =
+            selectionMode && selectedLocationIds.has(draggedLocation.id)
+                ? [...selectedLocationIds]
+                : [draggedLocation.id];
+        event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ type: 'locations', ids }));
+        event.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleLocationDragOver = target => setDragOverLocationId(target.id);
+    const handleLocationDragLeave = target =>
+        setDragOverLocationId(current => (current === target.id ? null : current));
+
+    const handleLocationDrop = async (event, target) => {
+        setDragOverLocationId(null);
+        const raw = event.dataTransfer.getData(DRAG_MIME);
+        if (!raw) return;
+        const { type, ids } = JSON.parse(raw);
+
+        if (type === 'items') {
+            bulkTransfer({ itemIds: ids, locationIds: [], destinationId: target.id });
+            return;
+        }
+
+        if (ids.includes(target.id)) return;
+        if (!(await isDestinationSafe(target.id, ids))) {
+            window.alert('No puedes soltar ahí — es la misma location o algo que ya contiene.');
+            return;
+        }
+        bulkTransfer({ itemIds: [], locationIds: ids, destinationId: target.id });
+    };
+
     const { mutate: destroy } = useMutation(
         deleteLocationMutation({
             onSuccess: () => {
@@ -288,7 +338,10 @@ export default function LocationPage({ params }) {
     const hasFilteredResults = filteredChildren.length > 0 || filteredItems.length > 0;
 
     return (
-        <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationPage'>
+        <div
+            className={cn('flex flex-1 flex-col gap-4 p-4', isDesktop && 'h-dvh overflow-hidden')}
+            data-block='LocationPage'
+        >
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={ancestors ?? []}
@@ -486,7 +539,7 @@ export default function LocationPage({ params }) {
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <div className='flex flex-col gap-4'>
+                <div className={cn('flex flex-col gap-4', isDesktop && 'min-h-0 flex-1')}>
                     <Tabs value={packFilter} onValueChange={setPackFilter}>
                         <TabsList>
                             <TabsTrigger value='all'>Todos</TabsTrigger>
@@ -495,41 +548,102 @@ export default function LocationPage({ params }) {
                         </TabsList>
                     </Tabs>
 
-                    {!hasFilteredResults && (
-                        <p className='py-6 text-center text-sm text-muted-foreground'>
-                            Nada que coincida con este filtro.
-                        </p>
-                    )}
-
-                    {filteredChildren.length > 0 && (
-                        <div className='flex flex-col gap-2'>
-                            {filteredChildren.map(child => (
-                                <LocationListItem
-                                    key={child.id}
-                                    location={child}
-                                    counts={childCounts?.[child.id]}
-                                    selectable={selectionMode}
-                                    selected={selectedLocationIds.has(child.id)}
-                                    onToggle={toggleLocationSelection}
-                                />
-                            ))}
+                    {isDesktop ? (
+                        // Desktop-only: 2/5 locations | 3/5 items, drag items onto a
+                        // location to transfer them, drag a location onto another to
+                        // nest it. Mobile keeps the single stacked list below untouched
+                        // (no drag gestures, per the owner's call to avoid touch issues).
+                        // Each side scrolls independently and always fills the full
+                        // available height, even when empty or nearly empty.
+                        <div className='flex min-h-0 flex-1 gap-4'>
+                            <div className='flex min-w-0 flex-[2] flex-col gap-2 overflow-y-auto'>
+                                {filteredChildren.length > 0 ? (
+                                    filteredChildren.map(child => (
+                                        <LocationListItem
+                                            key={child.id}
+                                            location={child}
+                                            counts={childCounts?.[child.id]}
+                                            selectable={selectionMode}
+                                            selected={selectedLocationIds.has(child.id)}
+                                            onToggle={toggleLocationSelection}
+                                            draggable
+                                            onDragStart={handleLocationDragStart}
+                                            onDragOver={handleLocationDragOver}
+                                            onDragLeave={handleLocationDragLeave}
+                                            onDrop={handleLocationDrop}
+                                            isDragOver={dragOverLocationId === child.id}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className='flex flex-1 items-center justify-center'>
+                                        <p className='text-sm text-muted-foreground'>
+                                            Sin locations.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            <Separator orientation='vertical' />
+                            <div className='flex min-w-0 flex-[3] flex-col gap-2 overflow-y-auto'>
+                                {filteredItems.length > 0 ? (
+                                    filteredItems.map(item => (
+                                        <ItemListRow
+                                            key={item.id}
+                                            item={item}
+                                            selectable={selectionMode}
+                                            selected={selectedItemIds.has(item.id)}
+                                            onToggle={toggleItemSelection}
+                                            draggable
+                                            onDragStart={handleItemDragStart}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className='flex flex-1 items-center justify-center'>
+                                        <p className='text-sm text-muted-foreground'>Sin items.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            {!hasFilteredResults && (
+                                <p className='py-6 text-center text-sm text-muted-foreground'>
+                                    Nada que coincida con este filtro.
+                                </p>
+                            )}
 
-                    {filteredChildren.length > 0 && filteredItems.length > 0 && <Separator />}
+                            {filteredChildren.length > 0 && (
+                                <div className='flex flex-col gap-2'>
+                                    {filteredChildren.map(child => (
+                                        <LocationListItem
+                                            key={child.id}
+                                            location={child}
+                                            counts={childCounts?.[child.id]}
+                                            selectable={selectionMode}
+                                            selected={selectedLocationIds.has(child.id)}
+                                            onToggle={toggleLocationSelection}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
-                    {filteredItems.length > 0 && (
-                        <div className='flex flex-col gap-2'>
-                            {filteredItems.map(item => (
-                                <ItemListRow
-                                    key={item.id}
-                                    item={item}
-                                    selectable={selectionMode}
-                                    selected={selectedItemIds.has(item.id)}
-                                    onToggle={toggleItemSelection}
-                                />
-                            ))}
-                        </div>
+                            {filteredChildren.length > 0 && filteredItems.length > 0 && (
+                                <Separator />
+                            )}
+
+                            {filteredItems.length > 0 && (
+                                <div className='flex flex-col gap-2'>
+                                    {filteredItems.map(item => (
+                                        <ItemListRow
+                                            key={item.id}
+                                            item={item}
+                                            selectable={selectionMode}
+                                            selected={selectedItemIds.has(item.id)}
+                                            onToggle={toggleItemSelection}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             )}
