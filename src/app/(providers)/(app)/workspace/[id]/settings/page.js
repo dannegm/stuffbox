@@ -39,7 +39,7 @@ export default function WorkspaceSettingsPage({ params }) {
     const { data: workspace, isPending: isWorkspacePending } = useQuery(
         workspaceQuery(id, { enabled: !!user }),
     );
-    const { data: mapDefault } = useQuery(
+    const { data: mapDefault, isPending: isMapDefaultPending } = useQuery(
         workspaceSettingQuery(id, 'mapDefaultViewport', { enabled: !!user }),
     );
 
@@ -89,7 +89,14 @@ export default function WorkspaceSettingsPage({ params }) {
         }
     };
 
-    if (isAuthLoading || !user || isWorkspacePending || !workspace) {
+    // Waits for `center` to actually reflect the DB-saved default (not just
+    // for the query itself to settle) before mounting LocationMapPicker —
+    // its map viewport is uncontrolled after mount, so mounting it a render
+    // early would permanently lock the camera onto the local per-device
+    // default instead of the workspace's saved one.
+    const isMapDefaultReady = !isMapDefaultPending && (mapDefault == null || center != null);
+
+    if (isAuthLoading || !user || isWorkspacePending || !workspace || !isMapDefaultReady) {
         return <Loading />;
     }
 

@@ -59,11 +59,14 @@ export const createMoveMutation = (opts = {}) => ({
 
 export const updateMoveMutation = (opts = {}) => ({
     mutationFn: async ({ id, name, status, routeType }) => {
+        // Same shape as moveQuery (origin/destination embedded, not just their
+        // ids) — the caller replaces the cached move with this result, and a
+        // narrower select would wipe out origin/destination, breaking hasRoute.
         const { data, error } = await supabase()
             .from('moves')
             .update({ name, status, route_type: routeType })
             .eq('id', id)
-            .select()
+            .select('*, origin:origin_location_id(*), destination:destination_location_id(*)')
             .single();
         if (error) throw error;
         return data;

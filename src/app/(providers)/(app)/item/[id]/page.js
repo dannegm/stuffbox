@@ -16,7 +16,7 @@ import {
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
 import { optionListsQuery } from '@/queries/option-lists';
-import { itemTagsQuery, syncItemTagsMutation } from '@/queries/tags';
+import { itemTagsQuery, syncItemTagsMutation, tagsQuery } from '@/queries/tags';
 import { moveQuery } from '@/queries/moves';
 import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
@@ -34,7 +34,7 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
-import { FALLBACK_ITEM_ICON } from '@/constants/location-icons';
+import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
 
 const Loading = () => (
     <div className='flex flex-1 items-center justify-center' data-block='ItemLoading'>
@@ -65,6 +65,7 @@ export default function ItemPage({ params }) {
         optionListsQuery(location?.workspace_id, 'orientation', { enabled: !!location }),
     );
     const { data: itemTags } = useQuery(itemTagsQuery(id, { enabled: !!item }));
+    const { data: tags } = useQuery(tagsQuery(location?.workspace_id));
     const { data: packedMove } = useQuery(
         moveQuery(item?.active_move_id, { enabled: !!item?.active_move_id }),
     );
@@ -203,9 +204,12 @@ export default function ItemPage({ params }) {
     }
 
     const previewIcon = icon ?? FALLBACK_ITEM_ICON;
+    const suggestedIcons = (tags ?? [])
+        .filter(tag => tagIds.includes(tag.id))
+        .map(tag => tag.icon ?? FALLBACK_TAG_ICON);
 
     return (
-        <div className='flex flex-1 flex-col gap-4 p-4' data-block='ItemPage'>
+        <div className='flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={[...(ancestors ?? []), location]}
@@ -278,7 +282,11 @@ export default function ItemPage({ params }) {
                         <Field>
                             <FieldLabel htmlFor='item-name'>Nombre</FieldLabel>
                             <div className='flex items-center gap-2'>
-                                <IconPicker value={icon} onChange={setIcon}>
+                                <IconPicker
+                                    value={icon}
+                                    onChange={setIcon}
+                                    suggestedIcons={suggestedIcons}
+                                >
                                     <button
                                         type='button'
                                         aria-label='Elegir ícono'

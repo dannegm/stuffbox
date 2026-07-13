@@ -48,7 +48,7 @@ export const IdentityTag = ({
     onRegenerateAvatar,
 }) => (
     <div
-        className='flex w-full overflow-hidden items-center gap-4 rounded-lg border border-dashed border-primary/10 bg-primary/35 p-4'
+        className='flex w-full overflow-hidden items-center gap-4 rounded-lg border border-dashed border-primary/10 bg-primary/15 dark:bg-primary/30 p-4'
         data-block='IdentityTag'
     >
         <div className='relative shrink-0'>

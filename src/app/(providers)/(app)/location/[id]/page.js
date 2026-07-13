@@ -42,6 +42,7 @@ import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
+import { FALLBACK_LOCATION_ICON, FALLBACK_ITEM_ICON } from '@/constants/location-icons';
 import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -622,11 +623,21 @@ export default function LocationPage({ params }) {
                                         />
                                     ))
                                 ) : (
-                                    <div className='flex flex-1 items-center justify-center'>
-                                        <p className='text-sm text-muted-foreground'>
-                                            Sin locations.
-                                        </p>
-                                    </div>
+                                    <Empty
+                                        className='flex-1 -mt-16'
+                                        data-block='SplitLocationsEmpty'
+                                    >
+                                        <EmptyHeader>
+                                            <EmptyMedia variant='icon'>
+                                                <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Sin locations</EmptyTitle>
+                                            <EmptyDescription>
+                                                Arrastra una location aquí para moverla a este
+                                                nivel.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 )}
                             </div>
                             <Separator orientation='vertical' />
@@ -644,9 +655,17 @@ export default function LocationPage({ params }) {
                                         />
                                     ))
                                 ) : (
-                                    <div className='flex flex-1 items-center justify-center'>
-                                        <p className='text-sm text-muted-foreground'>Sin items.</p>
-                                    </div>
+                                    <Empty className='flex-1 -mt-16' data-block='SplitItemsEmpty'>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant='icon'>
+                                                <DynamicIcon icon={FALLBACK_ITEM_ICON} />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Sin items</EmptyTitle>
+                                            <EmptyDescription>
+                                                Arrastra un item aquí para moverlo a este nivel.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 )}
                             </div>
                         </div>

@@ -3,25 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/ssr';
 import { nanoid } from 'nanoid';
 import { useAuth } from '@/providers/auth-provider';
 import { profileQuery, updateProfileMutation } from '@/queries/profiles';
-import { getAvatarUrl } from '@/helpers/avatar';
+import { generateName } from '@/helpers/identity';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
-import { ColorPicker } from '@/ui/color-picker';
-import { SelectSearch } from '@/ui/select-search';
+import { IdentityTag } from '@/components/auth/identity-tag';
 import { Field, FieldGroup, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Separator } from '@/ui/separator';
-
-const GENDER_OPTIONS = [
-    { value: 'male', label: 'Masculino' },
-    { value: 'female', label: 'Femenino' },
-];
 
 const Loading = () => (
     <div className='flex flex-1 items-center justify-center' data-block='ProfileLoading'>
@@ -69,8 +61,6 @@ export default function ProfilePage() {
         return <Loading />;
     }
 
-    const previewAvatarUrl = getAvatarUrl(avatarSeed, gender);
-
     return (
         <div
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 p-4'
@@ -79,59 +69,16 @@ export default function ProfilePage() {
             <h1 className='font-heading text-lg font-medium'>Tu perfil</h1>
 
             <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
+                <IdentityTag
+                    identity={{ name, color, gender, avatarSeed }}
+                    onNameChange={setName}
+                    onColorChange={setColor}
+                    onGenderChange={setGender}
+                    onRegenerateName={() => setName(generateName())}
+                    onRegenerateAvatar={() => setAvatarSeed(nanoid(10))}
+                />
+
                 <FieldGroup>
-                    <Field>
-                        <FieldLabel>Avatar</FieldLabel>
-                        <div className='flex items-center gap-3'>
-                            <Avatar
-                                className='size-16 bg-(--profile-color)'
-                                style={{ '--profile-color': color }}
-                            >
-                                <AvatarImage src={previewAvatarUrl} alt={name} />
-                                <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className='flex flex-col gap-2'>
-                                <Button
-                                    type='button'
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={() => setAvatarSeed(nanoid(10))}
-                                >
-                                    <ArrowsClockwiseIcon data-icon='inline-start' />
-                                    Regenerar
-                                </Button>
-                                <ColorPicker value={color} onChange={setColor}>
-                                    <button
-                                        type='button'
-                                        aria-label='Elegir color'
-                                        className='size-9 shrink-0 rounded-md border border-input bg-(--profile-color)'
-                                        style={{ '--profile-color': color }}
-                                    />
-                                </ColorPicker>
-                            </div>
-                        </div>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>Género del avatar</FieldLabel>
-                        <SelectSearch
-                            options={GENDER_OPTIONS}
-                            value={gender}
-                            onChange={setGender}
-                            getKey={option => option.value}
-                            getLabel={option => option.label}
-                        />
-                    </Field>
-
-                    <Field>
-                        <FieldLabel htmlFor='profile-name'>Nombre</FieldLabel>
-                        <Input
-                            id='profile-name'
-                            value={name}
-                            onChange={event => setName(event.target.value)}
-                        />
-                    </Field>
-
                     <Field>
                         <FieldLabel htmlFor='profile-email'>Correo</FieldLabel>
                         <Input id='profile-email' value={profile.email} disabled />

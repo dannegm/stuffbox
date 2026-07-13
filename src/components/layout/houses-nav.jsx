@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { PlusIcon } from '@phosphor-icons/react/ssr';
 import {
     SidebarGroup,
     SidebarGroupLabel,
+    SidebarGroupAction,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -17,6 +19,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { workspacesQuery } from '@/queries/workspaces';
 import { locationChildrenQuery, locationAncestorsQuery } from '@/queries/locations';
+import { itemQuery } from '@/queries/items';
 
 // One level of rooms under each house — enough for quick jumps from the
 // sidebar, not a full tree (that's what the location browser itself is for).
@@ -58,6 +61,7 @@ const HouseNavItem = ({ house, workspaceId, isActiveHouse, activeRoomId }) => {
 
 export const HousesNav = () => {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { data: workspaces } = useQuery(workspacesQuery());
 
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
@@ -75,20 +79,39 @@ export const HousesNav = () => {
     // give it — passing the *current* location's own id (not its parent_id)
     // means the returned array includes that location itself, root-first:
     // [house, room, ...deeper] regardless of how many levels down we are.
-    const activeLocationId = pathname.match(/^\/location\/([^/]+)/)?.[1];
+    // Item create/edit pages don't have a location id in their own path, so
+    // resolve one indirectly: /item/new carries it as a `?location=` query
+    // param, /item/[id] needs the item fetched first for its location_id.
+    const locationPageId = pathname.match(/^\/location\/([^/]+)/)?.[1];
+    const itemPageId = pathname.match(/^\/item\/([^/]+)/)?.[1];
+    const isNewItemPage = itemPageId === 'new';
+
+    const { data: activeItem } = useQuery(
+        itemQuery(itemPageId, { enabled: !!itemPageId && !isNewItemPage }),
+    );
+
+    const activeLocationId =
+        locationPageId ?? (isNewItemPage ? searchParams.get('location') : activeItem?.location_id);
+
     const { data: activeChain } = useQuery(
         locationAncestorsQuery(activeLocationId, { enabled: !!activeLocationId }),
     );
     const activeHouseId = activeChain?.[0]?.id;
     const activeRoomId = activeChain?.length > 1 ? activeChain[1].id : undefined;
 
-    if (!workspace || !houses?.length) return null;
+    if (!workspace) return null;
 
     return (
         <SidebarGroup data-block='HousesNav'>
             <SidebarGroupLabel render={<Link href='/' />}>Casas</SidebarGroupLabel>
+            <SidebarGroupAction
+                title='Crear casa'
+                render={<Link href={`/house/new?workspace=${workspace.id}`} />}
+            >
+                <PlusIcon />
+            </SidebarGroupAction>
             <SidebarMenu>
-                {houses.map(house => (
+                {houses?.map(house => (
                     <HouseNavItem
                         key={house.id}
                         house={house}

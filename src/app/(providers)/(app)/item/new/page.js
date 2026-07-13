@@ -5,14 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { WarningDiamondIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
-import { locationQuery } from '@/queries/locations';
+import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
+import { workspaceQuery } from '@/queries/workspaces';
 import { createItemMutation } from '@/queries/items';
 import { optionListsQuery } from '@/queries/option-lists';
-import { syncItemTagsMutation } from '@/queries/tags';
+import { syncItemTagsMutation, tagsQuery } from '@/queries/tags';
 import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
+import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
+import { getLocationIcon } from '@/helpers/location';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -22,7 +25,7 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
-import { FALLBACK_ITEM_ICON } from '@/constants/location-icons';
+import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
 
 export default function NewItemPage() {
     const router = useRouter();
@@ -37,6 +40,10 @@ export default function NewItemPage() {
     const { data: location, isPending: isLocationPending } = useQuery(
         locationQuery(locationId, { enabled: !!user && !!locationId }),
     );
+    const { data: workspace } = useQuery(
+        workspaceQuery(location?.workspace_id, { enabled: !!location }),
+    );
+    const { data: ancestors } = useQuery(locationAncestorsQuery(location?.parent_id));
 
     const { data: conditions } = useQuery(
         optionListsQuery(location?.workspace_id, 'condition', { enabled: !!location }),
@@ -44,6 +51,7 @@ export default function NewItemPage() {
     const { data: orientations } = useQuery(
         optionListsQuery(location?.workspace_id, 'orientation', { enabled: !!location }),
     );
+    const { data: tags } = useQuery(tagsQuery(location?.workspace_id));
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -120,7 +128,7 @@ export default function NewItemPage() {
         mutate(variables, { onSuccess: resetForm });
     };
 
-    if (isAuthLoading || !user || isLocationPending || !location) {
+    if (isAuthLoading || !user || isLocationPending || !location || !workspace) {
         return (
             <div className='flex flex-1 items-center justify-center' data-block='NewItemLoading'>
                 <Spinner className='size-6' />
@@ -129,159 +137,173 @@ export default function NewItemPage() {
     }
 
     const previewIcon = icon ?? FALLBACK_ITEM_ICON;
+    const suggestedIcons = (tags ?? [])
+        .filter(tag => tagIds.includes(tag.id))
+        .map(tag => tag.icon ?? FALLBACK_TAG_ICON);
 
     return (
-        <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
-            data-block='NewItemPage'
-        >
-            <div>
+        <div className='flex flex-1 flex-col gap-4 p-4 pb-12' data-block='NewItemPage'>
+            <LocationBreadcrumb
+                workspace={workspace}
+                ancestors={ancestors ?? []}
+                current={location}
+                currentIcon={getLocationIcon(location)}
+            />
+
+            <div className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4'>
                 <h1 className='font-heading text-lg font-medium'>Nuevo item</h1>
-                <p className='text-sm text-muted-foreground'>Se guarda en {location.name}.</p>
-            </div>
 
-            <form onSubmit={handleSaveAndFinish} className='flex flex-col gap-4'>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel htmlFor='item-name'>Nombre</FieldLabel>
-                        <div className='flex items-center gap-2'>
-                            <IconPicker value={icon} onChange={setIcon}>
-                                <button
-                                    type='button'
-                                    aria-label='Elegir ícono'
-                                    className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-foreground transition-colors hover:bg-muted [&_svg]:size-4'
+                <form onSubmit={handleSaveAndFinish} className='flex flex-col gap-4'>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor='item-name'>Nombre</FieldLabel>
+                            <div className='flex items-center gap-2'>
+                                <IconPicker
+                                    value={icon}
+                                    onChange={setIcon}
+                                    suggestedIcons={suggestedIcons}
                                 >
-                                    <DynamicIcon icon={previewIcon} />
-                                </button>
-                            </IconPicker>
-                            <Input
-                                id='item-name'
-                                autoFocus
-                                required
-                                value={name}
-                                onChange={event => setName(event.target.value)}
-                                placeholder='Ej. Taladro'
+                                    <button
+                                        type='button'
+                                        aria-label='Elegir ícono'
+                                        className='flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent text-foreground transition-colors hover:bg-muted [&_svg]:size-4'
+                                    >
+                                        <DynamicIcon icon={previewIcon} />
+                                    </button>
+                                </IconPicker>
+                                <Input
+                                    id='item-name'
+                                    autoFocus
+                                    required
+                                    value={name}
+                                    onChange={event => setName(event.target.value)}
+                                    placeholder='Ej. Taladro'
+                                />
+                            </div>
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
+                            <Textarea
+                                id='item-description'
+                                value={description}
+                                onChange={event => setDescription(event.target.value)}
+                                placeholder='Opcional'
                             />
-                        </div>
-                    </Field>
+                        </Field>
 
-                    <Field>
-                        <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
-                        <Textarea
-                            id='item-description'
-                            value={description}
-                            onChange={event => setDescription(event.target.value)}
-                            placeholder='Opcional'
+                        <Field>
+                            <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
+                            <Input
+                                id='item-quantity'
+                                type='number'
+                                min={1}
+                                value={quantity}
+                                onChange={event => setQuantity(event.target.value)}
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
+                            <Input
+                                id='item-sku'
+                                value={sku}
+                                onChange={event => setSku(event.target.value)}
+                                placeholder='Opcional'
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
+                            <Input
+                                id='item-price'
+                                type='number'
+                                min={0}
+                                step='0.01'
+                                value={purchasePrice}
+                                onChange={event => setPurchasePrice(event.target.value)}
+                                placeholder='Opcional'
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Fotos</FieldLabel>
+                            <PhotoGallery
+                                photos={itemPhotos.photos}
+                                pending={itemPhotos.pending}
+                                isProcessing={itemPhotos.isProcessing}
+                                onAddFiles={itemPhotos.addFiles}
+                                onRemove={itemPhotos.removePhoto}
+                            />
+                        </Field>
+
+                        <OptionDropdown
+                            label='Condición'
+                            value={condition}
+                            onChange={setCondition}
+                            options={conditions}
                         />
-                    </Field>
 
-                    <Field>
-                        <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
-                        <Input
-                            id='item-quantity'
-                            type='number'
-                            min={1}
-                            value={quantity}
-                            onChange={event => setQuantity(event.target.value)}
+                        <OptionDropdown
+                            label='Orientación de almacenaje'
+                            value={storageOrientation}
+                            onChange={setStorageOrientation}
+                            options={orientations}
                         />
-                    </Field>
 
-                    <Field>
-                        <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
-                        <Input
-                            id='item-sku'
-                            value={sku}
-                            onChange={event => setSku(event.target.value)}
-                            placeholder='Opcional'
-                        />
-                    </Field>
+                        <Field>
+                            <FieldLabel>Tags</FieldLabel>
+                            <TagPicker
+                                workspaceId={location.workspace_id}
+                                value={tagIds}
+                                onChange={setTagIds}
+                            />
+                        </Field>
 
-                    <Field>
-                        <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
-                        <Input
-                            id='item-price'
-                            type='number'
-                            min={0}
-                            step='0.01'
-                            value={purchasePrice}
-                            onChange={event => setPurchasePrice(event.target.value)}
-                            placeholder='Opcional'
-                        />
-                    </Field>
+                        <Field orientation='horizontal'>
+                            <FieldLabel htmlFor='item-fragile' className='flex-1'>
+                                <WarningDiamondIcon className='text-muted-foreground' />
+                                Es frágil
+                            </FieldLabel>
+                            <Switch
+                                id='item-fragile'
+                                checked={isFragile}
+                                onCheckedChange={setIsFragile}
+                            />
+                        </Field>
 
-                    <Field>
-                        <FieldLabel>Fotos</FieldLabel>
-                        <PhotoGallery
-                            photos={itemPhotos.photos}
-                            pending={itemPhotos.pending}
-                            isProcessing={itemPhotos.isProcessing}
-                            onAddFiles={itemPhotos.addFiles}
-                            onRemove={itemPhotos.removePhoto}
-                        />
-                    </Field>
+                        <FieldError>{error}</FieldError>
+                    </FieldGroup>
 
-                    <OptionDropdown
-                        label='Condición'
-                        value={condition}
-                        onChange={setCondition}
-                        options={conditions}
-                    />
-
-                    <OptionDropdown
-                        label='Orientación de almacenaje'
-                        value={storageOrientation}
-                        onChange={setStorageOrientation}
-                        options={orientations}
-                    />
-
-                    <Field>
-                        <FieldLabel>Tags</FieldLabel>
-                        <TagPicker
-                            workspaceId={location.workspace_id}
-                            value={tagIds}
-                            onChange={setTagIds}
-                        />
-                    </Field>
-
-                    <Field orientation='horizontal'>
-                        <FieldLabel htmlFor='item-fragile' className='flex-1'>
-                            <WarningDiamondIcon className='text-muted-foreground' />
-                            Es frágil
-                        </FieldLabel>
-                        <Switch
-                            id='item-fragile'
-                            checked={isFragile}
-                            onCheckedChange={setIsFragile}
-                        />
-                    </Field>
-
-                    <FieldError>{error}</FieldError>
-                </FieldGroup>
-
-                <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
-                    <Button
-                        type='button'
-                        variant='ghost'
-                        disabled={isPending}
-                        onClick={handleDiscard}
-                        className='sm:mr-auto'
-                    >
-                        Terminar sin guardar
-                    </Button>
-                    <Button type='submit' variant='outline' disabled={isPending || !name.trim()}>
-                        {isPending && <Spinner data-icon='inline-start' />}
-                        Guardar y terminar
-                    </Button>
-                    <Button
-                        type='button'
-                        disabled={isPending || !name.trim()}
-                        onClick={handleSaveAndCreateAnother}
-                    >
-                        {isPending && <Spinner data-icon='inline-start' />}
-                        Guardar y crear otro
-                    </Button>
-                </div>
-            </form>
+                    <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
+                        <Button
+                            type='button'
+                            variant='ghost'
+                            disabled={isPending}
+                            onClick={handleDiscard}
+                            className='sm:mr-auto'
+                        >
+                            Terminar sin guardar
+                        </Button>
+                        <Button
+                            type='submit'
+                            variant='outline'
+                            disabled={isPending || !name.trim()}
+                        >
+                            {isPending && <Spinner data-icon='inline-start' />}
+                            Guardar y terminar
+                        </Button>
+                        <Button
+                            type='button'
+                            disabled={isPending || !name.trim()}
+                            onClick={handleSaveAndCreateAnother}
+                        >
+                            {isPending && <Spinner data-icon='inline-start' />}
+                            Guardar y crear otro
+                        </Button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

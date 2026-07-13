@@ -2,12 +2,28 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { TruckIcon, AirplaneTiltIcon } from '@phosphor-icons/react/ssr';
 import { Map, MapMarker, MarkerContent, MapRoute, MapArc, useMap } from '@/ui/map';
-import { MarkerPin } from '@/components/locations/marker-pin';
+import { MoveRouteMarker } from '@/components/moves/move-route-marker';
+import { DirectionArrow } from '@/components/moves/direction-arrow';
 import { landRouteQuery } from '@/queries/directions';
 import { useResolvedTheme } from '@/hooks/use-resolved-theme';
+import { getLocationIcon } from '@/helpers/location';
 
-const ROUTE_COLOR = '#6366f1';
+// Route color and mid-route vehicle marker both key off the move's status —
+// gray while still planning, blue once in transit (with a truck/plane
+// marker at the route midpoint), green once done.
+const ROUTE_COLOR_BY_STATUS = {
+    planning: '#64748b',
+    in_transit: '#3b82f6',
+    done: '#22c55e',
+};
+
+const ORIGIN_COLOR = '#3b82f6';
+const DESTINATION_COLOR = '#22c55e';
+
+const FIT_BOUNDS_PADDING = 32;
+const MARKER_CLICK_ZOOM = 14;
 
 const FitBounds = ({ points }) => {
     const { map, isLoaded } = useMap();
@@ -21,17 +37,40 @@ const FitBounds = ({ points }) => {
                 [Math.min(...lngs), Math.min(...lats)],
                 [Math.max(...lngs), Math.max(...lats)],
             ],
-            { padding: 64, duration: 0 },
+            { padding: FIT_BOUNDS_PADDING, duration: 0 },
         );
     }, [map, isLoaded, points]);
 
     return null;
 };
 
+// MoveRouteMap renders <Map> itself, so its own body isn't inside the map
+// context — this wraps a marker in a component that is, purely so its
+// onClick can flyTo (per MapMarker's own click-handler wiring in ui/map.jsx).
+const FlyToMarker = ({ longitude, latitude, children }) => {
+    const { map } = useMap();
+
+    return (
+        <MapMarker
+            longitude={longitude}
+            latitude={latitude}
+            onClick={() =>
+                map?.flyTo({
+                    center: [longitude, latitude],
+                    zoom: MARKER_CLICK_ZOOM,
+                    duration: 800,
+                })
+            }
+        >
+            {children}
+        </MapMarker>
+    );
+};
+
 // Route geometry is never stored (stuffbox-plan.md §4) — land routes are
 // fetched live from ORS on each render; air routes are a decorative arc
 // (MapArc's own bezier, not a true geodesic — good enough at this scale).
-export const MoveRouteMap = ({ origin, destination, routeType }) => {
+export const MoveRouteMap = ({ origin, destination, routeType, status = 'planning' }) => {
     const resolvedTheme = useResolvedTheme();
     const { data: routeCoordinates } = useQuery(
         landRouteQuery(
@@ -45,6 +84,13 @@ export const MoveRouteMap = ({ origin, destination, routeType }) => {
         zoom: 4,
     };
 
+    const routeColor = ROUTE_COLOR_BY_STATUS[status] ?? ROUTE_COLOR_BY_STATUS.planning;
+
+    const midpoint =
+        routeType === 'land' && routeCoordinates?.length > 0
+            ? routeCoordinates[Math.floor(routeCoordinates.length / 2)]
+            : [(origin.lng + destination.lng) / 2, (origin.lat + destination.lat) / 2];
+
     return (
         <div className='h-64 w-full overflow-hidden rounded-lg border' data-block='MoveRouteMap'>
             <Map viewport={center} attributionControl={false} theme={resolvedTheme}>
@@ -54,18 +100,30 @@ export const MoveRouteMap = ({ origin, destination, routeType }) => {
                         [destination.lng, destination.lat],
                     ]}
                 />
-                <MapMarker longitude={origin.lng} latitude={origin.lat}>
+                <FlyToMarker longitude={origin.lng} latitude={origin.lat}>
                     <MarkerContent>
-                        <MarkerPin color='bg-primary' />
+                        <MoveRouteMarker icon={getLocationIcon(origin)} variant='origin' />
                     </MarkerContent>
-                </MapMarker>
-                <MapMarker longitude={destination.lng} latitude={destination.lat}>
+                </FlyToMarker>
+                <FlyToMarker longitude={destination.lng} latitude={destination.lat}>
                     <MarkerContent>
-                        <MarkerPin color='bg-foreground' pulse={false} />
+                        <MoveRouteMarker
+                            icon={getLocationIcon(destination)}
+                            variant='destination'
+                        />
                     </MarkerContent>
-                </MapMarker>
+                </FlyToMarker>
+                {status === 'in_transit' && (
+                    <MapMarker longitude={midpoint[0]} latitude={midpoint[1]}>
+                        <MarkerContent>
+                            <div className='flex size-7 items-center justify-center rounded-full border-2 border-background bg-blue-500 text-background shadow-md shadow-black/30 [&_svg]:size-3.5'>
+                                {routeType === 'air' ? <AirplaneTiltIcon /> : <TruckIcon />}
+                            </div>
+                        </MarkerContent>
+                    </MapMarker>
+                )}
                 {routeType === 'land' && routeCoordinates && (
-                    <MapRoute coordinates={routeCoordinates} color={ROUTE_COLOR} />
+                    <MapRoute coordinates={routeCoordinates} color={routeColor} />
                 )}
                 {routeType === 'air' && (
                     <MapArc
@@ -76,7 +134,7 @@ export const MoveRouteMap = ({ origin, destination, routeType }) => {
                                 to: [destination.lng, destination.lat],
                             },
                         ]}
-                        paint={{ 'line-color': ROUTE_COLOR, 'line-dasharray': [2, 1.5] }}
+                        paint={{ 'line-color': routeColor, 'line-dasharray': [2, 1.5] }}
                     />
                 )}
             </Map>

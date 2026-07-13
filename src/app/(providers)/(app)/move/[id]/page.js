@@ -9,6 +9,7 @@ import {
     ArrowsLeftRightIcon,
     PackageIcon,
     PrinterIcon,
+    ArrowRightIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     moveQuery,
@@ -101,8 +102,10 @@ export default function MovePage({ params }) {
                     <h1 className='truncate font-heading text-lg leading-tight font-medium'>
                         {move.name}
                     </h1>
-                    <p className='truncate text-xs text-muted-foreground'>
-                        {move.origin?.name} → {move.destination?.name}
+                    <p className='flex items-center gap-1 truncate text-xs text-muted-foreground'>
+                        <span className='truncate'>{move.origin?.name}</span>
+                        <ArrowRightIcon className='size-3 shrink-0' />
+                        <span className='truncate'>{move.destination?.name}</span>
                     </p>
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
@@ -140,6 +143,7 @@ export default function MovePage({ params }) {
                     origin={move.origin}
                     destination={move.destination}
                     routeType={move.route_type}
+                    status={move.status}
                 />
             ) : (
                 <p className='rounded-lg border p-3 text-sm text-muted-foreground'>
@@ -157,7 +161,7 @@ export default function MovePage({ params }) {
             />
 
             {isEmpty ? (
-                <Empty className='flex-1' data-block='MovePackedEmpty'>
+                <Empty className='flex-1 -mt-16' data-block='MovePackedEmpty'>
                     <EmptyHeader>
                         <EmptyMedia variant='icon'>
                             <PackageIcon />

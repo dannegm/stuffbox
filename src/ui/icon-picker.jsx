@@ -29,6 +29,33 @@ const MAX_RESULTS = 120;
 const matchesQuery = (icon, q) =>
     icon.name.toLowerCase().includes(q) || icon.tags.some(tag => tag.includes(q));
 
+const iconKey = icon => `${icon.library}:${icon.name}`;
+
+const SuggestedIcons = ({ icons, onSelect }) => (
+    <div className='flex flex-col gap-1 border-b pb-2' data-block='SuggestedIcons'>
+        <span className='px-1 text-xs text-muted-foreground'>Sugeridos por tus tags</span>
+        <div className='flex flex-wrap gap-1 px-1'>
+            {icons.map(icon => (
+                <Tooltip key={iconKey(icon)}>
+                    <TooltipTrigger
+                        render={
+                            <button
+                                type='button'
+                                aria-label={icon.name}
+                                onClick={() => onSelect(icon)}
+                                className='flex size-9 items-center justify-center rounded-md text-foreground bg-muted/30 hover:bg-muted hover:scale-125 [&_svg]:size-4 transition-all'
+                            />
+                        }
+                    >
+                        <DynamicIcon icon={icon} />
+                    </TooltipTrigger>
+                    <TooltipContent>{icon.name}</TooltipContent>
+                </Tooltip>
+            ))}
+        </div>
+    </div>
+);
+
 const IconGrid = ({ library, query, onSelect }) => {
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -72,7 +99,7 @@ const IconGrid = ({ library, query, onSelect }) => {
     );
 };
 
-export const IconPicker = ({ value, onChange, children }) => {
+export const IconPicker = ({ value, onChange, children, suggestedIcons = [] }) => {
     const [open, setOpen] = useState(false);
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
@@ -82,10 +109,23 @@ export const IconPicker = ({ value, onChange, children }) => {
         setOpen(false);
     };
 
+    const uniqueSuggestions = useMemo(() => {
+        const seen = new Set();
+        return suggestedIcons.filter(icon => {
+            const key = iconKey(icon);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [suggestedIcons]);
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger render={children} />
             <PopoverContent className='w-96 gap-2 p-2' data-block='IconPicker'>
+                {uniqueSuggestions.length > 0 && !query.trim() && (
+                    <SuggestedIcons icons={uniqueSuggestions} onSelect={handleSelect} />
+                )}
                 <InputGroup>
                     <InputGroupAddon>
                         <MagnifyingGlassIcon />
