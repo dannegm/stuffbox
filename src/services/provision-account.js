@@ -1,5 +1,26 @@
 import { nanoid } from 'nanoid';
 
+const PENDING_IDENTITY_KEY = 'stuffbox:pending-identity';
+
+// Stashed by the login/invite pages right before signInWithOtp(), so the
+// pregenerated name/color/gender/avatar the user saw on the identity card
+// becomes their actual profile — read here regardless of which caller wins
+// the race between the page's own await and AuthProvider's automatic call.
+export const setPendingIdentity = identity => {
+    sessionStorage.setItem(PENDING_IDENTITY_KEY, JSON.stringify(identity));
+};
+
+const popPendingIdentity = () => {
+    const raw = sessionStorage.getItem(PENDING_IDENTITY_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(PENDING_IDENTITY_KEY);
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+};
+
 const CONDITION_OPTIONS = [
     'New',
     'Like new',
@@ -36,12 +57,14 @@ export const ensureAccountProvisioned = async (supabase, user) => {
         .maybeSingle();
 
     if (!profile) {
+        const pending = popPendingIdentity();
         await supabase.from('profiles').insert({
             uuid: user.id,
-            name: user.user_metadata?.name ?? user.email.split('@')[0],
+            name: pending?.name ?? user.email.split('@')[0],
             email: user.email,
-            gender: Math.random() < 0.5 ? 'male' : 'female',
-            avatar_seed: user.id,
+            gender: pending?.gender ?? (Math.random() < 0.5 ? 'male' : 'female'),
+            avatar_seed: pending?.avatarSeed ?? user.id,
+            ...(pending?.color ? { color: pending.color } : {}),
         });
     }
 
@@ -58,7 +81,7 @@ export const ensureAccountProvisioned = async (supabase, user) => {
 
     await supabase.from('workspaces').insert({
         id: workspaceId,
-        name: 'My workspace',
+        name: 'Mi espacio',
         owner_id: user.id,
     });
 

@@ -34,7 +34,7 @@ UI language **Spanish**. Code, identifiers, DB columns, comments **English**. No
 - **Server-side is used only where a secret must not reach the client:**
     - **R2 presign** (needs R2 secret key)
     - **AI box summary** (needs LLM API key)
-      These are **Route Handlers** (`app/api/.../route.js`). Everything else is client-side. If either ever outgrows Vercel's free limits, move it to a serverless worker outside Vercel (e.g. Cloudflare, co-located with R2 for zero egress) or the old `endpoints` repo — documented escape hatch, not the main path.
+      These are **Route Handlers** (`src/app/api/.../route.js`). Everything else is client-side. If either ever outgrows Vercel's free limits, move it to a serverless worker outside Vercel (e.g. Cloudflare, co-located with R2 for zero egress) or the old `endpoints` repo — documented escape hatch, not the main path.
 - **PDF generation: 100% client-side** (`@react-pdf/renderer` `pdf().toBlob()`), so zero serverless cost for labels. **QR: client-side** (`qrcode`).
 - **State:** TanStack Query for everything (loading/error/caching/invalidation). No RSC data loading.
 - **Freshness (no realtime):** TanStack Query refetch — `refetchOnWindowFocus`, refetch on relevant interactions and after mutations, manual refresh buttons (bins' `RefreshCw` pattern). No Yjs, no Supabase Realtime subscriptions.
@@ -52,7 +52,7 @@ if (!mounted) return null   // or a skeleton
 return children
 ```
 
-- The root `app/layout.js` is the only real Server Component — minimal, just `<html><body>{children}</body></html>`.
+- The root `src/app/layout.js` is the only real Server Component — minimal, just `<html><body>{children}</body></html>`.
 - Immediately inside, a `'use client'` provider wrapper mounted-gated as above holds **all** providers: `QueryProvider` → `NuqsAdapter` → `BusProvider` → `DeviceProvider` → `AuthProvider`. Everything below is client by inheritance.
 - Cost (accepted): gated subtree isn't in initial HTML (skeleton until hydrate), and no SEO there — irrelevant for an inventory app behind login.
 
@@ -79,7 +79,7 @@ return children
 - JS only, no `.ts`/`.tsx`, no JSDoc types. `export const` for everything.
 - `useRef` vars: `$` prefix, no `Ref` suffix. `async/await`, never `.then()`.
 - kebab-case files/folders. Components PascalCase, hooks camelCase `use…`.
-- `src/components/` (domain-subfoldered), `src/ui/` (flat primitives), `src/helpers/` (not `lib/`; `cn()` at `src/helpers/utils.js`), `src/hooks/`, `src/constants/`, `src/queries/`, `src/providers/`. Routes under `app/`.
+- `src/components/` (domain-subfoldered), `src/ui/` (flat primitives), `src/helpers/` (not `lib/`; `cn()` at `src/helpers/utils.js`), `src/hooks/`, `src/constants/`, `src/queries/`, `src/providers/`. Routes under `src/app/` (everything, routes included, lives under `src/`).
 - Event bus (`BusProvider`: `useEvents`/`useListener`/`useEmitter`) instead of prop drilling — used for the select→picker→confirm flow (§7).
 - `cn()` with objects for conditional classes, never ternaries, never template-literal class strings.
 - Runtime values via CSS custom properties + Tailwind var syntax (`bg-(--x)` + `style={{ '--x': v }}`), never `style={{ color }}`.
@@ -227,7 +227,7 @@ The most important component. Pack, unpack, transfer, and bulk are one UI shape 
 
 **Labels (builder → client-side PDF)** — two-step builder: (1) select what's packed in the move; (2) select which of those get a printed label (skip nested boxes). One multi-page **A4** PDF, white bg / black content, **2×3 grid** (~90×90mm cells), QR ~4cm. Per label: QR (always) + name + summary (only when the 4+ rule fires; else nothing) + fragile icon (red, bold) + orientation icon (black, always up). Generated **client-side** (`@react-pdf/renderer` `pdf().toBlob()`), QR client-side (`qrcode`). Three actions on the same bytes: **imprimir** (open blob → native print), **descargar** (download), **enviar por correo** (this one needs a Route Handler + Resend, since email sending isn't client-side; it's the only label path touching the server).
 
-**Collaborators** — owner generates a shareable invite **link** (configurable `max_uses` default 1, `expires_at` default +1 week); no email flow. `app/invite/[token]` landing is read-only (bot-safe); "Unirse" runs the claim (after login/signup if needed). Owner removes members at will. Workspaces private to owner/members (RLS).
+**Collaborators** — owner generates a shareable invite **link** (configurable `max_uses` default 1, `expires_at` default +1 week); no email flow. `src/app/invite/[token]` landing is read-only (bot-safe); "Unirse" runs the claim (after login/signup if needed). Owner removes members at will. Workspaces private to owner/members (RLS).
 
 **Settings (bins pattern: stacked sections + side nav, danger zone last)** — identity/profile (name; avatar gender/seed/color random@signup, editable), appearance (theme/dark), workspace settings, **"Optimizar almacenamiento"** button. 5-level settings (env < app < workspace < user < localStorage); local level via the `settings` service. Cascade deferred to first real conflict.
 
@@ -255,34 +255,35 @@ POST /api/labels/email       # Resend key → email the client-built PDF (client
 
 If any outgrows Vercel free limits → move to a serverless worker outside Vercel (Cloudflare near R2, or the old `endpoints` repo at `/Users/danielgarcia/Desktop/Workspace/endpoints`). Documented escape hatch, not the plan.
 
-Deep links from QR: `app/i/[id]` → item, `app/l/[id]` → location (thin client redirects into the detail views).
+Deep links from QR: `src/app/i/[id]` → item, `src/app/l/[id]` → location (thin client redirects into the detail views).
 
 ---
 
-## 11. Routes (App Router, `app/`)
+## 11. Routes (App Router, `src/app/` — Next's `src/` dir convention, everything including routes lives under `src/`)
 
 ```
-app/layout.js            # ONLY server component: minimal <html><body>
-app/(providers)          # 'use client' ClientComponent wrapper + all providers (mounted-gate)
-app/page.js              # dashboard: default workspace → default house
-app/login/page.js        # signup/login (Supabase Auth)
-app/invite/[token]/page.js  # read-only landing; "Unirse" claims
-app/workspace/[id]/page.js  # workspace / house browser (core view)
-app/location/[id]/page.js   # location contents + transfer UI
-app/item/[id]/page.js       # item detail
-app/moves/page.js           # move list
-app/move/[id]/page.js       # move planner: map + route + pack/unpack + label builder
-app/settings/page.js        # stacked sections + side nav
-app/admin/page.js           # redirect → /admin/workspaces
-app/admin/workspaces/page.js
-app/admin/users/page.js
-app/i/[id]/page.js          # QR deep link → item redirect
-app/l/[id]/page.js          # QR deep link → location redirect
-app/api/uploads/presign/route.js
-app/api/uploads/optimize/route.js
-app/api/summary/route.js
-app/api/labels/email/route.js
-middleware.js               # Supabase session refresh
+src/app/layout.js            # ONLY server component: minimal <html><body>
+src/app/(providers)          # 'use client' ClientComponent wrapper + all providers (mounted-gate)
+src/app/page.js              # dashboard: default workspace → default house
+src/app/login/page.js        # returning user only — no identity tag, just email + code
+src/app/register/page.js     # new account — editable identity tag (name/avatar) + email + code
+src/app/invite/[token]/page.js  # read-only landing; identity tag if no session, else just "Unirse"
+src/app/workspace/[id]/page.js  # workspace / house browser (core view)
+src/app/location/[id]/page.js   # location contents + transfer UI
+src/app/item/[id]/page.js       # item detail
+src/app/moves/page.js           # move list
+src/app/move/[id]/page.js       # move planner: map + route + pack/unpack + label builder
+src/app/settings/page.js        # stacked sections + side nav
+src/app/admin/page.js           # redirect → /admin/workspaces
+src/app/admin/workspaces/page.js
+src/app/admin/users/page.js
+src/app/i/[id]/page.js          # QR deep link → item redirect
+src/app/l/[id]/page.js          # QR deep link → location redirect
+src/app/api/uploads/presign/route.js
+src/app/api/uploads/optimize/route.js
+src/app/api/summary/route.js
+src/app/api/labels/email/route.js
+src/proxy.js                 # Supabase session refresh (Next's proxy convention, formerly middleware.js)
 ```
 
 Design language: shadcn/Base-UI minimalist baseline, with **"modern skeuomorphism"** reserved for the pack/unpack moment (a box that opens/closes as the packing affordance) — everything else flat and quiet (frontend-design skill's "one signature element"). Default entity icons (Lucide, editable): house→`Home`, room→`DoorOpen`, box→`Box`, shelf/library→`Library`, closet→`Shirt`, drawer→`Archive`, warehouse→`Warehouse`, kitchen→`UtensilsCrossed`, bathroom→`Bath`, office→`Briefcase`, garage→`Car`; fallbacks: location→`Folder`, item→`Package2`, tag→`Tag`.

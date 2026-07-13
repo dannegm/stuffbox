@@ -45,9 +45,9 @@ Effectively an SPA: Next.js (latest, App Router) is the bundler + host; **Vercel
 - **State:** TanStack Query for all server state (no RSC data loading). **Freshness, not realtime:** refetch on window focus / relevant interactions / after mutations, plus manual refresh buttons — no Yjs, no Supabase Realtime.
 - **URL state:** nuqs (filters, sort, pagination, panel state).
 
-### The `<ClientComponent>` wrapper (critical, read before touching `app/layout.js` or providers)
+### The `<ClientComponent>` wrapper (critical, read before touching `src/app/layout.js` or providers)
 
-`'use client'` alone does not skip SSR — a client component still pre-renders on the server and hydrates, which is where hydration errors come from. `app/layout.js` is the **only** real Server Component (minimal `<html><body>{children}</body></html>`). Immediately inside it, a `'use client'` provider wrapper, mounted-gated (`useState`+`useEffect` gate returning `null` until mounted), holds **all** providers: `QueryProvider` → `NuqsAdapter` → `BusProvider` → `DeviceProvider` → `DebugProvider` → `ThemeProvider` → `AuthProvider`. Everything below is client-only by inheritance. Accepted cost: the gated subtree isn't in initial HTML (skeleton until hydrate) — fine, since this is an inventory app behind login with no SEO surface.
+`'use client'` alone does not skip SSR — a client component still pre-renders on the server and hydrates, which is where hydration errors come from. `src/app/layout.js` is the **only** real Server Component (minimal `<html><body>{children}</body></html>`). Immediately inside it, a `'use client'` provider wrapper, mounted-gated (`useState`+`useEffect` gate returning `null` until mounted), holds **all** providers: `QueryProvider` → `NuqsAdapter` → `BusProvider` → `DeviceProvider` → `DebugProvider` → `ThemeProvider` → `AuthProvider`. Everything below is client-only by inheritance. Accepted cost: the gated subtree isn't in initial HTML (skeleton until hydrate) — fine, since this is an inventory app behind login with no SEO surface.
 
 ## Stack
 
@@ -58,7 +58,7 @@ Plain JavaScript (JSX) — **no TypeScript, ever**; convert any `.tsx` registry 
 - JS only, no `.ts`/`.tsx`, no JSDoc types. `export const` for everything.
 - `useRef` vars: `$` prefix, no `Ref` suffix. `async/await`, never `.then()`.
 - kebab-case files/folders. Components PascalCase, hooks camelCase `use…`.
-- Layout: `src/components/` (domain-subfoldered), `src/ui/` (flat primitives), `src/helpers/` (pure functions only, not `lib/`; `cn()` at `src/helpers/utils.js`), `src/services/` (stateful/side-effecting modules — see Services pattern below), `src/hooks/`, `src/constants/`, `src/queries/` (TanStack Query factories, per-entity CRUD), `src/providers/`, `src/css/` (Tailwind v4 `@custom-variant` files). Routes under `app/`.
+- Layout: `src/components/` (domain-subfoldered), `src/ui/` (flat primitives), `src/helpers/` (pure functions only, not `lib/`; `cn()` at `src/helpers/utils.js`), `src/services/` (stateful/side-effecting modules — see Services pattern below), `src/hooks/`, `src/constants/`, `src/queries/` (TanStack Query factories, per-entity CRUD), `src/providers/`, `src/css/` (Tailwind v4 `@custom-variant` files). Routes under `src/app/` (Next's `src/` dir convention — everything, routes included, lives under `src/`).
 - Event bus (`BusProvider`: `useEvents`/`useListener`/`useEmitter`) instead of prop drilling — this is how the select→picker→confirm flow (LocationPicker) communicates across the tree.
 - `cn()` with objects for conditional classes — never ternaries, never template-literal class strings.
 - Runtime values via CSS custom properties + Tailwind var syntax (`bg-(--x)` + `style={{ '--x': v }}`) — never `style={{ color }}`.
