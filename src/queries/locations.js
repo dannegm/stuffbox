@@ -44,7 +44,7 @@ export const locationAncestorsQuery = (parentId, opts = {}) => ({
         while (currentId) {
             const { data, error } = await supabase()
                 .from('locations')
-                .select('id, name, type, parent_id')
+                .select('id, name, type, icon, parent_id')
                 .eq('id', currentId)
                 .single();
             if (error) throw error;
@@ -83,6 +83,31 @@ export const createLocationMutation = (opts = {}) => ({
             .single();
         if (error) throw error;
         return data;
+    },
+    ...opts,
+});
+
+export const updateLocationMutation = (opts = {}) => ({
+    mutationFn: async ({ id, name, type }) => {
+        const { data, error } = await supabase()
+            .from('locations')
+            .update({ name, type })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
+// Cascades to every descendant location and item (db.sql: parent_id/location_id
+// both `on delete cascade`) — the caller is responsible for warning about that.
+export const deleteLocationMutation = (opts = {}) => ({
+    mutationFn: async id => {
+        const { error } = await supabase().from('locations').delete().eq('id', id);
+        if (error) throw error;
+        return id;
     },
     ...opts,
 });

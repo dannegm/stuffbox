@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
 import { ScrollArea } from '@/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { PHOSPHOR_ICONS } from '@/constants/phosphor-icons';
 import { HUGE_ICONS } from '@/constants/huge-icons';
@@ -42,15 +43,30 @@ const IconGrid = ({ library, query, onSelect }) => {
     return (
         <div className='grid grid-cols-6 gap-1 p-1'>
             {results.map(icon => (
-                <button
-                    key={icon.name}
-                    type='button'
-                    aria-label={icon.name}
-                    onClick={() => onSelect({ library: library.value, name: icon.name })}
-                    className="flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted [&_svg:not([class*='size-'])]:size-4"
-                >
-                    <DynamicIcon icon={{ library: library.value, name: icon.name }} />
-                </button>
+                <Tooltip key={icon.name}>
+                    <TooltipTrigger
+                        render={
+                            <button
+                                type='button'
+                                aria-label={icon.name}
+                                onClick={() =>
+                                    onSelect({ library: library.value, name: icon.name })
+                                }
+                                className="flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted [&_svg:not([class*='size-'])]:size-4"
+                            />
+                        }
+                    >
+                        <DynamicIcon icon={{ library: library.value, name: icon.name }} />
+                    </TooltipTrigger>
+                    <TooltipContent className='flex flex-col items-center gap-0.5 text-center'>
+                        <span>{icon.name}</span>
+                        {icon.tags.length > 0 && (
+                            <span className='text-[10px] text-background/70'>
+                                {icon.tags.join(', ')}
+                            </span>
+                        )}
+                    </TooltipContent>
+                </Tooltip>
             ))}
         </div>
     );

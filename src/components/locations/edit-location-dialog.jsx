@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ResponsiveDialog,
@@ -8,36 +8,46 @@ import {
     ResponsiveDialogFooter,
     ResponsiveDialogHeader,
     ResponsiveDialogTitle,
-    ResponsiveDialogTrigger,
 } from '@/ui/responsive-dialog';
 import { SelectSearch } from '@/ui/select-search';
+import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
-import { DynamicIcon } from '@/ui/dynamic-icon';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
-import { createLocationMutation } from '@/queries/locations';
+import { updateLocationMutation } from '@/queries/locations';
 
-const FORM_ID = 'create-location-form';
+const FORM_ID = 'edit-location-form';
 
-// Shared by the workspace page (creating houses, parentId null) and the
-// location page (creating children) — same insert, only parentId changes.
-export const CreateLocationDialog = ({ workspaceId, parentId = null, title, children }) => {
+// Controlled from the outside (no trigger of its own) — this is opened from
+// a DropdownMenuItem, and nesting a dialog trigger inside a menu item races
+// with the menu's own close-on-click (same reasoning as the workspace
+// switcher's "crear nuevo").
+export const EditLocationDialog = ({ location, open, onOpenChange }) => {
     const queryClient = useQueryClient();
-    const [open, setOpen] = useState(false);
-    const [name, setName] = useState('');
-    const [type, setType] = useState(LOCATION_TYPE_PRESETS[0]);
+    const [name, setName] = useState(location.name);
+    const [type, setType] = useState(location.type);
     const [error, setError] = useState(null);
 
+    // Re-sync from the (possibly stale-closed) location whenever the dialog
+    // reopens, rather than trying to keep local state live the whole time.
+    useEffect(() => {
+        if (!open) return;
+        setName(location.name);
+        setType(location.type);
+        setError(null);
+    }, [open, location]);
+
     const { mutate, isPending } = useMutation(
-        createLocationMutation({
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['locations', workspaceId, parentId] });
-                setName('');
-                setType(LOCATION_TYPE_PRESETS[0]);
-                setError(null);
-                setOpen(false);
+        updateLocationMutation({
+            onSuccess: updated => {
+                queryClient.setQueryData(['location', updated.id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, updated.parent_id],
+                });
+                queryClient.invalidateQueries({ queryKey: ['location-ancestors'] });
+                onOpenChange(false);
             },
             onError: err => setError(err.message),
         }),
@@ -46,26 +56,24 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
-        mutate({ workspaceId, parentId, name: name.trim(), type });
+        mutate({ id: location.id, name: name.trim(), type });
     };
 
     return (
-        <ResponsiveDialog open={open} onOpenChange={setOpen}>
-            <ResponsiveDialogTrigger render={children} />
-            <ResponsiveDialogContent data-block='CreateLocationDialog'>
+        <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+            <ResponsiveDialogContent data-block='EditLocationDialog'>
                 <ResponsiveDialogHeader>
-                    <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+                    <ResponsiveDialogTitle>Editar</ResponsiveDialogTitle>
                 </ResponsiveDialogHeader>
                 <form id={FORM_ID} onSubmit={handleSubmit} className='px-4 sm:px-0 sm:pt-0 sm:pb-0'>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor='location-name'>Nombre</FieldLabel>
+                            <FieldLabel htmlFor='edit-location-name'>Nombre</FieldLabel>
                             <Input
-                                id='location-name'
+                                id='edit-location-name'
                                 autoFocus
                                 value={name}
                                 onChange={event => setName(event.target.value)}
-                                placeholder='Ej. Casa principal'
                             />
                         </Field>
                         <Field data-invalid={!!error}>
@@ -91,7 +99,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                 <ResponsiveDialogFooter>
                     <Button type='submit' form={FORM_ID} disabled={isPending || !name.trim()}>
                         {isPending && <Spinner data-icon='inline-start' />}
-                        Crear
+                        Guardar
                     </Button>
                 </ResponsiveDialogFooter>
             </ResponsiveDialogContent>

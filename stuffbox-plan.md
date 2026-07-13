@@ -274,7 +274,8 @@ src/app/(providers)/(app)/layout.js     # SidebarProvider + AppSidebar + Sidebar
   workspace/[id]/page.js                # workspace / house browser (core view)
   location/[id]/page.js                 # location contents + transfer UI
   house/new/page.js                     # dedicated route (not a dialog) — name/type/icon/lat+lng map picker for a root location; child locations (room/box/etc.) still use CreateLocationDialog
-  item/[id]/page.js                     # item detail
+  item/new/page.js                      # create item (MVP field set: name/description/quantity/condition/orientation/fragile/icon — no photos/tags/serial/price/acquired-date/sentimental-value yet, "guardar y crear otro" toggle)
+  item/[id]/page.js                     # item detail (read-only for now — no edit/delete yet)
   moves/page.js                         # move list (placeholder until the Moves feature lands)
   move/[id]/page.js                     # move planner: map + route + pack/unpack + label builder
   settings/page.js                      # stacked sections + side nav (placeholder until the Settings feature lands)

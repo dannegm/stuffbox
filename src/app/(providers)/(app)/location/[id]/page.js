@@ -1,16 +1,28 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { PlusIcon } from '@phosphor-icons/react/ssr';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+    PlusIcon,
+    DotsThreeVerticalIcon,
+    PencilSimpleIcon,
+    TrashIcon,
+} from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
-import { locationQuery, locationChildrenQuery, locationAncestorsQuery } from '@/queries/locations';
+import {
+    locationQuery,
+    locationChildrenQuery,
+    locationAncestorsQuery,
+    deleteLocationMutation,
+} from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
+import { EditLocationDialog } from '@/components/locations/edit-location-dialog';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
@@ -18,6 +30,12 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Separator } from '@/ui/separator';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/ui/dropdown-menu';
 
 const Loading = () => (
     <div className='flex flex-1 items-center justify-center' data-block='LocationLoading'>
@@ -28,7 +46,9 @@ const Loading = () => (
 export default function LocationPage({ params }) {
     const { id } = use(params);
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const [editOpen, setEditOpen] = useState(false);
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -51,6 +71,30 @@ export default function LocationPage({ params }) {
         itemsAtLocationQuery(id, { enabled: !!location }),
     );
 
+    const { mutate: destroy } = useMutation(
+        deleteLocationMutation({
+            onSuccess: () => {
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', location?.workspace_id, location?.parent_id],
+                });
+                router.replace(
+                    location?.parent_id
+                        ? `/location/${location.parent_id}`
+                        : `/workspace/${location?.workspace_id}`,
+                );
+            },
+        }),
+    );
+
+    const handleDelete = () => {
+        const warning =
+            children?.length || items?.length
+                ? `"${location.name}" tiene ${children.length} location(s) y ${items.length} item(s) dentro. Se eliminará todo. ¿Continuar?`
+                : `¿Eliminar "${location.name}"? Esto no se puede deshacer.`;
+        if (!window.confirm(warning)) return;
+        destroy(id);
+    };
+
     if (
         isAuthLoading ||
         !user ||
@@ -71,6 +115,7 @@ export default function LocationPage({ params }) {
                 workspace={workspace}
                 ancestors={ancestors ?? []}
                 current={location}
+                currentIcon={getLocationIcon(location)}
             />
 
             <div className='flex items-center justify-between gap-2'>
@@ -87,17 +132,44 @@ export default function LocationPage({ params }) {
                         </p>
                     </div>
                 </div>
-                <CreateLocationDialog
-                    workspaceId={location.workspace_id}
-                    parentId={id}
-                    title='Agregar dentro'
-                >
-                    <Button size='sm' variant='outline'>
+                <div className='flex shrink-0 items-center gap-2'>
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        render={<Link href={`/item/new?location=${id}`} />}
+                    >
                         <PlusIcon data-icon='inline-start' />
-                        Agregar
+                        Item
                     </Button>
-                </CreateLocationDialog>
+                    <CreateLocationDialog
+                        workspaceId={location.workspace_id}
+                        parentId={id}
+                        title='Agregar dentro'
+                    >
+                        <Button size='sm' variant='outline'>
+                            <PlusIcon data-icon='inline-start' />
+                            Location
+                        </Button>
+                    </CreateLocationDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger render={<Button size='icon-sm' variant='outline' />}>
+                            <DotsThreeVerticalIcon />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align='end'>
+                            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                                <PencilSimpleIcon />
+                                Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                <TrashIcon />
+                                Eliminar
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
+
+            <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />
 
             {isEmpty ? (
                 <Empty className='flex-1' data-block='LocationEmpty'>

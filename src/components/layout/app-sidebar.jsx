@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HouseIcon, TruckIcon, GearIcon } from '@phosphor-icons/react/ssr';
+import { TruckIcon, GearIcon } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
     SidebarContent,
@@ -15,11 +15,11 @@ import {
     SidebarSeparator,
 } from '@/ui/sidebar';
 import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher';
+import { HousesNav } from '@/components/layout/houses-nav';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
 
 const NAV_ITEMS = [
-    { href: '/', label: 'Casas', icon: HouseIcon, match: /^\/$|^\/(workspace|location)(\/|$)/ },
     { href: '/moves', label: 'Mudanzas', icon: TruckIcon, match: /^\/moves(\/|$)/ },
     { href: '/settings', label: 'Ajustes', icon: GearIcon, match: /^\/settings(\/|$)/ },
 ];
@@ -33,6 +33,7 @@ export const AppSidebar = () => {
                 <WorkspaceSwitcher />
             </SidebarHeader>
             <SidebarContent>
+                <HousesNav />
                 <SidebarGroup>
                     <SidebarMenu>
                         {NAV_ITEMS.map(item => (

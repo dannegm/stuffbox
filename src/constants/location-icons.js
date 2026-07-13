@@ -3,6 +3,11 @@
 export const DEFAULT_LOCATION_ICONS = {
     house: { library: 'phosphor', name: 'HouseIcon' },
     room: { library: 'phosphor', name: 'DoorOpenIcon' },
+    bedroom: { library: 'phosphor', name: 'BedIcon' },
+    livingroom: { library: 'phosphor', name: 'CouchIcon' },
+    diningroom: { library: 'huge', name: 'RestaurantTableIcon' },
+    // Videogame consoles, billiards, game zones.
+    gameroom: { library: 'phosphor', name: 'GameControllerIcon' },
     box: { library: 'phosphor', name: 'PackageIcon' },
     shelf: { library: 'phosphor', name: 'BooksIcon' },
     library: { library: 'phosphor', name: 'BooksIcon' },
@@ -11,8 +16,16 @@ export const DEFAULT_LOCATION_ICONS = {
     warehouse: { library: 'phosphor', name: 'WarehouseIcon' },
     kitchen: { library: 'phosphor', name: 'ForkKnifeIcon' },
     bathroom: { library: 'phosphor', name: 'BathtubIcon' },
+    // Laundry, maintenance, cleaning, linen room.
+    utility: { library: 'phosphor', name: 'WashingMachineIcon' },
     office: { library: 'phosphor', name: 'BriefcaseIcon' },
+    // Music/nail/art studio, workshop, general "make stuff" space.
+    studio: { library: 'phosphor', name: 'PaletteIcon' },
     garage: { library: 'phosphor', name: 'GarageIcon' },
+    outdoor: { library: 'phosphor', name: 'ParkIcon' },
+    // Transition zone, hallway, entryway, corridor.
+    hallway: { library: 'phosphor', name: 'FootprintsIcon' },
+    other: { library: 'phosphor', name: 'DotsThreeIcon' },
 };
 
 export const FALLBACK_LOCATION_ICON = { library: 'phosphor', name: 'FolderIcon' };

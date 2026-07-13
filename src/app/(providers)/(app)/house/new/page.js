@@ -3,15 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { createLocationMutation } from '@/queries/locations';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
@@ -94,32 +88,20 @@ export default function NewHousePage() {
 
                     <Field>
                         <FieldLabel>Tipo</FieldLabel>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={
-                                    <Button
-                                        type='button'
-                                        variant='outline'
-                                        className='w-full justify-between capitalize'
-                                    />
-                                }
-                            >
-                                {type}
-                                <CaretUpDownIcon className='text-muted-foreground' />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className='w-56'>
-                                {ROOT_LOCATION_TYPE_PRESETS.map(preset => (
-                                    <DropdownMenuItem
-                                        key={preset}
-                                        className='capitalize'
-                                        onClick={() => setType(preset)}
-                                    >
-                                        <DynamicIcon icon={DEFAULT_LOCATION_ICONS[preset]} />
-                                        {preset}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <SelectSearch
+                            options={ROOT_LOCATION_TYPE_PRESETS}
+                            value={type}
+                            onChange={setType}
+                            getKey={preset => preset}
+                            getLabel={preset => preset}
+                            searchPlaceholder='Buscar tipo'
+                            renderOption={preset => (
+                                <>
+                                    <DynamicIcon icon={DEFAULT_LOCATION_ICONS[preset]} />
+                                    <span className='capitalize'>{preset}</span>
+                                </>
+                            )}
+                        />
                     </Field>
 
                     <Field data-invalid={!!error}>
