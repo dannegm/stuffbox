@@ -77,7 +77,7 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect, quic
         onOpenChange(false);
     };
     const handleQuickSelect = () => {
-        onSelect(quickDestination.id);
+        onSelect(quickDestination?.id);
         onOpenChange(false);
     };
 
