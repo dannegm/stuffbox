@@ -5,6 +5,7 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
+import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { cn } from '@/helpers/utils';
 
 // Below this many options, scanning by eye beats typing — the search box
@@ -37,6 +38,7 @@ export const SelectSearch = ({
 }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const focusRef = useFocusWithoutScroll();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -87,7 +89,7 @@ export const SelectSearch = ({
                             <MagnifyingGlassIcon />
                         </InputGroupAddon>
                         <InputGroupInput
-                            autoFocus
+                            ref={focusRef}
                             value={query}
                             onChange={event => setQuery(event.target.value)}
                             placeholder={searchPlaceholder}

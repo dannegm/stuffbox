@@ -11,6 +11,7 @@ import { Button } from '@/ui/button';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { tagsQuery } from '@/queries/tags';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
+import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { cn } from '@/helpers/utils';
 
 // Standalone from TagPicker (src/components/items/tag-picker.jsx) on purpose —
@@ -25,6 +26,7 @@ const NAME_LIMIT = 2;
 export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const focusRef = useFocusWithoutScroll();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId, { enabled: !!workspaceId }));
 
     const results = useMemo(() => {
@@ -83,7 +85,7 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
                         <MagnifyingGlassIcon />
                     </InputGroupAddon>
                     <InputGroupInput
-                        autoFocus
+                        ref={focusRef}
                         value={query}
                         onChange={event => setQuery(event.target.value)}
                         placeholder='Buscar tag'

@@ -7,6 +7,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { Button } from '@/ui/button';
+import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { cn } from '@/helpers/utils';
 
 // Generic multi-select popover filter — backs the type/casa filters on the
@@ -31,6 +32,7 @@ export const MultiSelectFilter = ({
 }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const focusRef = useFocusWithoutScroll();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -90,7 +92,7 @@ export const MultiSelectFilter = ({
                         <MagnifyingGlassIcon />
                     </InputGroupAddon>
                     <InputGroupInput
-                        autoFocus
+                        ref={focusRef}
                         value={query}
                         onChange={event => setQuery(event.target.value)}
                         placeholder={searchPlaceholder}

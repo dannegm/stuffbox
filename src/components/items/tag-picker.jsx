@@ -9,12 +9,14 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { tagsQuery } from '@/queries/tags';
+import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 
 // Multi-select over pre-created tags only — tags are managed as their own
 // entity from /tags (name/color/icon, full CRUD), not created ad hoc here.
 export const TagPicker = ({ workspaceId, value = [], onChange }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const focusRef = useFocusWithoutScroll();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId));
 
     const toggle = tagId => {
@@ -53,7 +55,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
             <PopoverContent className='w-64 gap-2 p-2' align='start'>
                 <InputGroup>
                     <InputGroupInput
-                        autoFocus
+                        ref={focusRef}
                         value={query}
                         onChange={event => setQuery(event.target.value)}
                         placeholder='Buscar tag'

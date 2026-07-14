@@ -80,7 +80,7 @@ export const LocationBreadcrumb = ({
             </Crumb>
         ))}
 
-        <span className={cn('flex min-w-0 shrink items-center gap-1')}>
+        <span className={cn('flex sm:hidden min-w-0 shrink items-center gap-1')}>
             <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
             <DotsThreeIcon className='size-4 shrink-0' />
         </span>
