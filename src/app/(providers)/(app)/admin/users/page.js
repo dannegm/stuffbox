@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/services/supabase';
 import { setSuperAdminMutation } from '@/queries/profiles';
+import { useConfirm } from '@/hooks/use-confirm';
 import { getAvatarUrl } from '@/helpers/avatar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/ui/table';
@@ -105,6 +106,7 @@ const TableSkeletonRows = ({ rows = 6 }) => (
 export default function AdminUsersPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''));
     const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
     const [sortBy, setSortBy] = useQueryState(
@@ -133,12 +135,13 @@ export default function AdminUsersPage() {
         setPage(1);
     };
 
-    const handleToggleAdmin = profile => {
+    const handleToggleAdmin = async profile => {
         const next = !profile.is_super_admin;
-        const message = next
+        const title = next
             ? `¿Hacer admin a "${profile.name}"?`
             : `¿Quitarle admin a "${profile.name}"?`;
-        if (!window.confirm(message)) return;
+        const ok = await confirm({ title, confirmLabel: next ? 'Hacer admin' : 'Quitar admin' });
+        if (!ok) return;
         toggleAdmin({ id: profile.uuid, isSuperAdmin: next });
     };
 

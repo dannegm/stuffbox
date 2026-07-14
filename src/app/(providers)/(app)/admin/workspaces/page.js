@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { supabase } from '@/services/supabase';
 import { deleteWorkspaceMutation } from '@/queries/workspaces';
+import { useConfirm } from '@/hooks/use-confirm';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/ui/table';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
@@ -104,6 +105,7 @@ const TableSkeletonRows = ({ rows = 6 }) => (
 
 export default function AdminWorkspacesPage() {
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''));
     const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
     const [sortBy, setSortBy] = useQueryState(
@@ -132,14 +134,14 @@ export default function AdminWorkspacesPage() {
         setPage(1);
     };
 
-    const handleDelete = workspace => {
-        if (
-            !window.confirm(
-                `¿Eliminar "${workspace.name}"? Se borra todo lo que contiene. Esto no se puede deshacer.`,
-            )
-        ) {
-            return;
-        }
+    const handleDelete = async workspace => {
+        const ok = await confirm({
+            title: `¿Eliminar "${workspace.name}"?`,
+            description: 'Se borra todo lo que contiene. Esto no se puede deshacer.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         destroy(workspace.id);
     };
 

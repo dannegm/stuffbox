@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { WarningIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { useConfirm } from '@/hooks/use-confirm';
 import {
     locationQuery,
     locationAncestorsQuery,
@@ -52,6 +53,7 @@ export default function LocationEditPage({ params }) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const confirm = useConfirm();
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -143,8 +145,14 @@ export default function LocationEditPage({ params }) {
         });
     };
 
-    const handleDelete = () => {
-        if (!window.confirm(`¿Eliminar "${location?.name}"? Esto no se puede deshacer.`)) return;
+    const handleDelete = async () => {
+        const ok = await confirm({
+            title: `¿Eliminar "${location?.name}"?`,
+            description: 'Esto no se puede deshacer.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         destroy(id);
     };
 

@@ -10,6 +10,7 @@ import { DeviceProvider } from './device-provider';
 import { DebugProvider } from './debug-provider';
 import { ThemeProvider } from './theme-provider';
 import { AuthProvider } from './auth-provider';
+import { ConfirmProvider } from './confirm-provider';
 
 // 'use client' alone doesn't skip SSR — a client component still pre-renders
 // on the server and hydrates, which is where hydration errors come from.
@@ -31,6 +32,7 @@ const AppProviders = createProviders([
     [ThemeProvider],
     [AuthProvider],
     [TooltipProvider],
+    [ConfirmProvider],
 ]);
 
 export const Providers = ({ children }) => (

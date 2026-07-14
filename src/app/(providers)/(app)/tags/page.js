@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react/ssr';
 import { TagIcon, TagsIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
+import { useConfirm } from '@/hooks/use-confirm';
 import { workspacesQuery } from '@/queries/workspaces';
 import { tagsQuery, deleteTagMutation } from '@/queries/tags';
 import { TagDialog } from '@/components/tags/tag-dialog';
@@ -37,6 +38,7 @@ export default function TagsPage() {
     const pathname = usePathname();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const confirm = useConfirm();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTag, setEditingTag] = useState(null);
 
@@ -66,14 +68,14 @@ export default function TagsPage() {
         setDialogOpen(true);
     };
 
-    const handleDelete = tag => {
-        if (
-            !window.confirm(
-                `¿Eliminar el tag "${tag.name}"? Se quita de todos los items que lo tengan.`,
-            )
-        ) {
-            return;
-        }
+    const handleDelete = async tag => {
+        const ok = await confirm({
+            title: `¿Eliminar el tag "${tag.name}"?`,
+            description: 'Se quita de todos los items que lo tengan.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         destroy(tag.id);
     };
 

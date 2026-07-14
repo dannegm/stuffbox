@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/providers/auth-provider';
+import { useConfirm } from '@/hooks/use-confirm';
 import { workspaceQuery } from '@/queries/workspaces';
 import {
     locationQuery,
@@ -135,6 +136,7 @@ export default function LocationPage({ params }) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const confirm = useConfirm();
     const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
@@ -223,9 +225,11 @@ export default function LocationPage({ params }) {
 
     const handleTransfer = async newParentId => {
         if (!(await isDestinationSafe(newParentId, [id]))) {
-            window.alert(
-                'No puedes mover esta location dentro de sí misma o de algo que contiene.',
-            );
+            await confirm({
+                title: 'No puedes mover esta location dentro de sí misma o de algo que contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
             return;
         }
         transfer({ id, parentId: newParentId });
@@ -235,9 +239,11 @@ export default function LocationPage({ params }) {
 
     const handleUnpack = async newParentId => {
         if (!(await isDestinationSafe(newParentId, [id]))) {
-            window.alert(
-                'No puedes desempacar esta caja dentro de sí misma o de algo que contiene.',
-            );
+            await confirm({
+                title: 'No puedes desempacar esta caja dentro de sí misma o de algo que contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
             return;
         }
         unpack({ id, parentId: newParentId });
@@ -299,7 +305,11 @@ export default function LocationPage({ params }) {
     const handleBulkPickerSelect = async destinationId => {
         const locationIds = [...selectedLocationIds];
         if (locationIds.length > 0 && !(await isDestinationSafe(destinationId, locationIds))) {
-            window.alert('No puedes mover la selección dentro de sí misma o de algo que contiene.');
+            await confirm({
+                title: 'No puedes mover la selección dentro de sí misma o de algo que contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
             setBulkPickerMode(null);
             return;
         }
@@ -354,7 +364,11 @@ export default function LocationPage({ params }) {
 
         if (ids.includes(destinationId)) return;
         if (!(await isDestinationSafe(destinationId, ids))) {
-            window.alert('No puedes soltar ahí — es la misma location o algo que ya contiene.');
+            await confirm({
+                title: 'No puedes soltar ahí — es la misma location o algo que ya contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
             return;
         }
         bulkTransfer({ itemIds: [], locationIds: ids, destinationId });
@@ -375,12 +389,17 @@ export default function LocationPage({ params }) {
         }),
     );
 
-    const handleDelete = () => {
-        const warning =
-            children?.length || items?.length
-                ? `"${location?.name}" tiene ${children?.length} location(s) y ${items?.length} item(s) dentro. Se eliminará todo. ¿Continuar?`
-                : `¿Eliminar "${location?.name}"? Esto no se puede deshacer.`;
-        if (!window.confirm(warning)) return;
+    const handleDelete = async () => {
+        const hasContents = children?.length || items?.length;
+        const ok = await confirm({
+            title: `¿Eliminar "${location?.name}"?`,
+            description: hasContents
+                ? `Tiene ${children?.length} location(s) y ${items?.length} item(s) dentro. Se eliminará todo.`
+                : 'Esto no se puede deshacer.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         destroy(id);
     };
 

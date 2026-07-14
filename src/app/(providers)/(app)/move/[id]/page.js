@@ -28,6 +28,7 @@ import { SelectSearch } from '@/ui/select-search';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { getItemIcon } from '@/helpers/item';
+import { useConfirm } from '@/hooks/use-confirm';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
@@ -53,6 +54,7 @@ export default function MovePage({ params }) {
     const { id } = use(params);
     const router = useRouter();
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [unpackTarget, setUnpackTarget] = useState(null);
 
     const { data: move, isPending: isMovePending } = useQuery(moveQuery(id));
@@ -83,9 +85,14 @@ export default function MovePage({ params }) {
     const handleStatusChange = status =>
         updateMove({ id, name: move?.name, status, routeType: move?.route_type });
 
-    const handleDelete = () => {
-        if (!window.confirm(`¿Eliminar la mudanza "${move?.name}"? Se desempaca todo lo suelto.`))
-            return;
+    const handleDelete = async () => {
+        const ok = await confirm({
+            title: `¿Eliminar la mudanza "${move?.name}"?`,
+            description: 'Se desempaca todo lo suelto.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         destroyMove(id);
     };
 

@@ -14,6 +14,7 @@ import {
     CheckIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { useConfirm } from '@/hooks/use-confirm';
 import { workspacesQuery } from '@/queries/workspaces';
 import {
     workspaceMembersQuery,
@@ -244,6 +245,7 @@ export default function CollaboratorsPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const confirm = useConfirm();
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
     useEffect(() => {
@@ -282,12 +284,17 @@ export default function CollaboratorsPage() {
         }),
     );
 
-    const handleRemoveMember = member => {
+    const handleRemoveMember = async member => {
         const isSelf = member.user_id === user?.id;
-        const message = isSelf
+        const title = isSelf
             ? '¿Salir de este espacio?'
             : `¿Quitar a ${member.profiles.name} de este espacio?`;
-        if (!window.confirm(message)) return;
+        const ok = await confirm({
+            title,
+            confirmLabel: isSelf ? 'Salir' : 'Quitar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
         removeMember({ workspaceId: workspace?.id, userId: member.user_id });
     };
 
