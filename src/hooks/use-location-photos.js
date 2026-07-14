@@ -13,8 +13,9 @@ import {
 const MAX_DIMENSION = Number(process.env.NEXT_PUBLIC_STUFFBOX_MAX_IMAGE_DIMENSION) || 2000;
 
 // Simpler than useItemPhotos — a location always exists (has an id) by the
-// time its photo gallery is editable (EditLocationDialog only opens for an
-// existing row), so there's no pending/deferred-upload lifecycle to manage.
+// time its photo gallery is editable (only reachable from location/[id]/edit,
+// an existing row's own route), so there's no pending/deferred-upload
+// lifecycle to manage.
 export const useLocationPhotos = ({ locationId, workspaceId }) => {
     const queryClient = useQueryClient();
     const [isProcessing, setIsProcessing] = useState(false);

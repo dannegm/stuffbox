@@ -44,7 +44,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
-import { EditLocationDialog } from '@/components/locations/edit-location-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
@@ -84,7 +83,6 @@ export default function LocationPage({ params }) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
-    const [editOpen, setEditOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
@@ -561,7 +559,7 @@ export default function LocationPage({ params }) {
                                     <DotsThreeVerticalIcon />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align='end'>
-                                    <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                                    <DropdownMenuItem render={<Link href={`/location/${id}/edit`} />}>
                                         <PencilSimpleIcon />
                                         Editar
                                     </DropdownMenuItem>
@@ -575,8 +573,6 @@ export default function LocationPage({ params }) {
                     )}
                 </div>
             </div>
-
-            <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />
 
             <LocationPicker
                 open={transferOpen}

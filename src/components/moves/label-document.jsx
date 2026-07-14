@@ -84,6 +84,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: '1.5mm',
     },
+    emptyPage: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#ffffff',
+    },
+    emptyText: {
+        fontSize: 14,
+        color: '#999999',
+    },
 });
 
 // Hand-drawn — react-pdf can't render Phosphor/DOM icon components, only its
@@ -157,8 +167,19 @@ const Label = ({ label }) => (
 // already resolved (QR generation is async, so it happens in the builder
 // before this renders — see move/[id]/labels/page.js). `orientation` is the
 // storage_orientation enum (NONE/UP/DOWN/LEFT/RIGHT) — null/undefined/NONE
-// hides the arrow entirely.
+// hides the arrow entirely. `labels` missing/empty renders a single
+// placeholder page instead of a blank zero-page PDF.
 export const LabelDocument = ({ labels }) => {
+    if (!labels || labels.length === 0) {
+        return (
+            <Document>
+                <Page size='A4' style={styles.emptyPage}>
+                    <Text style={styles.emptyText}>No hay etiquetas para mostrar</Text>
+                </Page>
+            </Document>
+        );
+    }
+
     const pages = chunk(labels, CELLS_PER_PAGE);
     return (
         <Document>

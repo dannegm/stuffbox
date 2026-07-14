@@ -584,6 +584,13 @@ $$;
 grant execute on function stuffbox.get_invite_by_token(text) to authenticated;
 grant execute on function stuffbox.claim_workspace_invite(text) to authenticated;
 
+-- A fresh visitor following an /invite/[token] link has no session yet, so
+-- the landing lookup above runs as anon — needs its own narrow grant rather
+-- than the blanket authenticated/service_role one below. claim stays
+-- authenticated-only: it never runs until after the OTP verify establishes
+-- a session.
+grant execute on function stuffbox.get_invite_by_token(text) to anon;
+
 
 -- -----------------------------------------------------------------------------
 -- Location price rollup
@@ -696,9 +703,12 @@ create index if not exists idx_profiles_is_super_admin        on stuffbox.profil
 -- -----------------------------------------------------------------------------
 -- Grants
 -- -----------------------------------------------------------------------------
--- No anon grants anywhere — zero public content (unlike bins).
+-- No blanket anon grants — zero public content (unlike bins). anon only
+-- gets schema USAGE (required just to resolve the schema-qualified function
+-- name via PostgREST) plus the one narrow EXECUTE grant above
+-- (get_invite_by_token) — no ALL ON TABLES/ROUTINES/SEQUENCES for anon.
 
-GRANT USAGE ON SCHEMA stuffbox TO authenticated, service_role;
+GRANT USAGE ON SCHEMA stuffbox TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA stuffbox TO authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA stuffbox TO authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA stuffbox TO authenticated, service_role;

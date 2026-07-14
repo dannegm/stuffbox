@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { WarningDiamondIcon } from '@phosphor-icons/react/ssr';
+import { WarningIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -320,7 +320,7 @@ export default function NewItemPage() {
                                 className='rounded-lg border bg-muted/30 px-3 py-2.5'
                             >
                                 <FieldLabel htmlFor='item-fragile' className='flex-1'>
-                                    <WarningDiamondIcon className='text-muted-foreground' />
+                                    <WarningIcon className='text-muted-foreground' />
                                     Es frágil
                                 </FieldLabel>
                                 <Switch

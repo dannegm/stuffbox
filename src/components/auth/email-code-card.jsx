@@ -96,7 +96,7 @@ export const EmailCodeCard = ({
 
     return (
         <Card
-            className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-dashed border-primary/40 shadow-lg shadow-primary/10'
+            className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-primary/40 shadow-lg shadow-primary/10'
             data-block='EmailCodeCard'
         >
             <CardHeader className='gap-3'>

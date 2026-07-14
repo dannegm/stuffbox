@@ -23,8 +23,8 @@ const DEFAULT_COLOR = '#6366f1';
 const FORM_ID = 'tag-form';
 
 // Shared create/edit form — `tag` present means edit, absent means create.
-// Controlled from the outside (no trigger of its own), same reasoning as
-// EditLocationDialog: opened from a plain button/row action, not a menu item.
+// Controlled from the outside (no trigger of its own) — opened from a plain
+// button/row action, not a menu item.
 export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
     const queryClient = useQueryClient();
     const [name, setName] = useState('');

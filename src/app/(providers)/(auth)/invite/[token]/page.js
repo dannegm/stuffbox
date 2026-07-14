@@ -98,7 +98,7 @@ export default function InvitePage({ params }) {
         return (
             <AuthShell accent='destructive'>
                 <Card
-                    className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-dashed border-destructive/40 shadow-lg shadow-destructive/10'
+                    className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-destructive/40 shadow-lg shadow-destructive/10'
                     data-block='InvalidInviteCard'
                 >
                     <CardHeader className='items-center gap-3 text-center'>
@@ -121,7 +121,7 @@ export default function InvitePage({ params }) {
         return (
             <AuthShell>
                 <Card
-                    className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-dashed border-primary/40 shadow-lg shadow-primary/10'
+                    className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-primary/40 shadow-lg shadow-primary/10'
                     data-block='JoinExistingUserCard'
                 >
                     <CardHeader className='items-center gap-3 text-center'>
