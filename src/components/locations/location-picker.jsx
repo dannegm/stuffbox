@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CaretRightIcon, CheckCircleIcon, HouseIcon } from '@phosphor-icons/react/ssr';
+import {
+    ArrowCounterClockwiseIcon,
+    CaretRightIcon,
+    CheckCircleIcon,
+    HouseIcon,
+} from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -38,7 +43,15 @@ const RowsSkeleton = () => (
 // unbounded tree, "dejar aquí" at any level once inside a location, recurses
 // into boxes for free since boxes are just another location node. Reused
 // as-is for transfer, pack-into-box, and unpack destination.
-export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) => {
+//
+// `quickDestination` (optional, `{ id, name, icon? }`) adds a shortcut row
+// above the tree navigator that selects it directly — for unpack specifically,
+// this is "the place it was already at": packing never moves anything (only
+// flags active_move_id, db.sql), so an item/box's location_id/parent_id is
+// still wherever it was before the move, and un-packing back into that exact
+// spot shouldn't require re-navigating the tree to find it again. Omit the
+// prop entirely for transfer/pack-into-box, where there's no such shortcut.
+export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect, quickDestination }) => {
     const [stack, setStack] = useState([]);
     const current = stack[stack.length - 1] ?? null;
 
@@ -63,6 +76,10 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
         onSelect(current?.id);
         onOpenChange(false);
     };
+    const handleQuickSelect = () => {
+        onSelect(quickDestination.id);
+        onOpenChange(false);
+    };
 
     return (
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
@@ -73,6 +90,29 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect }) =>
                         Navega por el árbol y elige dónde dejarlo.
                     </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
+
+                {quickDestination && (
+                    <div className='px-4 sm:px-0'>
+                        <button
+                            type='button'
+                            onClick={handleQuickSelect}
+                            className='group flex w-full items-center gap-3 rounded-lg border border-dashed border-flourish/40 bg-flourish/5 p-2.5 text-left text-sm transition-colors hover:bg-flourish/10'
+                        >
+                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-flourish/15 text-flourish [&_svg]:size-4'>
+                                <ArrowCounterClockwiseIcon />
+                            </span>
+                            <span className='min-w-0 flex-1'>
+                                <span className='block truncate font-medium'>
+                                    Desempacar aquí mismo
+                                </span>
+                                <span className='block truncate text-xs text-muted-foreground'>
+                                    {quickDestination.name}
+                                </span>
+                            </span>
+                            <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground' />
+                        </button>
+                    </div>
+                )}
 
                 <div className='px-4 sm:px-0'>
                     <div className='flex flex-wrap items-center gap-1 rounded-lg bg-muted/50 p-1 text-sm text-muted-foreground'>

@@ -307,6 +307,7 @@ export default function ItemPage({ params }) {
                     onOpenChange={setUnpackOpen}
                     workspaceId={location.workspace_id}
                     onSelect={handleUnpack}
+                    quickDestination={{ id: location.id, name: location.name }}
                 />
 
                 <PackIntoMoveDialog

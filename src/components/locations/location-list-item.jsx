@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CaretRightIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
@@ -10,10 +11,11 @@ import { cn } from '@/helpers/utils';
 // `counts` = { locations, items } — direct/root-level only, not recursive.
 // Omitted entirely when both are 0 rather than showing "0 location(s)".
 // `selectable` swaps the row from a navigating Link to a toggle button, same
-// as ItemListRow. `draggable`/`onDragStart` and the `onDragOver`/`onDragLeave`/
-// `onDrop`/`isDragOver` pair are for the desktop-only split view — a location
-// row is both a drag source (move it into another location) and a drop
-// target (items or other locations dropped onto it transfer here).
+// as ItemListRow. `draggable`/`dragData` and `droppable` are for the
+// desktop-only split view (dnd-kit, wrapped in a <DndContext> by the page) —
+// a location row is both a drag source (move it into another location) and a
+// drop target (items or other locations dropped onto it transfer here); the
+// two dnd-kit hooks are independent, so either can be opted into alone.
 export const LocationListItem = ({
     location,
     counts,
@@ -21,20 +23,38 @@ export const LocationListItem = ({
     selected = false,
     onToggle,
     draggable = false,
-    onDragStart,
-    onDragOver,
-    onDragLeave,
-    onDrop,
-    isDragOver = false,
+    dragData,
+    droppable = false,
 }) => {
     const photoUrl = getLocationPhotoUrl(location);
     const photo = getFirstLocationPhoto(location);
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDragRef,
+        isDragging,
+    } = useDraggable({
+        id: location.id,
+        data: dragData,
+        disabled: !draggable,
+    });
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+        id: location.id,
+        disabled: !droppable,
+    });
+    const setRefs = node => {
+        setDragRef(node);
+        setDropRef(node);
+    };
+    const dragProps = draggable ? { ...attributes, ...listeners } : {};
 
     const className = cn(
         'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border bg-card p-3 text-left text-sm shadow-xs ring-1 ring-foreground/5 transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
         draggable && 'cursor-grab active:cursor-grabbing',
-        isDragOver && 'border-primary bg-primary/10 ring-2 ring-primary/40',
+        isDragging && 'opacity-40',
+        isOver && 'border-primary bg-primary/10 ring-2 ring-primary/40',
     );
 
     const content = (
@@ -86,28 +106,15 @@ export const LocationListItem = ({
         </>
     );
 
-    const dropProps = {
-        onDragOver: event => {
-            event.preventDefault();
-            onDragOver?.(location);
-        },
-        onDragLeave: () => onDragLeave?.(location),
-        onDrop: event => {
-            event.preventDefault();
-            onDrop?.(event, location);
-        },
-    };
-
     if (selectable) {
         return (
             <button
+                ref={setRefs}
                 type='button'
                 data-block='LocationListItem'
                 className={className}
                 onClick={() => onToggle(location.id)}
-                draggable={draggable}
-                onDragStart={event => onDragStart?.(event, location)}
-                {...dropProps}
+                {...dragProps}
             >
                 {content}
             </button>
@@ -116,12 +123,11 @@ export const LocationListItem = ({
 
     return (
         <Link
+            ref={setRefs}
             href={`/location/${location.id}`}
             data-block='LocationListItem'
             className={className}
-            draggable={draggable}
-            onDragStart={event => onDragStart?.(event, location)}
-            {...dropProps}
+            {...dragProps}
         >
             {content}
         </Link>

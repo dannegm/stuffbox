@@ -5,6 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+    DndContext,
+    DragOverlay,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    useDroppable,
+    pointerWithin,
+} from '@dnd-kit/core';
+import {
     PlusIcon,
     DotsThreeVerticalIcon,
     PencilSimpleIcon,
@@ -78,6 +87,49 @@ const Loading = () => (
     </div>
 );
 
+// Special drop zone (left column, desktop split view only): dropping an
+// item/location here un-nests it — it becomes a sibling of the current
+// location instead of a child, i.e. moves to this location's own parent.
+// Never shown at a root (no parent to move to). A real component (not an
+// inline hook call) since useDroppable can't be called conditionally.
+const MOVE_OUT_TARGET = '__move_out__';
+
+const MoveOutDropZone = ({ parentName }) => {
+    const { setNodeRef, isOver } = useDroppable({ id: MOVE_OUT_TARGET });
+
+    return (
+        <div
+            ref={setNodeRef}
+            data-block='MoveOutDropZone'
+            className={cn(
+                'flex items-center gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors',
+                isOver && 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/40',
+            )}
+        >
+            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted [&_svg]:size-4'>
+                <ArrowUpIcon />
+            </span>
+            <span className='min-w-0 flex-1 truncate'>Sacar a {parentName ?? 'nivel anterior'}</span>
+        </div>
+    );
+};
+
+// DragOverlay content — a floating "what am I dragging" chip that follows
+// the cursor, replacing native drag's default (often misaligned) ghost
+// image. Shows the actual name for a single item/location, or a count when
+// dragging a whole selection.
+const DragPreview = ({ data }) => {
+    const Icon = data.type === 'items' ? LeafIcon : PackageIcon;
+    const label = data.label ?? `${data.ids.length} seleccionados`;
+
+    return (
+        <div className='flex max-w-56 items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg shadow-black/10 ring-1 ring-foreground/10'>
+            <Icon className='size-4 shrink-0 text-muted-foreground' />
+            <span className='min-w-0 truncate font-medium'>{label}</span>
+        </div>
+    );
+};
+
 export default function LocationPage({ params }) {
     const { id } = use(params);
     const router = useRouter();
@@ -92,8 +144,9 @@ export default function LocationPage({ params }) {
     const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
     const [bulkPackOpen, setBulkPackOpen] = useState(false);
     const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
-    const [dragOverLocationId, setDragOverLocationId] = useState(null);
+    const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
+    const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
@@ -261,37 +314,38 @@ export default function LocationPage({ params }) {
         setBulkPackOpen(false);
     };
 
-    // Desktop-only split view drag-and-drop (see ItemListRow/LocationListItem).
-    // Dragging a row that's part of the active selection moves the whole
-    // selection; otherwise just that one row — same convention as Finder.
-    const DRAG_MIME = 'application/x-stuffbox-drag';
-
-    const handleItemDragStart = (event, draggedItem) => {
+    // Desktop-only split view drag-and-drop (see ItemListRow/LocationListItem;
+    // MOVE_OUT_TARGET/MoveOutDropZone above). Dragging a row that's part of
+    // the active selection moves the whole selection; otherwise just that one
+    // row — same convention as Finder. dnd-kit owns the actual drag mechanics
+    // (pointer tracking, hit-testing, the DragOverlay) — this just supplies
+    // the per-row payload and reacts to the final drop.
+    const getItemDragData = draggedItem => {
         const ids =
             selectionMode && selectedItemIds.has(draggedItem.id)
                 ? [...selectedItemIds]
                 : [draggedItem.id];
-        event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ type: 'items', ids }));
-        event.dataTransfer.effectAllowed = 'move';
+        return { type: 'items', ids, label: ids.length === 1 ? draggedItem.name : null };
     };
 
-    const handleLocationDragStart = (event, draggedLocation) => {
+    const getLocationDragData = draggedLocation => {
         const ids =
             selectionMode && selectedLocationIds.has(draggedLocation.id)
                 ? [...selectedLocationIds]
                 : [draggedLocation.id];
-        event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ type: 'locations', ids }));
-        event.dataTransfer.effectAllowed = 'move';
+        return { type: 'locations', ids, label: ids.length === 1 ? draggedLocation.name : null };
     };
 
-    const handleLocationDragOver = target => setDragOverLocationId(target.id);
-    const handleLocationDragLeave = target =>
-        setDragOverLocationId(current => (current === target.id ? null : current));
+    const handleDragStart = event => setActiveDrag(event.active.data.current);
 
-    const dropOntoDestination = async (event, destinationId) => {
-        const raw = event.dataTransfer.getData(DRAG_MIME);
-        if (!raw) return;
-        const { type, ids } = JSON.parse(raw);
+    const handleDragEnd = async event => {
+        setActiveDrag(null);
+        const { active, over } = event;
+        if (!over) return;
+
+        const { type, ids } = active.data.current;
+        const destinationId = over.id === MOVE_OUT_TARGET ? location?.parent_id : over.id;
+        if (!destinationId) return;
 
         if (type === 'items') {
             bulkTransfer({ itemIds: ids, locationIds: [], destinationId });
@@ -304,26 +358,6 @@ export default function LocationPage({ params }) {
             return;
         }
         bulkTransfer({ itemIds: [], locationIds: ids, destinationId });
-    };
-
-    const handleLocationDrop = (event, target) => {
-        setDragOverLocationId(null);
-        dropOntoDestination(event, target.id);
-    };
-
-    // Special drop zone (left column, desktop split view only): dropping an
-    // item/location here un-nests it — it becomes a sibling of the current
-    // location instead of a child, i.e. moves to this location's own parent.
-    // Never shown at a root (no parent to move to).
-    const MOVE_OUT_TARGET = '__move_out__';
-
-    const handleMoveOutDragOver = () => setDragOverLocationId(MOVE_OUT_TARGET);
-    const handleMoveOutDragLeave = () =>
-        setDragOverLocationId(current => (current === MOVE_OUT_TARGET ? null : current));
-
-    const handleMoveOutDrop = event => {
-        setDragOverLocationId(null);
-        dropOntoDestination(event, location?.parent_id);
     };
 
     const { mutate: destroy } = useMutation(
@@ -586,6 +620,11 @@ export default function LocationPage({ params }) {
                 onOpenChange={setUnpackOpen}
                 workspaceId={location.workspace_id}
                 onSelect={handleUnpack}
+                quickDestination={
+                    location.parent_id
+                        ? { id: location.parent_id, name: parentName ?? 'nivel anterior' }
+                        : null
+                }
             />
 
             <PackIntoMoveDialog
@@ -600,6 +639,13 @@ export default function LocationPage({ params }) {
                 onOpenChange={open => !open && setBulkPickerMode(null)}
                 workspaceId={location.workspace_id}
                 onSelect={handleBulkPickerSelect}
+                quickDestination={
+                    // Every selectable row on this page (children/items) already
+                    // lives in `id` — packing never moves anything, so that's a
+                    // single, uniform "unpack in place" target for the whole
+                    // selection. Only for unpack — transfer has no such shortcut.
+                    bulkPickerMode === 'unpack' ? { id, name: location.name } : null
+                }
             />
 
             <PackIntoMoveDialog
@@ -636,98 +682,85 @@ export default function LocationPage({ params }) {
                         // (no drag gestures, per the owner's call to avoid touch issues).
                         // Each side scrolls independently and always fills the full
                         // available height, even when empty or nearly empty.
-                        <div className='flex min-h-0 flex-1 gap-4'>
-                            <div className='flex min-w-0 flex-2 flex-col gap-2 overflow-y-auto'>
-                                {location.parent_id && (
-                                    <div
-                                        data-block='MoveOutDropZone'
-                                        className={cn(
-                                            'flex items-center gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors',
-                                            dragOverLocationId === MOVE_OUT_TARGET &&
-                                                'border-primary bg-primary/10 text-foreground ring-2 ring-primary/40',
-                                        )}
-                                        onDragOver={event => {
-                                            event.preventDefault();
-                                            handleMoveOutDragOver();
-                                        }}
-                                        onDragLeave={handleMoveOutDragLeave}
-                                        onDrop={event => {
-                                            event.preventDefault();
-                                            handleMoveOutDrop(event);
-                                        }}
-                                    >
-                                        <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted [&_svg]:size-4'>
-                                            <ArrowUpIcon />
-                                        </span>
-                                        <span className='min-w-0 flex-1 truncate'>
-                                            Sacar a {parentName ?? 'nivel anterior'}
-                                        </span>
-                                    </div>
-                                )}
-                                {filteredChildren.length > 0 ? (
-                                    filteredChildren.map(child => (
-                                        <LocationListItem
-                                            key={child.id}
-                                            location={child}
-                                            counts={childCounts?.[child.id]}
-                                            selectable={selectionMode}
-                                            selected={selectedLocationIds.has(child.id)}
-                                            onToggle={toggleLocationSelection}
-                                            draggable
-                                            onDragStart={handleLocationDragStart}
-                                            onDragOver={handleLocationDragOver}
-                                            onDragLeave={handleLocationDragLeave}
-                                            onDrop={handleLocationDrop}
-                                            isDragOver={dragOverLocationId === child.id}
-                                        />
-                                    ))
-                                ) : (
-                                    <Empty
-                                        className='flex-1 -mt-16'
-                                        data-block='SplitLocationsEmpty'
-                                    >
-                                        <EmptyHeader>
-                                            <EmptyMedia variant='icon'>
-                                                <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
-                                            </EmptyMedia>
-                                            <EmptyTitle>Sin locations</EmptyTitle>
-                                            <EmptyDescription>
-                                                Arrastra una location aquí para moverla a este
-                                                nivel.
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                    </Empty>
-                                )}
+                        <DndContext
+                            sensors={dndSensors}
+                            collisionDetection={pointerWithin}
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className='flex min-h-0 flex-1 gap-4'>
+                                <div className='flex min-w-0 flex-2 flex-col gap-2 overflow-y-auto'>
+                                    {location.parent_id && (
+                                        <MoveOutDropZone parentName={parentName} />
+                                    )}
+                                    {filteredChildren.length > 0 ? (
+                                        filteredChildren.map(child => (
+                                            <LocationListItem
+                                                key={child.id}
+                                                location={child}
+                                                counts={childCounts?.[child.id]}
+                                                selectable={selectionMode}
+                                                selected={selectedLocationIds.has(child.id)}
+                                                onToggle={toggleLocationSelection}
+                                                draggable
+                                                dragData={getLocationDragData(child)}
+                                                droppable
+                                            />
+                                        ))
+                                    ) : (
+                                        <Empty
+                                            className='flex-1 -mt-16'
+                                            data-block='SplitLocationsEmpty'
+                                        >
+                                            <EmptyHeader>
+                                                <EmptyMedia variant='icon'>
+                                                    <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                                                </EmptyMedia>
+                                                <EmptyTitle>Sin locations</EmptyTitle>
+                                                <EmptyDescription>
+                                                    Arrastra una location aquí para moverla a este
+                                                    nivel.
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
+                                </div>
+                                <Separator orientation='vertical' />
+                                <div className='flex min-w-0 flex-3 flex-col gap-2 overflow-y-auto'>
+                                    {filteredItems.length > 0 ? (
+                                        filteredItems.map(item => (
+                                            <ItemListRow
+                                                key={item.id}
+                                                item={item}
+                                                selectable={selectionMode}
+                                                selected={selectedItemIds.has(item.id)}
+                                                onToggle={toggleItemSelection}
+                                                draggable
+                                                dragData={getItemDragData(item)}
+                                            />
+                                        ))
+                                    ) : (
+                                        <Empty
+                                            className='flex-1 -mt-16'
+                                            data-block='SplitItemsEmpty'
+                                        >
+                                            <EmptyHeader>
+                                                <EmptyMedia variant='icon'>
+                                                    <DynamicIcon icon={FALLBACK_ITEM_ICON} />
+                                                </EmptyMedia>
+                                                <EmptyTitle>Sin items</EmptyTitle>
+                                                <EmptyDescription>
+                                                    Arrastra un item aquí para moverlo a este nivel.
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
+                                </div>
                             </div>
-                            <Separator orientation='vertical' />
-                            <div className='flex min-w-0 flex-3 flex-col gap-2 overflow-y-auto'>
-                                {filteredItems.length > 0 ? (
-                                    filteredItems.map(item => (
-                                        <ItemListRow
-                                            key={item.id}
-                                            item={item}
-                                            selectable={selectionMode}
-                                            selected={selectedItemIds.has(item.id)}
-                                            onToggle={toggleItemSelection}
-                                            draggable
-                                            onDragStart={handleItemDragStart}
-                                        />
-                                    ))
-                                ) : (
-                                    <Empty className='flex-1 -mt-16' data-block='SplitItemsEmpty'>
-                                        <EmptyHeader>
-                                            <EmptyMedia variant='icon'>
-                                                <DynamicIcon icon={FALLBACK_ITEM_ICON} />
-                                            </EmptyMedia>
-                                            <EmptyTitle>Sin items</EmptyTitle>
-                                            <EmptyDescription>
-                                                Arrastra un item aquí para moverlo a este nivel.
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                    </Empty>
-                                )}
-                            </div>
-                        </div>
+                            <DragOverlay>
+                                {activeDrag && <DragPreview data={activeDrag} />}
+                            </DragOverlay>
+                        </DndContext>
                     ) : (
                         <>
                             {!hasFilteredResults && (

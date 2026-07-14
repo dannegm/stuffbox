@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useDraggable } from '@dnd-kit/core';
 import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
@@ -9,23 +10,33 @@ import { cn } from '@/helpers/utils';
 
 // `selectable` swaps the row from a navigating Link to a toggle button —
 // tapping anywhere in the row selects it instead of opening the item, same
-// as bulk-select on mobile file pickers. `draggable`/`onDragStart` are for
-// the desktop-only split view's drag-to-transfer (never set on mobile).
+// as bulk-select on mobile file pickers. `draggable`/`dragData` are for the
+// desktop-only split view's drag-to-transfer (dnd-kit, wrapped in a
+// <DndContext> by the page; never set on mobile) — an item row is only ever
+// a drag source, never a drop target.
 export const ItemListRow = ({
     item,
     selectable = false,
     selected = false,
     onToggle,
     draggable = false,
-    onDragStart,
+    dragData,
 }) => {
     const photoUrl = getItemPhotoUrl(item);
     const photo = getFirstItemPhoto(item);
+
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+        id: item.id,
+        data: dragData,
+        disabled: !draggable,
+    });
+    const dragProps = draggable ? { ...attributes, ...listeners } : {};
 
     const className = cn(
         'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
         draggable && 'cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-40',
     );
 
     const content = (
@@ -63,12 +74,12 @@ export const ItemListRow = ({
     if (selectable) {
         return (
             <button
+                ref={setNodeRef}
                 type='button'
                 data-block='ItemListRow'
                 className={className}
                 onClick={() => onToggle(item.id)}
-                draggable={draggable}
-                onDragStart={event => onDragStart?.(event, item)}
+                {...dragProps}
             >
                 {content}
             </button>
@@ -77,11 +88,11 @@ export const ItemListRow = ({
 
     return (
         <Link
+            ref={setNodeRef}
             href={`/item/${item.id}`}
             data-block='ItemListRow'
             className={className}
-            draggable={draggable}
-            onDragStart={event => onDragStart?.(event, item)}
+            {...dragProps}
         >
             {content}
         </Link>
