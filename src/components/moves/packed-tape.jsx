@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PackageIcon } from '@phosphor-icons/react/ssr';
+import { PackageIcon } from 'lucide-react';
 import { cn } from '@/helpers/utils';
 
 // Packing-tape shorthand (`bg-strip-*`, src/css/utilities.css) for "packed
@@ -40,13 +40,13 @@ export const MoveTag = ({ moveId, moveName }) => (
         aria-label={`Empacado en la mudanza: ${moveName}`}
         data-block='MoveTag'
         className={cn(
-            'group/tag absolute top-1 right-3 z-10 -rotate-3 animate-tag-swing',
+            'group/tag absolute -top-2.5 sm:top-1 right-3 z-10 -rotate-3 animate-tag-swing',
             'flex items-center gap-1.5 rounded-md border border-dashed border-flourish/50',
             'bg-card py-1 pr-2.5 pl-1.5 text-xs font-medium text-foreground',
             'shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:rotate-0',
         )}
     >
-        <span className='flex size-2.5 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-foreground/15 group-hover/tag:ring-flourish/40' />
+        <span className='flex size-2.5 shrink-0 items-center justify-center rounded-full bg-muted ring-1 ring-foreground/15 group-hover/tag:ring-flourish/40' />
         <PackageIcon weight='bold' className='size-3.5 shrink-0 text-flourish' />
         <span className='max-w-28 truncate'>{moveName}</span>
     </Link>

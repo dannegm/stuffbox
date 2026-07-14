@@ -8,16 +8,21 @@ import {
     PlusIcon,
     DotsThreeVerticalIcon,
     PencilSimpleIcon,
-    TrashIcon,
     PackageIcon,
+    LeafIcon,
+    TrashIcon,
     ArrowsLeftRightIcon,
     CheckSquareIcon,
     XIcon,
     ArrowUpIcon,
-    FolderIcon,
-    StackIcon,
     CurrencyDollarIcon,
 } from '@phosphor-icons/react/ssr';
+
+import {
+    PackageIcon as LucidePackageIcon,
+    PackageOpenIcon as LucidePackageOpenIcon,
+} from 'lucide-react';
+
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
 import {
@@ -390,163 +395,185 @@ export default function LocationPage({ params }) {
             />
 
             <div
-                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
                 data-block='LocationHero'
             >
-                <div className='flex min-w-0 items-center gap-3'>
-                    <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-foreground shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
-                        <DynamicIcon icon={getLocationIcon(location)} />
-                    </span>
-                    <div className='min-w-0'>
-                        <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
-                            {location.name}
-                        </h1>
-                        <p className='truncate text-xs text-muted-foreground capitalize'>
-                            {location.type}
-                        </p>
-                    </div>
-                </div>
-                {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
-                    <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
-                        {children.length > 0 && (
-                            <Stat icon={FolderIcon} value={children.length} label='dentro' />
-                        )}
-                        {items.length > 0 && (
-                            <Stat icon={StackIcon} value={items.length} label='items' />
-                        )}
-                        {location.is_container && totalPrice > 0 && (
-                            <Stat
-                                icon={CurrencyDollarIcon}
-                                value={`$${Number(totalPrice).toLocaleString('es-MX')}`}
-                                label='valor total'
-                            />
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <div className='flex flex-wrap items-center justify-end gap-2'>
-                {selectionMode ? (
-                    <>
-                        <span className='text-xs text-muted-foreground'>
-                            {selectedCount} seleccionado(s)
+                <div className='flex items-center justify-between gap-2'>
+                    <div className='flex min-w-0 items-center gap-3'>
+                        <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-foreground shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
+                            <DynamicIcon icon={getLocationIcon(location)} />
                         </span>
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPickerMode('transfer')}
-                        >
-                            <ArrowsLeftRightIcon data-icon='inline-start' />
-                            Transferir
-                        </Button>
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPackOpen(true)}
-                        >
-                            <PackageIcon data-icon='inline-start' />
-                            Empacar
-                        </Button>
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPickerMode('unpack')}
-                        >
-                            <PackageIcon data-icon='inline-start' />
-                            Desempacar
-                        </Button>
-                        <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
-                            <XIcon data-icon='inline-start' />
-                            Cancelar
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        {location.parent_id && (
+
+                        <div className='min-w-0'>
+                            <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                                {location.name}
+                            </h1>
+                            <p className='truncate text-xs text-muted-foreground capitalize'>
+                                {location.type}
+                            </p>
+                        </div>
+                    </div>
+
+                    {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
+                        <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2'>
+                            {children.length > 0 && (
+                                <Stat icon={PackageIcon} value={children.length} label='dentro' />
+                            )}
+                            {items.length > 0 && (
+                                <Stat icon={LeafIcon} value={items.length} label='items' />
+                            )}
+                            {location.is_container && totalPrice > 0 && (
+                                <Stat
+                                    className='hidden sm:flex'
+                                    icon={CurrencyDollarIcon}
+                                    value={`$${Number(totalPrice).toLocaleString('es-MX')}`}
+                                    label='valor total'
+                                />
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className='h-1 bg-muted/50' />
+
+                <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                    {selectionMode ? (
+                        <>
+                            <span className='text-sm text-muted-foreground'>
+                                {selectedCount} sel.
+                            </span>
+
                             <Button
                                 size='sm'
                                 variant='outline'
-                                disabled={isTransferring}
-                                onClick={() => setTransferOpen(true)}
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPickerMode('transfer')}
                             >
-                                {isTransferring ? (
-                                    <Spinner data-icon='inline-start' />
-                                ) : (
-                                    <ArrowsLeftRightIcon data-icon='inline-start' />
-                                )}
+                                <ArrowsLeftRightIcon />
                                 Transferir
                             </Button>
-                        )}
-                        {location.is_container &&
-                            (location.active_move_id ? (
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={() => setUnpackOpen(true)}
-                                >
-                                    <PackageIcon data-icon='inline-start' />
-                                    Desempacar{packedMove ? `: ${packedMove.name}` : ''}
-                                </Button>
-                            ) : (
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={() => setPackDialogOpen(true)}
-                                >
-                                    <PackageIcon data-icon='inline-start' />
-                                    Empacar
-                                </Button>
-                            ))}
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            render={<Link href={`/item/new?location=${id}`} />}
-                        >
-                            <PlusIcon data-icon='inline-start' />
-                            Item
-                        </Button>
-                        <CreateLocationDialog
-                            workspaceId={location.workspace_id}
-                            parentId={id}
-                            title='Agregar dentro'
-                        >
-                            <Button size='sm' variant='outline'>
-                                <PlusIcon data-icon='inline-start' />
-                                Location
-                            </Button>
-                        </CreateLocationDialog>
-                        {!isEmpty && (
+
+                            <div className='flex flex-1' />
+
                             <Button
                                 size='sm'
                                 variant='outline'
-                                onClick={() => setSelectionMode(true)}
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPackOpen(true)}
                             >
-                                <CheckSquareIcon data-icon='inline-start' />
-                                Seleccionar
+                                <LucidePackageIcon className='stroke-1' />
+                                <span className='hidden sm:inline'>Empacar</span>
                             </Button>
-                        )}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={<Button size='icon-sm' variant='outline' />}
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                disabled={selectedCount === 0}
+                                onClick={() => setBulkPickerMode('unpack')}
                             >
-                                <DotsThreeVerticalIcon />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align='end'>
-                                <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                                    <PencilSimpleIcon />
-                                    Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem variant='destructive' onClick={handleDelete}>
-                                    <TrashIcon />
-                                    Eliminar
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </>
-                )}
+                                <LucidePackageOpenIcon className='stroke-1' />
+                                <span className='hidden sm:inline'>Desempacar</span>
+                            </Button>
+
+                            <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
+                                <XIcon />
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            {!isEmpty && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={() => setSelectionMode(true)}
+                                >
+                                    <CheckSquareIcon />
+                                </Button>
+                            )}
+
+                            {location.parent_id && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    disabled={isTransferring}
+                                    onClick={() => setTransferOpen(true)}
+                                >
+                                    {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
+                                    <span className='hidden sm:inline'>Transferir</span>
+                                </Button>
+                            )}
+
+                            {location.is_container &&
+                                (location.active_move_id ? (
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setUnpackOpen(true)}
+                                    >
+                                        <LucidePackageOpenIcon className='stroke-1' />
+                                        <span
+                                            className={cn('after:content-[_]', {
+                                                'hidden sm:inline': packedMove,
+                                            })}
+                                        >
+                                            Desempacar
+                                        </span>
+                                        <span>{packedMove ? `(${packedMove.name})` : ''}</span>
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setPackDialogOpen(true)}
+                                    >
+                                        <LucidePackageIcon className='stroke-1' />
+                                        <span className='hidden sm:inline'>Empacar</span>
+                                    </Button>
+                                ))}
+
+                            <div className='flex flex-1' />
+
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                render={<Link href={`/item/new?location=${id}`} />}
+                            >
+                                <PlusIcon />
+                                <LeafIcon />
+                                <span className='hidden sm:inline'>Item</span>
+                            </Button>
+
+                            <CreateLocationDialog
+                                workspaceId={location.workspace_id}
+                                parentId={id}
+                                title='Agregar dentro'
+                            >
+                                <Button size='sm' variant='outline'>
+                                    <PlusIcon />
+                                    <PackageIcon />
+                                    <span className='hidden sm:inline'>Location</span>
+                                </Button>
+                            </CreateLocationDialog>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    render={<Button size='icon-sm' variant='outline' />}
+                                >
+                                    <DotsThreeVerticalIcon />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='end'>
+                                    <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                                        <PencilSimpleIcon />
+                                        Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                        <TrashIcon />
+                                        Eliminar
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </>
+                    )}
+                </div>
             </div>
 
             <EditLocationDialog location={location} open={editOpen} onOpenChange={setEditOpen} />
@@ -614,7 +641,7 @@ export default function LocationPage({ params }) {
                         // Each side scrolls independently and always fills the full
                         // available height, even when empty or nearly empty.
                         <div className='flex min-h-0 flex-1 gap-4'>
-                            <div className='flex min-w-0 flex-[2] flex-col gap-2 overflow-y-auto'>
+                            <div className='flex min-w-0 flex-2 flex-col gap-2 overflow-y-auto'>
                                 {location.parent_id && (
                                     <div
                                         data-block='MoveOutDropZone'
@@ -677,7 +704,7 @@ export default function LocationPage({ params }) {
                                 )}
                             </div>
                             <Separator orientation='vertical' />
-                            <div className='flex min-w-0 flex-[3] flex-col gap-2 overflow-y-auto'>
+                            <div className='flex min-w-0 flex-3 flex-col gap-2 overflow-y-auto'>
                                 {filteredItems.length > 0 ? (
                                     filteredItems.map(item => (
                                         <ItemListRow

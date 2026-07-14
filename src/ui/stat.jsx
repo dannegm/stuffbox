@@ -11,8 +11,8 @@ export const Stat = ({ icon: Icon, value, label, className }) => (
             </span>
         )}
         <div className='flex min-w-0 flex-col leading-tight'>
-            <span className='font-heading text-base font-semibold tabular-nums'>{value}</span>
-            <span className='truncate text-xs text-muted-foreground'>{label}</span>
+            <span className='font-heading text-base font-semibold tabular-nums -mb-1'>{value}</span>
+            <span className='hidden sm:block truncate text-xs text-muted-foreground'>{label}</span>
         </div>
     </div>
 );

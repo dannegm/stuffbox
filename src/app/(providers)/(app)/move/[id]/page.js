@@ -12,8 +12,8 @@ import {
     ArrowRightIcon,
     TruckIcon,
     AirplaneIcon,
-    StackIcon,
 } from '@phosphor-icons/react/ssr';
+import { BoxesIcon } from 'lucide-react';
 import {
     moveQuery,
     updateMoveMutation,
@@ -111,62 +111,70 @@ export default function MovePage({ params }) {
             data-block='MovePage'
         >
             <div
-                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
                 data-block='MoveHero'
             >
-                <div className='flex min-w-0 items-center gap-3'>
-                    <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
-                        {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
-                    </span>
-                    <div className='min-w-0 flex-1'>
-                        <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
-                            {move.name}
-                        </h1>
-                        <p className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
-                            <span className='truncate'>{move.origin?.name}</span>
-                            <ArrowRightIcon className='size-3 shrink-0' />
-                            <span className='truncate'>{move.destination?.name}</span>
-                        </p>
+                <div className='flex items-center justify-between gap-2'>
+                    <div className='flex min-w-0 items-center gap-3'>
+                        <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
+                            {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
+                        </span>
+                        <div className='min-w-0 flex-1'>
+                            <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                                {move.name}
+                            </h1>
+                            <p className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
+                                <span className='truncate'>{move.origin?.name}</span>
+                                <ArrowRightIcon className='size-3 shrink-0' />
+                                <span className='truncate'>{move.destination?.name}</span>
+                            </p>
+                        </div>
                     </div>
-                </div>
-                {!isEmpty && (
-                    <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
-                        <Stat
-                            icon={StackIcon}
-                            value={packed.locations.length + packed.items.length}
-                            label='empacado'
-                        />
-                    </div>
-                )}
-            </div>
 
-            <div className='flex flex-wrap items-center justify-end gap-2'>
-                {!isEmpty && (
+                    {!isEmpty && (
+                        <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2'>
+                            <Stat
+                                icon={BoxesIcon}
+                                value={packed.locations.length + packed.items.length}
+                                label='empacado'
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className='h-1 bg-muted/50' />
+
+                <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                    {!isEmpty && (
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            render={<Link href={`/move/${id}/labels`} />}
+                        >
+                            <PrinterIcon data-icon='inline-start' />
+                            Etiquetas
+                        </Button>
+                    )}
+                    <SelectSearch
+                        options={MOVE_STATUSES}
+                        value={move.status}
+                        onChange={handleStatusChange}
+                        getKey={option => option.value}
+                        getLabel={option => option.label}
+                        triggerClassName='w-auto'
+                    />
+
+                    <div className='flex flex-1' />
+
                     <Button
-                        size='sm'
+                        size='icon-sm'
                         variant='outline'
-                        render={<Link href={`/move/${id}/labels`} />}
+                        disabled={isDeleting}
+                        onClick={handleDelete}
                     >
-                        <PrinterIcon data-icon='inline-start' />
-                        Etiquetas
+                        {isDeleting ? <Spinner /> : <TrashIcon />}
                     </Button>
-                )}
-                <SelectSearch
-                    options={MOVE_STATUSES}
-                    value={move.status}
-                    onChange={handleStatusChange}
-                    getKey={option => option.value}
-                    getLabel={option => option.label}
-                    triggerClassName='w-auto'
-                />
-                <Button
-                    size='icon-sm'
-                    variant='outline'
-                    disabled={isDeleting}
-                    onClick={handleDelete}
-                >
-                    {isDeleting ? <Spinner /> : <TrashIcon />}
-                </Button>
+                </div>
             </div>
 
             {hasRoute ? (

@@ -134,20 +134,7 @@ export default function WorkspaceSettingsPage({ params }) {
                 className='relative overflow-hidden rounded-2xl bg-hero-mesh p-5 ring-1 ring-foreground/10'
                 data-block='WorkspaceSettingsHero'
             >
-                <span
-                    aria-hidden
-                    className='absolute inset-x-0 top-0 h-1 bg-(--ws-color)'
-                    style={{ '--ws-color': color }}
-                />
-                <div className='flex items-center gap-3'>
-                    <Button
-                        size='icon-sm'
-                        variant='outline'
-                        className='shrink-0'
-                        render={<Link href={`/workspace/${id}`} />}
-                    >
-                        <CaretLeftIcon />
-                    </Button>
+                <div className='flex items-start gap-3'>
                     <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg]:size-4'>
                         <GearSixIcon />
                     </span>
@@ -198,7 +185,7 @@ export default function WorkspaceSettingsPage({ params }) {
                     </FieldGroup>
                 </SectionCard>
 
-                <Button type='submit' disabled={isPending || !name.trim()} className='self-start'>
+                <Button type='submit' disabled={isPending || !name.trim()}>
                     {isPending && <Spinner data-icon='inline-start' />}
                     Guardar
                 </Button>

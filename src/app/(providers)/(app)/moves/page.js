@@ -59,12 +59,27 @@ export default function MovesPage() {
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='MovesPage'
         >
-            <div className='flex items-center justify-between gap-2'>
-                <h1 className='font-heading text-lg font-medium'>Mudanzas</h1>
-                <Button size='sm' onClick={() => setDialogOpen(true)}>
-                    <PlusIcon data-icon='inline-start' />
-                    Nueva mudanza
-                </Button>
+            <div
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='WorkspaceSettingsHero'
+            >
+                <div className='flex items-center gap-3'>
+                    <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg]:size-4'>
+                        <TruckIcon />
+                    </span>
+                    <div className='min-w-0'>
+                        <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
+                            Mudanzas
+                        </h1>
+                    </div>
+
+                    <div className='flex-1 shrink-0' />
+
+                    <Button variant='outline' size='sm' onClick={() => setDialogOpen(true)}>
+                        <PlusIcon data-icon='inline-start' />
+                        Nueva mudanza
+                    </Button>
+                </div>
             </div>
 
             {moves.length === 0 ? (

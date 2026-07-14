@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/providers/auth-provider';
 import { createLocationMutation } from '@/queries/locations';
+import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
@@ -30,6 +32,14 @@ export default function NewHousePage() {
     const [icon, setIcon] = useState(null);
     const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
+
+    // LocationMapPicker's viewport is uncontrolled after mount — mounting it
+    // before the workspace's configured center loads would lock the camera
+    // onto the local per-device default forever (same reason the workspace
+    // settings page gates its own LocationMapPicker mount).
+    const { isPending: isMapDefaultPending } = useQuery(
+        workspaceSettingQuery(workspaceId, 'mapDefaultViewport', { enabled: !!workspaceId }),
+    );
 
     const { mutate, isPending } = useMutation(
         createLocationMutation({
@@ -63,7 +73,7 @@ export default function NewHousePage() {
                 className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
                 data-block='NewHouseHero'
             >
-                <div className='flex items-center gap-3'>
+                <div className='flex items-start gap-3'>
                     <span className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-card/80 text-primary shadow-xs ring-1 ring-foreground/10 [&_svg]:size-5'>
                         <DynamicIcon icon={previewIcon} />
                     </span>
@@ -123,11 +133,15 @@ export default function NewHousePage() {
 
                     <Field data-invalid={!!error}>
                         <FieldLabel>Ubicación en el mapa</FieldLabel>
-                        <LocationMapPicker
-                            value={coords}
-                            onChange={setCoords}
-                            workspaceId={workspaceId}
-                        />
+                        {isMapDefaultPending ? (
+                            <Skeleton className='h-64 w-full rounded-lg' />
+                        ) : (
+                            <LocationMapPicker
+                                value={coords}
+                                onChange={setCoords}
+                                workspaceId={workspaceId}
+                            />
+                        )}
                         <FieldError>{error}</FieldError>
                     </Field>
                 </FieldGroup>

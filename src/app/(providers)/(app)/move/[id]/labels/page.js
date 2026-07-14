@@ -363,14 +363,6 @@ export default function MoveLabelsPage({ params }) {
                 data-block='MoveLabelsHero'
             >
                 <div className='flex items-center gap-3'>
-                    <Button
-                        size='icon-sm'
-                        variant='outline'
-                        className='shrink-0 bg-card'
-                        render={<Link href={`/move/${id}`} />}
-                    >
-                        <CaretLeftIcon />
-                    </Button>
                     <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-4.5'>
                         <PrinterIcon />
                     </span>

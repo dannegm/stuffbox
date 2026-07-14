@@ -8,7 +8,7 @@ import { PlusIcon, PencilSimpleIcon, HouseIcon, UsersIcon } from '@phosphor-icon
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
 import { workspaceMembersQuery } from '@/queries/collaborators';
-import { locationChildrenQuery } from '@/queries/locations';
+import { locationChildrenQuery, locationCountsQuery } from '@/queries/locations';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -48,10 +48,13 @@ export default function WorkspacePage({ params }) {
         locationChildrenQuery({ workspaceId: id, parentId: null }, { enabled: !!user }),
     );
     const { data: members } = useQuery(workspaceMembersQuery(id, { enabled: !!user }));
+    const { data: houseCounts } = useQuery(
+        locationCountsQuery(houses?.map(house => house.id) ?? [], {
+            enabled: !!houses?.length,
+        }),
+    );
 
     if (isAuthLoading || !user || isWorkspacePending || isHousesPending) return <Loading />;
-
-    const workspaceColor = resolveWorkspaceColor(workspace);
 
     return (
         <div className='flex flex-1 flex-col gap-4 p-4' data-block='WorkspacePage'>
@@ -59,11 +62,6 @@ export default function WorkspacePage({ params }) {
                 className='relative overflow-hidden rounded-2xl bg-hero-mesh p-5 ring-1 ring-foreground/10'
                 data-block='WorkspaceHero'
             >
-                <span
-                    aria-hidden
-                    className='absolute inset-x-0 top-0 h-1 bg-(--ws-color)'
-                    style={{ '--ws-color': workspaceColor }}
-                />
                 <div className='flex items-start justify-between gap-2'>
                     <div className='min-w-0'>
                         <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
@@ -87,7 +85,7 @@ export default function WorkspacePage({ params }) {
                             render={<Link href={`/house/new?workspace=${id}`} />}
                         >
                             <PlusIcon data-icon='inline-start' />
-                            Agregar casa
+                            <span className='hidden sm:inline'>Agregar casa</span>
                         </Button>
                     </div>
                 </div>
@@ -136,7 +134,11 @@ export default function WorkspacePage({ params }) {
             ) : (
                 <div className='flex flex-col gap-2'>
                     {houses.map(house => (
-                        <LocationListItem key={house.id} location={house} />
+                        <LocationListItem
+                            key={house.id}
+                            location={house}
+                            counts={houseCounts?.[house.id]}
+                        />
                     ))}
                 </div>
             )}

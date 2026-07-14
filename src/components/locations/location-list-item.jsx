@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CaretRightIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { PackedTape } from '@/components/moves/packed-tape';
@@ -27,12 +27,6 @@ export const LocationListItem = ({
     isDragOver = false,
 }) => {
     const photoUrl = getLocationPhotoUrl(location);
-    const summary = [
-        counts?.locations > 0 && `${counts.locations} location(s)`,
-        counts?.items > 0 && `${counts.items} item(s)`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
 
     const className = cn(
         'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border bg-card p-3 text-left text-sm shadow-xs ring-1 ring-foreground/5 transition-colors hover:bg-muted',
@@ -69,9 +63,24 @@ export const LocationListItem = ({
                 <span className='block truncate font-medium'>{location.name}</span>
                 <span className='block truncate text-xs text-muted-foreground capitalize'>
                     {location.type}
-                    {summary && <> · {summary}</>}
                 </span>
             </span>
+            {(counts?.locations > 0 || counts?.items > 0) && (
+                <span className='z-1 flex shrink-0 items-center gap-2.5 text-xs text-muted-foreground'>
+                    {counts.locations > 0 && (
+                        <span className='flex items-center gap-1'>
+                            <PackageIcon className='size-3.5' />
+                            {counts.locations}
+                        </span>
+                    )}
+                    {counts.items > 0 && (
+                        <span className='flex items-center gap-1'>
+                            <LeafIcon className='size-3.5' />
+                            {counts.items}
+                        </span>
+                    )}
+                </span>
+            )}
             {!selectable && <CaretRightIcon className='size-4 shrink-0 text-muted-foreground' />}
         </>
     );

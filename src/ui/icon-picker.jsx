@@ -99,7 +99,7 @@ const IconGrid = ({ library, query, onSelect }) => {
     );
 };
 
-export const IconPicker = ({ value, onChange, children, suggestedIcons = [] }) => {
+export const IconPicker = ({ value, onChange, children, suggestedIcons = [], align = 'start' }) => {
     const [open, setOpen] = useState(false);
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
@@ -122,7 +122,7 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [] }) =
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger render={children} />
-            <PopoverContent className='w-96 gap-2 p-2' data-block='IconPicker'>
+            <PopoverContent className='w-96 gap-2 p-2' data-block='IconPicker' align={align}>
                 {uniqueSuggestions.length > 0 && !query.trim() && (
                     <SuggestedIcons icons={uniqueSuggestions} onSelect={handleSelect} />
                 )}

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CaretRightIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, DotsThreeIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
@@ -11,9 +11,13 @@ import { cn } from '@/helpers/utils';
 // `truncate` actually has something to clip against — without a bound, a
 // long location name just grows the row past a 380px viewport instead of
 // clipping, since `flex-wrap` alone doesn't constrain a single item's width.
-const Crumb = ({ href, icon, children, current = false }) => (
-    <span className='flex min-w-0 shrink items-center gap-1'>
-        <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
+const Crumb = ({ className, href, icon, children, index = 0, current = false }) => (
+    <span className={cn('flex min-w-0 shrink items-center gap-1', className)}>
+        <CaretRightIcon
+            className={cn('size-3.5 shrink-0 text-muted-foreground/60', {
+                'hidden sm:block': index === 0,
+            })}
+        />
         {current ? (
             <span className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground'>
                 {icon}
@@ -51,7 +55,7 @@ export const LocationBreadcrumb = ({
     >
         <Link
             href={`/workspace/${workspace.id}`}
-            className='flex min-w-0 shrink items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
+            className='hidden sm:flex min-w-0 shrink items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
         >
             <span
                 className='size-2 shrink-0 rounded-full bg-(--bullet-color)'
@@ -59,10 +63,15 @@ export const LocationBreadcrumb = ({
             />
             <span className='max-w-24 truncate sm:max-w-36'>{workspace.name}</span>
         </Link>
-        {ancestors.map(ancestor => (
+
+        {ancestors.map((ancestor, index) => (
             <Crumb
                 key={ancestor.id}
+                index={index}
                 href={`/location/${ancestor.id}`}
+                className={cn({
+                    'hidden sm:flex': index > 0,
+                })}
                 icon={
                     <DynamicIcon icon={getLocationIcon(ancestor)} className='size-3.5 shrink-0' />
                 }
@@ -70,7 +79,17 @@ export const LocationBreadcrumb = ({
                 {ancestor.name}
             </Crumb>
         ))}
-        <Crumb current icon={<DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />}>
+
+        <span className={cn('flex min-w-0 shrink items-center gap-1')}>
+            <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
+            <DotsThreeIcon className='size-4 shrink-0' />
+        </span>
+
+        <Crumb
+            icon={<DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />}
+            index={ancestors.length}
+            current
+        >
             {current.name}
         </Crumb>
     </nav>

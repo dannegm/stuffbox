@@ -38,6 +38,7 @@ import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/ui/input-group';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='ItemLoading'>
@@ -236,42 +237,62 @@ export default function ItemPage({ params }) {
             />
 
             <div className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4'>
-                <div className='flex items-center justify-end gap-2'>
-                    {item.active_move_id ? (
-                        <Button
-                            type='button'
-                            size='sm'
-                            variant='outline'
-                            onClick={() => setUnpackOpen(true)}
-                        >
-                            <PackageIcon data-icon='inline-start' />
-                            Desempacar{packedMove ? `: ${packedMove.name}` : ''}
-                        </Button>
-                    ) : (
-                        <Button
-                            type='button'
-                            size='sm'
-                            variant='outline'
-                            onClick={() => setPackDialogOpen(true)}
-                        >
-                            <PackageIcon data-icon='inline-start' />
-                            Empacar
-                        </Button>
-                    )}
-                    <Button
-                        type='button'
-                        size='sm'
-                        variant='outline'
-                        disabled={isTransferring}
-                        onClick={() => setPickerOpen(true)}
-                    >
-                        {isTransferring ? (
-                            <Spinner data-icon='inline-start' />
+                <div
+                    className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                    data-block='ItemEditHero'
+                >
+                    <div className='flex items-start gap-3'>
+                        <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg]:size-4'>
+                            <DynamicIcon icon={previewIcon} />
+                        </span>
+                        <div className='min-w-0'>
+                            <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                                ITEM
+                            </p>
+                            <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
+                                {name}
+                            </h1>
+                        </div>
+                    </div>
+                    <div className='h-1 bg-muted/50' />
+
+                    <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                        {item.active_move_id ? (
+                            <Button
+                                type='button'
+                                size='sm'
+                                variant='outline'
+                                onClick={() => setUnpackOpen(true)}
+                            >
+                                <PackageIcon data-icon='inline-start' />
+                                Desempacar{packedMove ? `: ${packedMove.name}` : ''}
+                            </Button>
                         ) : (
-                            <ArrowsLeftRightIcon data-icon='inline-start' />
+                            <Button
+                                type='button'
+                                size='sm'
+                                variant='outline'
+                                onClick={() => setPackDialogOpen(true)}
+                            >
+                                <PackageIcon data-icon='inline-start' />
+                                Empacar
+                            </Button>
                         )}
-                        Transferir
-                    </Button>
+                        <Button
+                            type='button'
+                            size='sm'
+                            variant='outline'
+                            disabled={isTransferring}
+                            onClick={() => setPickerOpen(true)}
+                        >
+                            {isTransferring ? (
+                                <Spinner data-icon='inline-start' />
+                            ) : (
+                                <ArrowsLeftRightIcon data-icon='inline-start' />
+                            )}
+                            Transferir
+                        </Button>
+                    </div>
                 </div>
 
                 <LocationPicker
@@ -325,16 +346,6 @@ export default function ItemPage({ params }) {
                                     />
                                 </div>
                             </Field>
-
-                            <Field>
-                                <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
-                                <Textarea
-                                    id='item-description'
-                                    value={description}
-                                    onChange={event => setDescription(event.target.value)}
-                                    placeholder='Opcional'
-                                />
-                            </Field>
                         </FieldGroup>
                     </div>
 
@@ -346,6 +357,16 @@ export default function ItemPage({ params }) {
                             Detalles
                         </h2>
                         <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor='item-description'>Descripción</FieldLabel>
+                                <Textarea
+                                    id='item-description'
+                                    value={description}
+                                    onChange={event => setDescription(event.target.value)}
+                                    placeholder='Opcional'
+                                />
+                            </Field>
+
                             <div className='grid grid-cols-2 gap-3'>
                                 <Field>
                                     <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
@@ -360,15 +381,24 @@ export default function ItemPage({ params }) {
 
                                 <Field>
                                     <FieldLabel htmlFor='item-price'>Precio</FieldLabel>
-                                    <Input
-                                        id='item-price'
-                                        type='number'
-                                        min={0}
-                                        step='0.01'
-                                        value={purchasePrice}
-                                        onChange={event => setPurchasePrice(event.target.value)}
-                                        placeholder='Opcional'
-                                    />
+
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <InputGroupText>$</InputGroupText>
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            id='item-price'
+                                            type='number'
+                                            min={0}
+                                            step='0.01'
+                                            value={purchasePrice}
+                                            onChange={event => setPurchasePrice(event.target.value)}
+                                            placeholder='Opcional'
+                                        />
+                                        <InputGroupAddon align='inline-end'>
+                                            <InputGroupText>mxn</InputGroupText>
+                                        </InputGroupAddon>
+                                    </InputGroup>
                                 </Field>
                             </div>
 
@@ -381,9 +411,19 @@ export default function ItemPage({ params }) {
                                     placeholder='Opcional'
                                 />
                             </Field>
+                        </FieldGroup>
+                    </div>
 
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemDetailsCard'
+                    >
+                        <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                            Fotos
+                        </h2>
+
+                        <FieldGroup>
                             <Field>
-                                <FieldLabel>Fotos</FieldLabel>
                                 <PhotoGallery
                                     photos={itemPhotos.photos}
                                     pending={itemPhotos.pending}
