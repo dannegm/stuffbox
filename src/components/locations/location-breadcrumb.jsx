@@ -26,14 +26,17 @@ import { cn } from '@/helpers/utils';
 // getLocationIcon) and the item page (current = an item, icon is its own
 // `item.icon` field) — two different shapes, same component.
 //
-// Responsive shape: on mobile the workspace crumb disappears entirely, the
-// first ancestor (root) and the last one (`current`'s direct parent — a
-// de-facto "back" button) stay visible, and whatever's between them
-// collapses behind a `BreadcrumbEllipsis` that opens a `DropdownMenu` listing
-// those hidden ancestors (shadcn's documented ellipsis+dropdown composition)
-// — not a static "…", an actual way back to them. Desktop (`sm:`) shows the
-// full chain instead; the collapsed-only items are simply hidden there via
-// `sm:hidden`, mirroring how the always-visible ones use `hidden sm:inline-flex`.
+// Responsive shape: on mobile the workspace crumb and `current` itself both
+// disappear (the page's own hero header already names the current item/
+// location, so repeating it in the breadcrumb is redundant on a narrow
+// screen) — the first ancestor (root) and the last one (`current`'s direct
+// parent — a de-facto "back" button) stay visible, and whatever's between
+// them collapses behind a `BreadcrumbEllipsis` that opens a `DropdownMenu`
+// listing those hidden ancestors (shadcn's documented ellipsis+dropdown
+// composition) — not a static "…", an actual way back to them. Desktop
+// (`sm:`) shows the full chain instead, `current` included; the mobile-only
+// bits are hidden there via `sm:hidden`, the always-visible ones use
+// `hidden sm:inline-flex`.
 export const LocationBreadcrumb = ({
     workspace,
     ancestors = [],
@@ -80,7 +83,11 @@ export const LocationBreadcrumb = ({
                                 </span>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
-                        <BreadcrumbSeparator />
+                        {/* Followed by `current` (hidden on mobile) only when
+                        there's no lastAncestor to separate it from instead —
+                        otherwise this separator leads into the middle/dropdown
+                        content, which stays visible on mobile too. */}
+                        <BreadcrumbSeparator className={cn(!lastAncestor && 'hidden sm:flex')} />
                     </>
                 )}
 
@@ -145,11 +152,12 @@ export const LocationBreadcrumb = ({
                                 </span>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
-                        <BreadcrumbSeparator />
+                        {/* Always leads into `current`, which is mobile-hidden. */}
+                        <BreadcrumbSeparator className='hidden sm:flex' />
                     </>
                 )}
 
-                <BreadcrumbItem className='min-w-0 shrink'>
+                <BreadcrumbItem className='hidden min-w-0 shrink sm:inline-flex'>
                     <BreadcrumbPage className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium'>
                         <DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />
                         <span className='max-w-24 truncate sm:max-w-48'>{current.name}</span>
