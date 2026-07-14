@@ -48,5 +48,14 @@ export const DynamicIcon = ({ icon, className, ...props }) => {
     if (!icon?.name) return null;
     const render = iconSets[icon.library ?? 'lucide'];
     if (!render) return null;
-    return render({ name: icon.name, className: cn('size-4', className), ...props });
+    // `icon.props` carries per-icon rendering defaults (e.g. a lighter
+    // `strokeWidth` for a lucide icon standing in next to phosphor ones,
+    // whose regular weight reads visually thinner at the same stroke) —
+    // distinct from a call site's own `...props`, which still wins on conflict.
+    return render({
+        name: icon.name,
+        className: cn('size-4', className),
+        ...icon.props,
+        ...props,
+    });
 };

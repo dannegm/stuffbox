@@ -31,8 +31,16 @@ export const DEFAULT_LOCATION_ICONS = {
     other: { library: 'phosphor', name: 'DotsThreeIcon' },
 };
 
-export const FALLBACK_LOCATION_ICON = { library: 'phosphor', name: 'FolderIcon' };
-export const FALLBACK_ITEM_ICON = { library: 'phosphor', name: 'CubeIcon' };
+// lucide, not phosphor — `props.strokeWidth` trims lucide's default (2) down
+// closer to phosphor regular's visual weight, since these sit next to
+// phosphor icons everywhere (list rows, headers) and lucide's default stroke
+// reads noticeably heavier at the same size.
+export const FALLBACK_LOCATION_ICON = {
+    library: 'lucide',
+    name: 'Package',
+    props: { strokeWidth: 1.5 },
+};
+export const FALLBACK_ITEM_ICON = { library: 'lucide', name: 'Leaf', props: { strokeWidth: 1.5 } };
 export const FALLBACK_TAG_ICON = { library: 'phosphor', name: 'TagIcon' };
 
 // Common type presets offered when creating a location — free text, not an
