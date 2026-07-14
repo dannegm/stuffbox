@@ -46,7 +46,6 @@ export const PhotoGallery = ({ photos = [], pending = [], isProcessing, onAddFil
                     type='file'
                     accept='image/*'
                     multiple
-                    capture='environment'
                     className='sr-only'
                     onChange={event => {
                         onAddFiles(event.target.files);
