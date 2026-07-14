@@ -11,7 +11,6 @@ import { workspaceMembersQuery } from '@/queries/collaborators';
 import { locationChildrenQuery, locationCountsQuery } from '@/queries/locations';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Stat } from '@/ui/stat';
@@ -19,7 +18,6 @@ import { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount } fr
 import { DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getAvatarUrl } from '@/helpers/avatar';
-import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='WorkspaceLoading'>

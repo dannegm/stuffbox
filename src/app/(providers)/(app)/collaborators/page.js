@@ -23,7 +23,6 @@ import {
     removeWorkspaceMemberMutation,
 } from '@/queries/collaborators';
 import { getAvatarUrl } from '@/helpers/avatar';
-import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { Avatar, AvatarFallback, AvatarImage, AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -306,7 +305,6 @@ export default function CollaboratorsPage() {
     }
 
     const isOwner = workspace.owner_id === user.id;
-    const workspaceColor = resolveWorkspaceColor(workspace);
 
     return (
         <div
@@ -317,11 +315,6 @@ export default function CollaboratorsPage() {
                 className='relative overflow-hidden rounded-2xl bg-hero-mesh p-5 ring-1 ring-foreground/10'
                 data-block='CollaboratorsHero'
             >
-                <span
-                    aria-hidden
-                    className='absolute inset-x-0 top-0 h-1 bg-(--ws-color)'
-                    style={{ '--ws-color': workspaceColor }}
-                />
                 <div className='flex items-start justify-between gap-2'>
                     <div className='min-w-0'>
                         <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>

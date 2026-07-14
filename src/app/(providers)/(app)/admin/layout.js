@@ -85,33 +85,28 @@ export default function AdminLayout({ children }) {
     return (
         <div className='flex flex-1 flex-col gap-4 p-4' data-block='AdminLayout'>
             <div
-                className='relative overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10 sm:p-5'
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
                 data-block='AdminHero'
             >
-                <Link
-                    href='/'
-                    className='mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
-                >
-                    <ArrowLeftIcon className='size-3.5' />
-                    Volver al inicio
-                </Link>
-                <div className='flex items-center gap-3'>
-                    <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-5'>
-                        <ShieldCheckIcon weight='fill' />
-                    </span>
-                    <div className='min-w-0'>
-                        <h1 className='font-heading text-xl font-semibold tracking-tight sm:text-2xl'>
-                            Admin
-                        </h1>
-                        <p className='truncate text-xs text-muted-foreground sm:text-sm'>
-                            Workspaces, usuarios y ajustes globales de stuffbox
-                        </p>
+                <div className='flex items-center justify-between gap-2'>
+                    <div className='flex items-center gap-3'>
+                        <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-5'>
+                            <ShieldCheckIcon weight='fill' />
+                        </span>
+                        <div className='min-w-0'>
+                            <h1 className='font-heading text-xl font-semibold tracking-tight sm:text-2xl'>
+                                Admin
+                            </h1>
+                            <p className='truncate text-xs text-muted-foreground sm:text-sm'>
+                                Workspaces, usuarios y ajustes globales de stuffbox
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-2'>
-                    <Stat icon={HouseIcon} value={workspacesCount ?? 0} label='workspaces' />
-                    <Stat icon={UsersIcon} value={usersCount ?? 0} label='usuarios' />
+                    <div className='flex flex-wrap items-center gap-x-6 gap-y-2'>
+                        <Stat icon={HouseIcon} value={workspacesCount ?? 0} label='workspaces' />
+                        <Stat icon={UsersIcon} value={usersCount ?? 0} label='usuarios' />
+                    </div>
                 </div>
             </div>
 

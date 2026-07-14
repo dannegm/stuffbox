@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react/ssr';
+import { TagIcon, TagsIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { tagsQuery, deleteTagMutation } from '@/queries/tags';
@@ -13,6 +14,7 @@ import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
+import { Stat } from '@/ui/stat';
 
 const Loading = () => (
     <div
@@ -84,12 +86,37 @@ export default function TagsPage() {
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
             data-block='TagsPage'
         >
-            <div className='flex items-center justify-between gap-2'>
-                <h1 className='font-heading text-xl font-semibold tracking-tight'>Tags</h1>
-                <Button size='sm' onClick={handleCreate}>
-                    <PlusIcon data-icon='inline-start' />
-                    Nuevo tag
-                </Button>
+            <div
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='MoveHero'
+            >
+                <div className='flex items-center justify-between gap-2'>
+                    <div className='flex min-w-0 items-center gap-3'>
+                        <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
+                            <TagIcon />
+                        </span>
+                        <div className='min-w-0 flex-1'>
+                            <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                                Tags
+                            </h1>
+                        </div>
+                    </div>
+
+                    {Boolean(tags.length) && (
+                        <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2'>
+                            <Stat icon={TagsIcon} value={tags.length} label='tags' />
+                        </div>
+                    )}
+                </div>
+
+                <div className='h-1 bg-muted/50' />
+
+                <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                    <Button variant='outline' size='sm' onClick={handleCreate}>
+                        <PlusIcon data-icon='inline-start' />
+                        Nuevo tag
+                    </Button>
+                </div>
             </div>
 
             {tags.length === 0 ? (
@@ -105,17 +132,13 @@ export default function TagsPage() {
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <div className='flex flex-col gap-2'>
+                <div className='flex flex-col gap-2 mb-12'>
                     {tags.map(tag => (
                         <div
                             key={tag.id}
-                            className='group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
+                            className='group relative flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
                             style={{ '--tag-color': tag.color }}
                         >
-                            <span
-                                aria-hidden
-                                className='absolute inset-y-0 left-0 w-1 bg-(--tag-color)'
-                            />
                             <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-(--tag-color)/15 text-(--tag-color) [&_svg]:size-4.5'>
                                 <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
                             </span>
