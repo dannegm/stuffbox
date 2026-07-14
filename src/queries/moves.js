@@ -93,12 +93,14 @@ export const packedInMoveQuery = (moveId, opts = {}) => ({
         const [itemsRes, locationsRes] = await Promise.all([
             supabase()
                 .from('items')
-                .select('id, name, quantity, icon, is_fragile')
+                .select('id, name, quantity, icon, is_fragile, storage_orientation')
                 .eq('active_move_id', moveId)
                 .order('name'),
             supabase()
                 .from('locations')
-                .select('id, name, type, icon, parent_id, is_fragile, ai_summary')
+                .select(
+                    'id, name, type, icon, parent_id, is_fragile, ai_summary, storage_orientation',
+                )
                 .eq('active_move_id', moveId)
                 .order('name'),
         ]);

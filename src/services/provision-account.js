@@ -22,26 +22,22 @@ const popPendingIdentity = () => {
 };
 
 const CONDITION_OPTIONS = [
-    'New',
-    'Like new',
-    'Good',
-    'Used',
-    'Worn',
-    'Damaged',
-    'Needs repair',
-    'Restored',
+    'Nuevo',
+    'Como nuevo',
+    'Bueno',
+    'Usado',
+    'Desgastado',
+    'Dañado',
+    'Necesita reparación',
+    'Restaurado',
     'Vintage',
-    'Out of service',
-    'To discard',
+    'Fuera de servicio',
+    'Para desechar',
 ];
 
-const ORIENTATION_OPTIONS = [
-    'No restriction',
-    'This side up',
-    'Lay flat',
-    'Do not tilt',
-    'Do not stack',
-];
+// Fixed directional enum, not free text like CONDITION_OPTIONS — drives the
+// "this side up" arrow rotation on printed labels (label-document.jsx).
+const ORIENTATION_OPTIONS = ['NONE', 'UP', 'DOWN', 'LEFT', 'RIGHT'];
 
 // Call on every authenticated session (e.g. AuthProvider on SIGNED_IN), not
 // only right after signUp() — if email confirmation is on, there's no

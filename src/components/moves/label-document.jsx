@@ -2,54 +2,87 @@
 
 import { Document, Page, View, Text, Image, Svg, Path, StyleSheet } from '@react-pdf/renderer';
 
-const CELLS_PER_PAGE = 6;
+const CELLS_PER_PAGE = 10;
 
+// Matches storage_orientation's fixed enum (see provision-account.js) —
+// degrees to rotate the arrow so it still reads as "this side up" pointing
+// the right way. UP is the icon's native drawn direction, hence 0.
+const ORIENTATION_ROTATION = { UP: 0, RIGHT: 90, DOWN: 180, LEFT: 270 };
+
+// A4 usable area (210x297mm minus page padding) is 180x270mm either way. A
+// 5mm gap between cells eats into that: 1 column gap over 2 columns (180-5)/2
+// = 87.5mm wide (unchanged), 4 row gaps over 5 rows (270-20)/5 = 50mm tall
+// (only the cell shrinks — qr/icon/font/padding/gap values stay as they are).
 const styles = StyleSheet.create({
     page: {
         paddingVertical: '13.5mm',
         paddingHorizontal: '15mm',
         flexDirection: 'row',
         flexWrap: 'wrap',
+        gap: '5mm',
         backgroundColor: '#ffffff',
     },
     cell: {
-        width: '90mm',
-        height: '90mm',
-        padding: '4mm',
+        width: '87.5mm',
+        height: '50mm',
+        padding: '5mm',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        border: '0.5pt solid #cccccc',
+        border: '0.5pt dashed #aaaaaa',
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: '3mm',
+        gap: '5mm',
     },
     qr: {
-        width: '40mm',
-        height: '40mm',
+        width: '20mm',
+        height: '20mm',
     },
     textCol: {
         flex: 1,
     },
     name: {
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: 700,
         color: '#000000',
     },
     summary: {
-        fontSize: 8,
+        fontSize: 10,
         color: '#333333',
-        marginTop: '2mm',
+        marginTop: '1.5mm',
     },
     bottomRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: '3mm',
+        alignItems: 'flex-end',
+        gap: '2.5mm',
+        paddingTop: '2mm',
+        borderTopWidth: '0.5pt',
+        borderTopColor: '#dddddd',
     },
     icon: {
-        width: '8mm',
-        height: '8mm',
+        width: '6mm',
+        height: '6mm',
+    },
+    fragileText: {
+        fontSize: 16,
+        fontWeight: 700,
+        color: '#dc2626',
+    },
+    orientationGroup: {
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: '1mm',
+        marginLeft: 'auto',
+    },
+    orientationLabel: {
+        fontSize: 6,
+        fontWeight: 700,
+        color: '#000000',
+    },
+    orientationIcons: {
+        flexDirection: 'row',
+        gap: '1.5mm',
     },
 });
 
@@ -61,11 +94,11 @@ const FragileIcon = () => (
     </Svg>
 );
 
-// Always shown, per the label spec — a generic "this side up" convention,
-// not tied to the item/box's own configured storage_orientation value.
-const UpIcon = () => (
-    <Svg viewBox='0 0 24 24' style={styles.icon}>
-        <Path d='M12 2L4 12h5v10h6V12h5L12 2z' fill='#000000' />
+// Rotated per label.storage_orientation (UP/RIGHT/DOWN/LEFT) — only the
+// arrow itself rotates, not the "ESTE LADO ARRIBA" caption around it.
+const UpIcon = ({ rotation = 0 }) => (
+    <Svg viewBox='0 0 24 24' style={[styles.icon, { transform: `rotate(${rotation}deg)` }]}>
+        <Path d='M12 2L4 12h6v10h4V12h6L12 2z' fill='#000000' />
     </Svg>
 );
 
@@ -75,26 +108,56 @@ const chunk = (array, size) => {
     return chunks;
 };
 
+// react-pdf's <Text> has no line-clamp/numberOfLines — approximate a line
+// cap with a character budget instead, sized to textCol's ~52.5mm width
+// (cell width minus padding, qr, and gap) at each field's font size.
+const NAME_MAX_CHARS = 32; // ~2 lines at fontSize 14
+const SUMMARY_MAX_CHARS = 80; // ~3 lines at fontSize 10
+
+const truncateText = (text, maxChars) => {
+    if (!text || text.length <= maxChars) return text;
+    return `${text.slice(0, maxChars - 1).trimEnd()}…`;
+};
+
 const Label = ({ label }) => (
     <View style={styles.cell} wrap={false}>
         <View style={styles.topRow}>
             <Image src={label.qrDataUrl} style={styles.qr} />
             <View style={styles.textCol}>
-                <Text style={styles.name}>{label.name}</Text>
-                {label.summary && <Text style={styles.summary}>{label.summary}</Text>}
+                <Text style={styles.name}>{truncateText(label.name, NAME_MAX_CHARS)}</Text>
+                {label.summary && (
+                    <Text style={styles.summary}>
+                        {truncateText(label.summary, SUMMARY_MAX_CHARS)}
+                    </Text>
+                )}
             </View>
         </View>
         <View style={styles.bottomRow}>
-            {label.isFragile && <FragileIcon />}
-            <UpIcon />
+            {label.isFragile && (
+                <>
+                    <FragileIcon />
+                    <Text style={styles.fragileText}>FRÁGIL</Text>
+                </>
+            )}
+            {label.orientation && label.orientation !== 'NONE' && (
+                <View style={styles.orientationGroup}>
+                    <Text style={styles.orientationLabel}>ESTE LADO ARRIBA</Text>
+                    <View style={styles.orientationIcons}>
+                        <UpIcon rotation={ORIENTATION_ROTATION[label.orientation] ?? 0} />
+                        <UpIcon rotation={ORIENTATION_ROTATION[label.orientation] ?? 0} />
+                    </View>
+                </View>
+            )}
         </View>
     </View>
 );
 
-// One multi-page A4 doc, 2x3 grid (~90x90mm cells) — stuffbox-plan.md §8.
-// `labels` items need { id, name, qrDataUrl, summary, isFragile } already
-// resolved (QR generation is async, so it happens in the builder before this
-// renders — see move/[id]/labels/page.js).
+// One multi-page A4 doc, 2x5 grid (~87.5x50mm cells, 5mm gap) — stuffbox-plan.md §8.
+// `labels` items need { id, name, qrDataUrl, summary, isFragile, orientation }
+// already resolved (QR generation is async, so it happens in the builder
+// before this renders — see move/[id]/labels/page.js). `orientation` is the
+// storage_orientation enum (NONE/UP/DOWN/LEFT/RIGHT) — null/undefined/NONE
+// hides the arrow entirely.
 export const LabelDocument = ({ labels }) => {
     const pages = chunk(labels, CELLS_PER_PAGE);
     return (

@@ -279,6 +279,7 @@ export default function MoveLabelsPage({ params }) {
                     name: item.name,
                     isFragile: item.is_fragile,
                     summary: null,
+                    orientation: item.storage_orientation,
                     qrDataUrl: await generateQrDataUrl(`${APP_URL}/i/${item.id}`),
                 })),
             );
@@ -293,6 +294,7 @@ export default function MoveLabelsPage({ params }) {
                         name: location.name,
                         isFragile: location.is_fragile,
                         summary: showSummary ? location.ai_summary : null,
+                        orientation: location.storage_orientation,
                         qrDataUrl: await generateQrDataUrl(`${APP_URL}/l/${location.id}`),
                     };
                 }),
