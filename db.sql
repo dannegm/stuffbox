@@ -16,6 +16,15 @@ create schema if not exists stuffbox;
 
 
 -- -----------------------------------------------------------------------------
+-- Extensions
+-- -----------------------------------------------------------------------------
+-- pg_trgm: trigram similarity, backing the fuzzy/typo-tolerant name match in
+-- stuffbox.search_workspace (word_similarity) and doubling as an ilike
+-- '%...%' accelerator for the GIN indexes below.
+create extension if not exists pg_trgm;
+
+
+-- -----------------------------------------------------------------------------
 -- ID strategy
 -- -----------------------------------------------------------------------------
 -- Two kinds of primary key in this schema:
@@ -621,6 +630,111 @@ grant execute on function stuffbox.location_total_price(text) to authenticated;
 
 
 -- -----------------------------------------------------------------------------
+-- Workspace search
+-- -----------------------------------------------------------------------------
+-- Resolves only the ordered (kind, id) pairs + total_count for a workspace
+-- search — the one thing that needs real SQL (union across two tables, a
+-- recursive ancestor walk for the house filter, and a single shared count).
+-- The app fetches full item/location rows for this page's ids separately via
+-- plain direct-client selects (same shape as itemsAtLocationQuery /
+-- locationChildrenQuery), so search results carry the same photos/tags/
+-- fields as their native list views instead of a stripped-down shape.
+--
+-- Plain invoker rights (no security definer), same pattern as
+-- location_total_price above — RLS on locations/items already scopes this to
+-- what the caller can see. Type only applies to locations (items have no
+-- `type` column) and tags only apply to items (locations have no tags), so
+-- each side excludes itself entirely when the other's filter is active.
+--
+-- Name matching combines exact substring (ilike) with pg_trgm word_similarity
+-- for typo tolerance ("macbuc" → "MacBook") — ilike stays as the guaranteed
+-- match (trigram similarity is unreliable for very short queries like SKUs),
+-- word_similarity only adds the fuzzy net on top. word_similarity (not plain
+-- similarity) because it scores the best-matching word/substring within the
+-- name rather than the whole string, since names are usually longer than the
+-- query. Results rank by word_similarity when a query is present, else by
+-- name (plain alphabetical browse).
+create or replace function stuffbox.search_workspace(
+  p_workspace_id text,
+  p_query        text default null,
+  p_tag_ids      uuid[] default null,
+  p_type_ids     text[] default null,
+  p_packed       boolean default null,
+  p_house_ids    text[] default null,
+  p_limit        int default 25,
+  p_offset       int default 0
+)
+returns table (
+  kind        text,
+  id          text,
+  total_count bigint
+)
+language sql
+stable
+as $$
+  with recursive location_roots as (
+    select l.id, l.id as root_id
+    from stuffbox.locations l
+    where l.parent_id is null and l.workspace_id = p_workspace_id
+    union all
+    select l.id, lr.root_id
+    from stuffbox.locations l
+    join location_roots lr on l.parent_id = lr.id
+    where l.workspace_id = p_workspace_id
+  ),
+  matched_locations as (
+    select 'location'::text as kind, l.id, l.name
+    from stuffbox.locations l
+    join location_roots lr on lr.id = l.id
+    where l.workspace_id = p_workspace_id
+      and p_tag_ids is null
+      and (
+        p_query is null
+        or l.name ilike '%' || p_query || '%'
+        or word_similarity(p_query, l.name) > 0.3
+      )
+      and (p_type_ids is null or l.type = any(p_type_ids))
+      and (p_packed is null or (l.active_move_id is not null) = p_packed)
+      and (p_house_ids is null or lr.root_id = any(p_house_ids))
+  ),
+  matched_items as (
+    select 'item'::text as kind, i.id, i.name
+    from stuffbox.items i
+    join location_roots lr on lr.id = i.location_id
+    where i.workspace_id = p_workspace_id
+      and p_type_ids is null
+      and (
+        p_query is null
+        or i.name ilike '%' || p_query || '%'
+        or word_similarity(p_query, i.name) > 0.3
+      )
+      and (p_packed is null or (i.active_move_id is not null) = p_packed)
+      and (p_house_ids is null or lr.root_id = any(p_house_ids))
+      and (
+        p_tag_ids is null
+        or exists (
+          select 1 from stuffbox.item_tags it
+          where it.item_id = i.id and it.tag_id = any(p_tag_ids)
+        )
+      )
+  ),
+  combined as (
+    select * from matched_locations
+    union all
+    select * from matched_items
+  )
+  select c.kind, c.id, count(*) over() as total_count
+  from combined c
+  order by
+    case when p_query is not null then word_similarity(p_query, c.name) end desc nulls last,
+    c.name
+  limit p_limit offset p_offset;
+$$;
+
+grant execute on function stuffbox.search_workspace(text, text, uuid[], text[], boolean, text[], int, int) to authenticated;
+
+
+-- -----------------------------------------------------------------------------
 -- Triggers
 -- -----------------------------------------------------------------------------
 -- Account provisioning (profile + workspace + owner membership + seeded
@@ -698,6 +812,11 @@ create index if not exists idx_tags_workspace_id              on stuffbox.tags (
 create index if not exists idx_option_lists_workspace_field   on stuffbox.option_lists (workspace_id, field);
 create index if not exists idx_movement_log_workspace_id      on stuffbox.movement_log (workspace_id);
 create index if not exists idx_profiles_is_super_admin        on stuffbox.profiles (is_super_admin);
+
+-- Trigram GIN indexes — back the fuzzy name match in search_workspace and
+-- double as an ilike '%...%' accelerator (pg_trgm's documented use case).
+create index if not exists idx_locations_name_trgm on stuffbox.locations using gin (name gin_trgm_ops);
+create index if not exists idx_items_name_trgm     on stuffbox.items using gin (name gin_trgm_ops);
 
 
 -- -----------------------------------------------------------------------------

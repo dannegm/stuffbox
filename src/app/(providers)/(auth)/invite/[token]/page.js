@@ -33,7 +33,7 @@ const AuthShell = ({ children, accent = 'primary' }) => (
         <div
             aria-hidden
             className={cn(
-                'pointer-events-none absolute top-1/3 left-1/2 size-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:size-[36rem]',
+                'pointer-events-none absolute top-1/3 left-1/2 size-112 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl sm:size-144',
                 {
                     'bg-primary/10': accent === 'primary',
                     'bg-destructive/10': accent === 'destructive',

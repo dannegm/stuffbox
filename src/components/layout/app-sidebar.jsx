@@ -22,6 +22,7 @@ import {
     SidebarSeparator,
 } from '@/ui/sidebar';
 import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher';
+import { SidebarSearch } from '@/components/layout/sidebar-search';
 import { HousesNav } from '@/components/layout/houses-nav';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
@@ -98,6 +99,7 @@ export const AppSidebar = () => {
                 <WorkspaceSwitcher />
             </SidebarHeader>
             <SidebarContent>
+                <SidebarSearch />
                 <HousesNav />
                 <SidebarSeparator />
                 <SidebarGroup>
