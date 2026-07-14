@@ -378,7 +378,7 @@ export default function LocationPage({ params }) {
     const handleDelete = () => {
         const warning =
             children?.length || items?.length
-                ? `"${location?.name}" tiene ${children.length} location(s) y ${items.length} item(s) dentro. Se eliminará todo. ¿Continuar?`
+                ? `"${location?.name}" tiene ${children?.length} location(s) y ${items?.length} item(s) dentro. Se eliminará todo. ¿Continuar?`
                 : `¿Eliminar "${location?.name}"? Esto no se puede deshacer.`;
         if (!window.confirm(warning)) return;
         destroy(id);
