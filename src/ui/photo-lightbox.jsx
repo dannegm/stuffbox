@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { Button } from '@/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/ui/carousel';
+import { CroppedPhoto } from '@/ui/cropped-photo';
 import { cn } from '@/helpers/utils';
 
 // Fullscreen image viewer for PhotoGallery — a bespoke Popup (not
@@ -14,11 +15,10 @@ import { cn } from '@/helpers/utils';
 // the drag-vs-tap distinction, native image-drag suppression, and
 // touch-action correctly. Click anywhere on the dark backdrop closes it; the
 // carousel and its own controls stop that click from bubbling. `photos` is
-// `[{ src, cropStyle, raw }]` — resolving r2_key/previewUrl into a url and
-// crop_x/crop_y/zoom into cropStyle (getPhotoCropStyle, src/helpers/photo-crop.js)
-// is the caller's job, so this stays a dumb viewer; `raw` (the original photo
-// row) is only forwarded to `onEditPhoto`, never read here. `onEditPhoto` is
-// optional — omit it to hide the edit button entirely.
+// `[{ src, photo }]` — resolving r2_key/previewUrl into `src` is the
+// caller's job; `photo` (the raw row) feeds CroppedPhoto's crop_x/crop_y/
+// zoom and is forwarded to `onEditPhoto`. `onEditPhoto` is optional — omit
+// it to hide the edit button entirely.
 export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPhoto }) => {
     const open = index !== null && index !== undefined;
     const hasMultiple = photos.length > 1;
@@ -61,14 +61,9 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                                         key={photoIndex}
                                         className='flex h-full items-center justify-center pl-0'
                                     >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={photo.src}
-                                            alt=''
-                                            draggable={false}
-                                            style={photo.cropStyle}
-                                            className='size-full scale-(--photo-zoom) rounded-2xl object-cover object-(--photo-position) shadow-lg shadow-black/40'
-                                        />
+                                        <div className='relative size-full overflow-hidden rounded-2xl shadow-lg shadow-black/40'>
+                                            <CroppedPhoto src={photo.src} photo={photo.photo} />
+                                        </div>
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
@@ -108,7 +103,7 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                             aria-label='Editar foto'
                             onClick={event => {
                                 event.stopPropagation();
-                                onEditPhoto(photos[index].raw);
+                                onEditPhoto(photos[index].photo);
                             }}
                             className='absolute top-4 left-4 bg-black/40 text-white hover:bg-black/60 hover:text-white'
                         >

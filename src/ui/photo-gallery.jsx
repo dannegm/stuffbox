@@ -6,7 +6,7 @@ import { cn } from '@/helpers/utils';
 import { Spinner } from '@/ui/spinner';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { PhotoCropDialog } from '@/components/photos/photo-crop-dialog';
-import { getPhotoCropStyle } from '@/helpers/photo-crop';
+import { CroppedPhoto } from '@/ui/cropped-photo';
 
 const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 
@@ -41,16 +41,11 @@ export const PhotoGallery = ({
                         type='button'
                         aria-label='Ver foto'
                         onClick={() => setOpenIndex(index)}
-                        className='block size-full'
+                        className='relative block size-full overflow-hidden'
                     >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={photoSrc(photo)}
-                            alt=''
-                            style={getPhotoCropStyle(photo)}
-                            className='size-full scale-(--photo-zoom) object-cover object-(--photo-position)'
-                        />
+                        <CroppedPhoto src={photoSrc(photo)} photo={photo} />
                     </button>
+
                     <button
                         type='button'
                         aria-label='Editar foto'
@@ -97,11 +92,7 @@ export const PhotoGallery = ({
             </label>
 
             <PhotoLightbox
-                photos={all.map(photo => ({
-                    src: photoSrc(photo),
-                    cropStyle: getPhotoCropStyle(photo),
-                    raw: photo,
-                }))}
+                photos={all.map(photo => ({ src: photoSrc(photo), photo }))}
                 index={openIndex}
                 onIndexChange={setOpenIndex}
                 onClose={() => setOpenIndex(null)}
