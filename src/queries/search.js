@@ -6,8 +6,8 @@ export const SEARCH_PAGE_SIZE = 25;
 // results carry the exact same fields (photos, tags, quantity, type, etc.)
 // as their native list views, not a stripped-down shape.
 const ITEM_SELECT =
-    'id, name, quantity, icon, active_move_id, item_photos(r2_key, order), item_tags(tags(icon))';
-const LOCATION_SELECT = '*, location_photos(r2_key, order)';
+    'id, name, quantity, icon, active_move_id, item_photos(r2_key, order, crop_x, crop_y, zoom), item_tags(tags(icon))';
+const LOCATION_SELECT = '*, location_photos(r2_key, order, crop_x, crop_y, zoom)';
 
 // Growing-window pagination ("cargar más") — each click re-fetches from
 // offset 0 with a bigger limit instead of appending distinct offset pages.

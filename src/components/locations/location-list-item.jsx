@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { CaretRightIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
+import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PackedTape } from '@/components/moves/packed-tape';
-import { getLocationIcon, getLocationPhotoUrl } from '@/helpers/location';
+import { getLocationIcon, getLocationPhotoUrl, getFirstLocationPhoto } from '@/helpers/location';
 import { cn } from '@/helpers/utils';
 
 // `counts` = { locations, items } — direct/root-level only, not recursive.
@@ -27,6 +28,7 @@ export const LocationListItem = ({
     isDragOver = false,
 }) => {
     const photoUrl = getLocationPhotoUrl(location);
+    const photo = getFirstLocationPhoto(location);
 
     const className = cn(
         'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border bg-card p-3 text-left text-sm shadow-xs ring-1 ring-foreground/5 transition-colors hover:bg-muted',
@@ -51,10 +53,9 @@ export const LocationListItem = ({
                     <Checkbox checked={selected} onCheckedChange={() => onToggle(location.id)} />
                 </span>
             )}
-            <span className='z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
+            <span className='relative z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
                 {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrl} alt='' className='size-full object-cover' />
+                    <CroppedPhoto src={photoUrl} photo={photo} />
                 ) : (
                     <DynamicIcon icon={getLocationIcon(location)} />
                 )}

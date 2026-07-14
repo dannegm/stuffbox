@@ -113,13 +113,12 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
                     <Button
                         type='button'
                         variant='outline'
-                        className='self-start'
                         onClick={handleReset}
                     >
                         Restablecer
                     </Button>
 
-                    <div className='flex-1' />
+                    <div className='hidden sm:block flex-1' />
 
                     <Button onClick={handleSave} disabled={isSaving || !cropSize}>
                         {isSaving && <Spinner data-icon='inline-start' />}

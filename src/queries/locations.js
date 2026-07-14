@@ -23,7 +23,7 @@ export const locationChildrenQuery = ({ workspaceId, parentId = null }, opts = {
     queryFn: async () => {
         let query = supabase()
             .from('locations')
-            .select('*, location_photos(r2_key, order)')
+            .select('*, location_photos(r2_key, order, crop_x, crop_y, zoom)')
             .eq('workspace_id', workspaceId)
             .order('name');
         query = parentId ? query.eq('parent_id', parentId) : query.is('parent_id', null);

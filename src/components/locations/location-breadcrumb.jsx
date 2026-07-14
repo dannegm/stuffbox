@@ -1,96 +1,161 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
-import { CaretRightIcon, DotsThreeIcon } from '@phosphor-icons/react/ssr';
+import {
+    Breadcrumb,
+    BreadcrumbEllipsis,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/ui/breadcrumb';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/ui/dropdown-menu';
+import { Button } from '@/ui/button';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { cn } from '@/helpers/utils';
 
-// Icon lives inside the same color-carrying element as the text (not a
-// sibling of it) so it inherits `current`/hover text color instead of
-// staying at the <nav>'s base muted color. Each crumb is width-capped so
-// `truncate` actually has something to clip against — without a bound, a
-// long location name just grows the row past a 380px viewport instead of
-// clipping, since `flex-wrap` alone doesn't constrain a single item's width.
-const Crumb = ({ className, href, icon, children, index = 0, current = false }) => (
-    <span className={cn('flex min-w-0 shrink items-center gap-1', className)}>
-        <CaretRightIcon
-            className={cn('size-3.5 shrink-0 text-muted-foreground/60', {
-                'hidden sm:block': index === 0,
-            })}
-        />
-        {current ? (
-            <span className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground'>
-                {icon}
-                <span className='max-w-32 truncate sm:max-w-48'>{children}</span>
-            </span>
-        ) : (
-            <Link
-                href={href}
-                className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
-            >
-                {icon}
-                <span className='max-w-24 truncate sm:max-w-36'>{children}</span>
-            </Link>
-        )}
-    </span>
-);
-
 // `currentIcon` is explicit rather than derived from `current` because this
 // breadcrumb is shared by location pages (current = a location, icon via
 // getLocationIcon) and the item page (current = an item, icon is its own
 // `item.icon` field) — two different shapes, same component.
+//
+// Responsive shape: on mobile the workspace crumb disappears entirely, the
+// first ancestor (root) and the last one (`current`'s direct parent — a
+// de-facto "back" button) stay visible, and whatever's between them
+// collapses behind a `BreadcrumbEllipsis` that opens a `DropdownMenu` listing
+// those hidden ancestors (shadcn's documented ellipsis+dropdown composition)
+// — not a static "…", an actual way back to them. Desktop (`sm:`) shows the
+// full chain instead; the collapsed-only items are simply hidden there via
+// `sm:hidden`, mirroring how the always-visible ones use `hidden sm:inline-flex`.
 export const LocationBreadcrumb = ({
     workspace,
     ancestors = [],
     current,
     currentIcon,
     className,
-}) => (
-    <nav
-        data-block='LocationBreadcrumb'
-        className={cn(
-            'flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-muted-foreground',
-            className,
-        )}
-    >
-        <Link
-            href={`/workspace/${workspace.id}`}
-            className='hidden sm:flex min-w-0 shrink items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground'
-        >
-            <span
-                className='size-2 shrink-0 rounded-full bg-(--bullet-color)'
-                style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
-            />
-            <span className='max-w-24 truncate sm:max-w-36'>{workspace.name}</span>
-        </Link>
+}) => {
+    const firstAncestor = ancestors[0];
+    // Only set when distinct from firstAncestor — a single-ancestor chain
+    // (e.g. current sits directly inside a house) has nothing to duplicate.
+    const lastAncestor = ancestors.length > 1 ? ancestors[ancestors.length - 1] : null;
+    const middleAncestors = ancestors.length > 2 ? ancestors.slice(1, -1) : [];
 
-        {ancestors.map((ancestor, index) => (
-            <Crumb
-                key={ancestor.id}
-                index={index}
-                href={`/location/${ancestor.id}`}
-                className={cn({
-                    'hidden sm:flex': index > 0,
-                })}
-                icon={
-                    <DynamicIcon icon={getLocationIcon(ancestor)} className='size-3.5 shrink-0' />
-                }
-            >
-                {ancestor.name}
-            </Crumb>
-        ))}
+    return (
+        <Breadcrumb data-block='LocationBreadcrumb' className={cn('min-w-0', className)}>
+            <BreadcrumbList>
+                <BreadcrumbItem className='hidden min-w-0 shrink sm:inline-flex'>
+                    <BreadcrumbLink
+                        render={<Link href={`/workspace/${workspace.id}`} />}
+                        className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-muted'
+                    >
+                        <span
+                            className='size-2 shrink-0 rounded-full bg-(--bullet-color)'
+                            style={{ '--bullet-color': resolveWorkspaceColor(workspace) }}
+                        />
+                        <span className='max-w-24 truncate sm:max-w-36'>{workspace.name}</span>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className='hidden sm:flex' />
 
-        <span className={cn('flex sm:hidden min-w-0 shrink items-center gap-1')}>
-            <CaretRightIcon className='size-3.5 shrink-0 text-muted-foreground/60' />
-            <DotsThreeIcon className='size-4 shrink-0' />
-        </span>
+                {firstAncestor && (
+                    <>
+                        <BreadcrumbItem className='min-w-0 shrink'>
+                            <BreadcrumbLink
+                                render={<Link href={`/location/${firstAncestor.id}`} />}
+                                className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-muted'
+                            >
+                                <DynamicIcon
+                                    icon={getLocationIcon(firstAncestor)}
+                                    className='size-3.5 shrink-0'
+                                />
+                                <span className='max-w-24 truncate sm:max-w-36'>
+                                    {firstAncestor.name}
+                                </span>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                    </>
+                )}
 
-        <Crumb
-            icon={<DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />}
-            index={ancestors.length}
-            current
-        >
-            {current.name}
-        </Crumb>
-    </nav>
-);
+                {middleAncestors.map(ancestor => (
+                    <Fragment key={ancestor.id}>
+                        <BreadcrumbItem className='hidden min-w-0 shrink sm:inline-flex'>
+                            <BreadcrumbLink
+                                render={<Link href={`/location/${ancestor.id}`} />}
+                                className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-muted'
+                            >
+                                <DynamicIcon
+                                    icon={getLocationIcon(ancestor)}
+                                    className='size-3.5 shrink-0'
+                                />
+                                <span className='max-w-36 truncate'>{ancestor.name}</span>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator className='hidden sm:flex' />
+                    </Fragment>
+                ))}
+
+                {middleAncestors.length > 0 && (
+                    <>
+                        <BreadcrumbItem className='sm:hidden'>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    render={<Button variant='ghost' size='icon-sm' />}
+                                >
+                                    <BreadcrumbEllipsis />
+                                    <span className='sr-only'>Mostrar ruta completa</span>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='start'>
+                                    {middleAncestors.map(ancestor => (
+                                        <DropdownMenuItem
+                                            key={ancestor.id}
+                                            render={<Link href={`/location/${ancestor.id}`} />}
+                                        >
+                                            <DynamicIcon icon={getLocationIcon(ancestor)} />
+                                            {ancestor.name}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator className='sm:hidden' />
+                    </>
+                )}
+
+                {lastAncestor && (
+                    <>
+                        <BreadcrumbItem className='min-w-0 shrink'>
+                            <BreadcrumbLink
+                                render={<Link href={`/location/${lastAncestor.id}`} />}
+                                className='flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-muted'
+                            >
+                                <DynamicIcon
+                                    icon={getLocationIcon(lastAncestor)}
+                                    className='size-3.5 shrink-0'
+                                />
+                                <span className='max-w-18 truncate sm:max-w-36'>
+                                    {lastAncestor.name}
+                                </span>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                    </>
+                )}
+
+                <BreadcrumbItem className='min-w-0 shrink'>
+                    <BreadcrumbPage className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium'>
+                        <DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />
+                        <span className='max-w-24 truncate sm:max-w-48'>{current.name}</span>
+                    </BreadcrumbPage>
+                </BreadcrumbItem>
+            </BreadcrumbList>
+        </Breadcrumb>
+    );
+};

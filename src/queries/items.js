@@ -7,7 +7,7 @@ export const itemsAtLocationQuery = (locationId, opts = {}) => ({
         const { data, error } = await supabase()
             .from('items')
             .select(
-                'id, name, quantity, icon, active_move_id, item_photos(r2_key, order), item_tags(tags(icon))',
+                'id, name, quantity, icon, active_move_id, item_photos(r2_key, order, crop_x, crop_y, zoom), item_tags(tags(icon))',
             )
             .eq('location_id', locationId)
             .order('name');

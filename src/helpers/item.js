@@ -7,10 +7,18 @@ const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 export const getItemIcon = item =>
     item?.icon ?? item?.item_tags?.[0]?.tags?.icon ?? FALLBACK_ITEM_ICON;
 
-// photo → item.icon → first tag icon → fallback (stuffbox-plan.md §4).
-export const getItemPhotoUrl = item => {
+// The raw first-by-order photo row (crop_x/crop_y/zoom included) — needed
+// wherever a thumbnail has to respect the saved crop (CroppedPhoto,
+// src/ui/cropped-photo.jsx), not just its url.
+export const getFirstItemPhoto = item => {
     const photos = item?.item_photos ?? [];
     if (photos.length === 0) return null;
     const [first] = [...photos].sort((a, b) => a.order - b.order);
-    return `${R2_PUBLIC_URL}/${first.r2_key}`;
+    return first;
+};
+
+// photo → item.icon → first tag icon → fallback (stuffbox-plan.md §4).
+export const getItemPhotoUrl = item => {
+    const photo = getFirstItemPhoto(item);
+    return photo ? `${R2_PUBLIC_URL}/${photo.r2_key}` : null;
 };

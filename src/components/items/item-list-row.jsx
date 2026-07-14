@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
+import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PackedTape } from '@/components/moves/packed-tape';
-import { getItemIcon, getItemPhotoUrl } from '@/helpers/item';
+import { getItemIcon, getItemPhotoUrl, getFirstItemPhoto } from '@/helpers/item';
 import { cn } from '@/helpers/utils';
 
 // `selectable` swaps the row from a navigating Link to a toggle button —
@@ -19,6 +20,7 @@ export const ItemListRow = ({
     onDragStart,
 }) => {
     const photoUrl = getItemPhotoUrl(item);
+    const photo = getFirstItemPhoto(item);
 
     const className = cn(
         'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
@@ -43,10 +45,9 @@ export const ItemListRow = ({
                     <Checkbox checked={selected} onCheckedChange={() => onToggle(item.id)} />
                 </span>
             )}
-            <span className='z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
+            <span className='relative z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
                 {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrl} alt='' className='size-full object-cover' />
+                    <CroppedPhoto src={photoUrl} photo={photo} />
                 ) : (
                     <DynamicIcon icon={getItemIcon(item)} />
                 )}
