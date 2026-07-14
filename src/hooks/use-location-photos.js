@@ -8,6 +8,7 @@ import {
     locationPhotosQuery,
     createLocationPhotosMutation,
     deleteLocationPhotoMutation,
+    updateLocationPhotoCropMutation,
 } from '@/queries/location-photos';
 
 const MAX_DIMENSION = Number(process.env.NEXT_PUBLIC_STUFFBOX_MAX_IMAGE_DIMENSION) || 2000;
@@ -30,6 +31,9 @@ export const useLocationPhotos = ({ locationId, workspaceId }) => {
     );
     const { mutate: removePersisted } = useMutation(
         deleteLocationPhotoMutation({ onSuccess: invalidate }),
+    );
+    const { mutate: persistCrop } = useMutation(
+        updateLocationPhotoCropMutation({ onSuccess: invalidate }),
     );
 
     const addFiles = async fileList => {
@@ -61,5 +65,10 @@ export const useLocationPhotos = ({ locationId, workspaceId }) => {
         deleteR2Objects([photo.r2_key]);
     };
 
-    return { photos, isProcessing, addFiles, removePhoto };
+    const updateCrop = (photo, cropValues) =>
+        new Promise((resolve, reject) => {
+            persistCrop({ id: photo.id, ...cropValues }, { onSuccess: resolve, onError: reject });
+        });
+
+    return { photos, isProcessing, addFiles, removePhoto, updateCrop };
 };

@@ -430,6 +430,7 @@ export default function ItemPage({ params }) {
                                     isProcessing={itemPhotos.isProcessing}
                                     onAddFiles={itemPhotos.addFiles}
                                     onRemove={itemPhotos.removePhoto}
+                                    onUpdateCrop={itemPhotos.updateCrop}
                                 />
                             </Field>
                         </FieldGroup>

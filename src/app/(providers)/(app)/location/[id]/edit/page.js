@@ -283,6 +283,7 @@ export default function LocationEditPage({ params }) {
                                             isProcessing={photos.isProcessing}
                                             onAddFiles={photos.addFiles}
                                             onRemove={photos.removePhoto}
+                                            onUpdateCrop={photos.updateCrop}
                                         />
                                     </Field>
                                 </FieldGroup>

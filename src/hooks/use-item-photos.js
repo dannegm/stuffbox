@@ -8,6 +8,7 @@ import {
     itemPhotosQuery,
     createItemPhotosMutation,
     deleteItemPhotoMutation,
+    updateItemPhotoCropMutation,
 } from '@/queries/item-photos';
 
 const MAX_DIMENSION = Number(process.env.NEXT_PUBLIC_STUFFBOX_MAX_IMAGE_DIMENSION) || 2000;
@@ -30,6 +31,9 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
     );
     const { mutate: removePersisted } = useMutation(
         deleteItemPhotoMutation({ onSuccess: invalidate }),
+    );
+    const { mutate: persistCrop } = useMutation(
+        updateItemPhotoCropMutation({ onSuccess: invalidate }),
     );
 
     const addFiles = async fileList => {
@@ -82,10 +86,34 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
         if (pending.length === 0) return;
         persistPhotos({
             itemId: newItemId,
-            photos: pending.map((photo, index) => ({ r2Key: photo.r2Key, order: index })),
+            photos: pending.map((photo, index) => ({
+                r2Key: photo.r2Key,
+                order: index,
+                crop_x: photo.crop_x,
+                crop_y: photo.crop_y,
+                zoom: photo.zoom,
+            })),
         });
         setPending([]);
     };
 
-    return { photos, pending, isProcessing, addFiles, removePhoto, commitPending };
+    // Persisted photo → a real mutation by id. Pending (item/new, no row yet)
+    // → just update the local draft; commitPending carries crop_x/crop_y/zoom
+    // over once the item (and its rows) actually get created.
+    const updateCrop = (photo, cropValues) => {
+        if (photo.id) {
+            return new Promise((resolve, reject) => {
+                persistCrop(
+                    { id: photo.id, ...cropValues },
+                    { onSuccess: resolve, onError: reject },
+                );
+            });
+        }
+        setPending(current =>
+            current.map(p => (p.r2Key === photo.r2Key ? { ...p, ...cropValues } : p)),
+        );
+        return Promise.resolve();
+    };
+
+    return { photos, pending, isProcessing, addFiles, removePhoto, commitPending, updateCrop };
 };

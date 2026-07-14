@@ -41,3 +41,17 @@ export const deleteLocationPhotoMutation = (opts = {}) => ({
     },
     ...opts,
 });
+
+export const updateLocationPhotoCropMutation = (opts = {}) => ({
+    mutationFn: async ({ id, crop_x, crop_y, zoom }) => {
+        const { data, error } = await supabase()
+            .from('location_photos')
+            .update({ crop_x, crop_y, zoom })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
