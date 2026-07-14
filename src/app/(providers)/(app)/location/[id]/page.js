@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Fuse from 'fuse.js';
 import {
     DndContext,
     DragOverlay,
@@ -25,6 +26,7 @@ import {
     XIcon,
     ArrowUpIcon,
     CurrencyDollarIcon,
+    MagnifyingGlassIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -67,6 +69,7 @@ import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { Stat } from '@/ui/stat';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import {
@@ -146,6 +149,8 @@ export default function LocationPage({ params }) {
     const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
     const [bulkPackOpen, setBulkPackOpen] = useState(false);
     const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
+    const [locationSearch, setLocationSearch] = useState(''); // desktop split view only
+    const [itemSearch, setItemSearch] = useState(''); // desktop split view only
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -425,6 +430,20 @@ export default function LocationPage({ params }) {
     const filteredChildren = children.filter(matchesPackFilter);
     const filteredItems = items.filter(matchesPackFilter);
     const hasFilteredResults = filteredChildren.length > 0 || filteredItems.length > 0;
+
+    // Desktop split view only: filters what's already loaded via Fuse, no
+    // refetch. Locations search by name/type, items by name/tag name.
+    const locationFuse = new Fuse(filteredChildren, { keys: ['name', 'type'], threshold: 0.3 });
+    const itemFuse = new Fuse(filteredItems, {
+        keys: ['name', 'item_tags.tags.name'],
+        threshold: 0.3,
+    });
+    const searchedChildren = locationSearch.trim()
+        ? locationFuse.search(locationSearch.trim()).map(result => result.item)
+        : filteredChildren;
+    const searchedItems = itemSearch.trim()
+        ? itemFuse.search(itemSearch.trim()).map(result => result.item)
+        : filteredItems;
     const parentName = ancestors?.[ancestors.length - 1]?.name;
 
     return (
@@ -708,72 +727,107 @@ export default function LocationPage({ params }) {
                             onDragEnd={handleDragEnd}
                         >
                             <div className='flex min-h-0 flex-1 gap-4'>
-                                <div className='flex min-w-0 flex-2 flex-col gap-2 overflow-y-auto'>
-                                    {location.parent_id && (
-                                        <MoveOutDropZone parentName={parentName} />
-                                    )}
-                                    {filteredChildren.length > 0 ? (
-                                        filteredChildren.map(child => (
-                                            <LocationListItem
-                                                key={child.id}
-                                                location={child}
-                                                counts={childCounts?.[child.id]}
-                                                selectable={selectionMode}
-                                                selected={selectedLocationIds.has(child.id)}
-                                                onToggle={toggleLocationSelection}
-                                                draggable
-                                                dragData={getLocationDragData(child)}
-                                                droppable
-                                            />
-                                        ))
-                                    ) : (
-                                        <Empty
-                                            className='flex-1 -mt-16'
-                                            data-block='SplitLocationsEmpty'
-                                        >
-                                            <EmptyHeader>
-                                                <EmptyMedia variant='icon'>
-                                                    <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
-                                                </EmptyMedia>
-                                                <EmptyTitle>Sin locations</EmptyTitle>
-                                                <EmptyDescription>
-                                                    Arrastra una location aquí para moverla a este
-                                                    nivel.
-                                                </EmptyDescription>
-                                            </EmptyHeader>
-                                        </Empty>
-                                    )}
+                                <div className='flex min-h-0 min-w-0 flex-2 flex-col gap-2'>
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <MagnifyingGlassIcon />
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            value={locationSearch}
+                                            onChange={event => setLocationSearch(event.target.value)}
+                                            placeholder='Filtrar locations…'
+                                        />
+                                    </InputGroup>
+                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
+                                        {location.parent_id && (
+                                            <MoveOutDropZone parentName={parentName} />
+                                        )}
+                                        {searchedChildren.length > 0 ? (
+                                            searchedChildren.map(child => (
+                                                <LocationListItem
+                                                    key={child.id}
+                                                    location={child}
+                                                    counts={childCounts?.[child.id]}
+                                                    selectable={selectionMode}
+                                                    selected={selectedLocationIds.has(child.id)}
+                                                    onToggle={toggleLocationSelection}
+                                                    draggable
+                                                    dragData={getLocationDragData(child)}
+                                                    droppable
+                                                />
+                                            ))
+                                        ) : (
+                                            <Empty
+                                                className='flex-1 -mt-16'
+                                                data-block='SplitLocationsEmpty'
+                                            >
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant='icon'>
+                                                        <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>
+                                                        {locationSearch.trim()
+                                                            ? 'Sin resultados'
+                                                            : 'Sin locations'}
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        {locationSearch.trim()
+                                                            ? 'Nada coincide con tu búsqueda.'
+                                                            : 'Arrastra una location aquí para moverla a este nivel.'}
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </div>
                                 </div>
                                 <Separator orientation='vertical' />
-                                <div className='flex min-w-0 flex-3 flex-col gap-2 overflow-y-auto'>
-                                    {filteredItems.length > 0 ? (
-                                        filteredItems.map(item => (
-                                            <ItemListRow
-                                                key={item.id}
-                                                item={item}
-                                                selectable={selectionMode}
-                                                selected={selectedItemIds.has(item.id)}
-                                                onToggle={toggleItemSelection}
-                                                draggable
-                                                dragData={getItemDragData(item)}
-                                            />
-                                        ))
-                                    ) : (
-                                        <Empty
-                                            className='flex-1 -mt-16'
-                                            data-block='SplitItemsEmpty'
-                                        >
-                                            <EmptyHeader>
-                                                <EmptyMedia variant='icon'>
-                                                    <DynamicIcon icon={FALLBACK_ITEM_ICON} />
-                                                </EmptyMedia>
-                                                <EmptyTitle>Sin items</EmptyTitle>
-                                                <EmptyDescription>
-                                                    Arrastra un item aquí para moverlo a este nivel.
-                                                </EmptyDescription>
-                                            </EmptyHeader>
-                                        </Empty>
-                                    )}
+                                <div className='flex min-h-0 min-w-0 flex-3 flex-col gap-2'>
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <MagnifyingGlassIcon />
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            value={itemSearch}
+                                            onChange={event => setItemSearch(event.target.value)}
+                                            placeholder='Filtrar items…'
+                                        />
+                                    </InputGroup>
+                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
+                                        {searchedItems.length > 0 ? (
+                                            searchedItems.map(item => (
+                                                <ItemListRow
+                                                    key={item.id}
+                                                    item={item}
+                                                    selectable={selectionMode}
+                                                    selected={selectedItemIds.has(item.id)}
+                                                    onToggle={toggleItemSelection}
+                                                    draggable
+                                                    dragData={getItemDragData(item)}
+                                                />
+                                            ))
+                                        ) : (
+                                            <Empty
+                                                className='flex-1 -mt-16'
+                                                data-block='SplitItemsEmpty'
+                                            >
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant='icon'>
+                                                        <DynamicIcon icon={FALLBACK_ITEM_ICON} />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>
+                                                        {itemSearch.trim()
+                                                            ? 'Sin resultados'
+                                                            : 'Sin items'}
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        {itemSearch.trim()
+                                                            ? 'Nada coincide con tu búsqueda.'
+                                                            : 'Arrastra un item aquí para moverlo a este nivel.'}
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <DragOverlay>
