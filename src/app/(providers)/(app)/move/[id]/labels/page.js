@@ -138,10 +138,10 @@ const LabelPreviewCard = ({ name, isFragile, className, style }) => (
         style={style}
     >
         <div className='flex items-start gap-2'>
-            <span className='flex size-11 shrink-0 items-center justify-center rounded-xs border border-dashed border-black/20 bg-black/5'>
+            <span className='flex size-8 shrink-0 items-center justify-center rounded-xs border border-dashed border-black/20 bg-black/5'>
                 <QrCodeIcon weight='light' className='size-6 text-black/35' />
             </span>
-            <p className='min-w-0 flex-1 truncate text-[0.7rem] leading-tight font-bold text-black'>
+            <p className='min-w-0 flex-1 truncate text-sm leading-tight font-bold text-black'>
                 {name}
             </p>
         </div>
