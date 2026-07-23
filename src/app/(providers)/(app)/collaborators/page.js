@@ -348,7 +348,12 @@ export default function CollaboratorsPage() {
                     <Stat icon={UsersIcon} value={members.length} label='colaboradores' />
                     <AvatarGroup className='ml-auto'>
                         {members.slice(0, 4).map(member => (
-                            <Avatar key={member.user_id} size='sm'>
+                            <Avatar
+                                key={member.user_id}
+                                size='sm'
+                                className='bg-(--profile-color)'
+                                style={{ '--profile-color': member.profiles?.color }}
+                            >
                                 <AvatarImage
                                     src={getAvatarUrl(
                                         member.profiles?.avatar_seed,

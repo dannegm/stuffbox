@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 
 const PENDING_IDENTITY_KEY = 'stuffbox:pending-identity';
+const PENDING_INVITE_TOKEN_KEY = 'stuffbox:pending-invite-token';
 
 // Stashed by the login/invite pages right before signInWithOtp(), so the
 // pregenerated name/color/gender/avatar the user saw on the identity card
@@ -20,6 +21,23 @@ const popPendingIdentity = () => {
         return null;
     }
 };
+
+// Stashed by /invite/[token] on mount, before the OTP verifies, so both the
+// page's own awaited ensureAccountProvisioned() call AND AuthProvider's
+// fire-and-forget one (racing off the same SIGNED_IN event) know a workspace
+// join is about to happen via claim_workspace_invite and skip auto-creating
+// a throwaway "Mi espacio" — whichever of the two runs first, peeking (not
+// popping) means the other still sees it. The invite page itself clears it
+// once the claim resolves, success or failure.
+export const setPendingInviteToken = token => {
+    sessionStorage.setItem(PENDING_INVITE_TOKEN_KEY, token);
+};
+
+export const clearPendingInviteToken = () => {
+    sessionStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
+};
+
+const hasPendingInviteToken = () => !!sessionStorage.getItem(PENDING_INVITE_TOKEN_KEY);
 
 const CONDITION_OPTIONS = [
     'Nuevo',
@@ -72,6 +90,12 @@ export const ensureAccountProvisioned = async (supabase, user) => {
         .maybeSingle();
 
     if (membership) return;
+
+    // A workspace join via invite token is in flight for this session — let
+    // claim_workspace_invite() supply the membership instead of creating a
+    // throwaway default workspace here. If the claim ends up failing, the
+    // invite page clears the flag and calls this again to fall back to one.
+    if (hasPendingInviteToken()) return;
 
     const workspaceId = nanoid(8);
 

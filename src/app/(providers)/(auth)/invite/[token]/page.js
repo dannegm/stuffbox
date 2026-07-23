@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { LinkBreakIcon, UsersIcon } from '@phosphor-icons/react/ssr';
@@ -10,7 +10,13 @@ import { Spinner } from '@/ui/spinner';
 import { EmailCodeCard } from '@/components/auth/email-code-card';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/services/supabase';
-import { ensureAccountProvisioned } from '@/services/provision-account';
+import {
+    ensureAccountProvisioned,
+    setPendingInviteToken,
+    clearPendingInviteToken,
+} from '@/services/provision-account';
+import { inviteLinks } from '@/services/invite-links';
+import { workspacesQuery } from '@/queries/workspaces';
 import { cn } from '@/helpers/utils';
 
 const inviteQuery = token => ({
@@ -54,6 +60,36 @@ const AuthShell = ({ children, accent = 'primary' }) => (
     </div>
 );
 
+const Loading = ({ label = 'Cargando invitación…' }) => (
+    <AuthShell>
+        <div className='flex flex-col items-center gap-3 text-muted-foreground'>
+            <Spinner className='size-6' />
+            <p className='text-xs'>{label}</p>
+        </div>
+    </AuthShell>
+);
+
+const InvalidInviteCard = () => (
+    <AuthShell accent='destructive'>
+        <Card
+            className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-destructive/40 shadow-lg shadow-destructive/10'
+            data-block='InvalidInviteCard'
+        >
+            <CardHeader className='items-center gap-3 text-center'>
+                <span className='mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive [&_svg]:size-5'>
+                    <LinkBreakIcon weight='bold' />
+                </span>
+                <div>
+                    <CardTitle>Invitación no válida</CardTitle>
+                    <CardDescription className='mt-1 text-pretty'>
+                        Este enlace venció o ya se usó. Pide uno nuevo a quien te invitó.
+                    </CardDescription>
+                </div>
+            </CardHeader>
+        </Card>
+    </AuthShell>
+);
+
 export default function InvitePage({ params }) {
     const { token } = use(params);
     const router = useRouter();
@@ -63,12 +99,46 @@ export default function InvitePage({ params }) {
     const [error, setError] = useState(null);
 
     const { data: invite, isPending: isInvitePending } = useQuery(inviteQuery(token));
+    const { data: workspaces, isPending: isWorkspacesPending } = useQuery(
+        workspacesQuery({ enabled: !!user }),
+    );
+
+    // Tracked locally (not the DB) — a visitor who already joined through
+    // this exact link before gets no confirmation screen at all on repeat
+    // visits, even if the invite row itself has since expired or been
+    // deleted: the link becomes a direct shortcut back into the workspace.
+    const cachedWorkspaceId = inviteLinks.get(token);
+    const alreadyJoined = !!user && !!cachedWorkspaceId;
+
+    // Invite is dead and this browser has no memory of ever using it — the
+    // only helpful thing left to do for a signed-in visitor is drop them on
+    // a workspace they already belong to, instead of a dead end.
+    const needsFallback = !!user && !isInvitePending && !invite?.valid && !cachedWorkspaceId;
+    const fallbackWorkspaceId = workspaces?.[0]?.id ?? null;
+
+    useEffect(() => {
+        if (alreadyJoined) router.replace(`/workspace/${cachedWorkspaceId}`);
+    }, [alreadyJoined, cachedWorkspaceId, router]);
+
+    useEffect(() => {
+        if (needsFallback && !isWorkspacesPending && fallbackWorkspaceId) {
+            router.replace(`/workspace/${fallbackWorkspaceId}`);
+        }
+    }, [needsFallback, isWorkspacesPending, fallbackWorkspaceId, router]);
+
+    // Set as soon as the page mounts for an unauthenticated visitor, well
+    // before the OTP verifies — see provision-account.js for why this needs
+    // to beat AuthProvider's fire-and-forget SIGNED_IN listener.
+    useEffect(() => {
+        if (!user) setPendingInviteToken(token);
+    }, [token, user]);
 
     const claimInvite = async () => {
         const { error: claimError } = await supabase().rpc('claim_workspace_invite', {
             p_token: token,
         });
         if (claimError) throw claimError;
+        inviteLinks.set(token, invite.workspace_id);
         router.replace('/');
     };
 
@@ -84,37 +154,44 @@ export default function InvitePage({ params }) {
     };
 
     if (isInvitePending || isAuthLoading) {
+        return <Loading />;
+    }
+
+    // Already a member via this exact link — redirecting above, nothing to
+    // confirm.
+    if (alreadyJoined) {
+        return <Loading label='Entrando al espacio…' />;
+    }
+
+    // Returning visitor, session expired — a plain login (no identity/
+    // registration step, they already have a profile) then straight into
+    // the workspace, skipping the "Unirse" confirmation entirely.
+    if (!user && cachedWorkspaceId) {
         return (
             <AuthShell>
-                <div className='flex flex-col items-center gap-3 text-muted-foreground'>
-                    <Spinner className='size-6' />
-                    <p className='text-xs'>Cargando invitación…</p>
-                </div>
+                <EmailCodeCard
+                    title='Bienvenido de vuelta'
+                    description='Escribe tu correo para volver a entrar a tu espacio.'
+                    emailSubmitLabel='Enviar código'
+                    codeSubmitLabel='Entrar'
+                    onVerified={async () => {
+                        clearPendingInviteToken();
+                        router.replace(`/workspace/${cachedWorkspaceId}`);
+                    }}
+                />
             </AuthShell>
         );
     }
 
     if (!invite?.valid) {
-        return (
-            <AuthShell accent='destructive'>
-                <Card
-                    className='relative w-full max-w-sm gap-5 overflow-hidden rounded-2xl border-t-4 border-destructive/40 shadow-lg shadow-destructive/10'
-                    data-block='InvalidInviteCard'
-                >
-                    <CardHeader className='items-center gap-3 text-center'>
-                        <span className='mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive [&_svg]:size-5'>
-                            <LinkBreakIcon weight='bold' />
-                        </span>
-                        <div>
-                            <CardTitle>Invitación no válida</CardTitle>
-                            <CardDescription className='mt-1 text-pretty'>
-                                Este enlace venció o ya se usó. Pide uno nuevo a quien te invitó.
-                            </CardDescription>
-                        </div>
-                    </CardHeader>
-                </Card>
-            </AuthShell>
-        );
+        if (needsFallback) {
+            return fallbackWorkspaceId ? (
+                <Loading label='Buscando tu espacio…' />
+            ) : (
+                <InvalidInviteCard />
+            );
+        }
+        return <InvalidInviteCard />;
     }
 
     if (user) {
@@ -170,7 +247,17 @@ export default function InvitePage({ params }) {
                     // must wait for provisioning before claiming, can't rely
                     // on AuthProvider's own fire-and-forget call for that.
                     await ensureAccountProvisioned(supabase(), verifiedUser);
-                    await claimInvite();
+                    try {
+                        await claimInvite();
+                        clearPendingInviteToken();
+                    } catch (err) {
+                        // Claim failed (invite got exhausted/expired in the
+                        // race) — clear the flag and re-run provisioning so
+                        // this account still ends up with a workspace.
+                        clearPendingInviteToken();
+                        await ensureAccountProvisioned(supabase(), verifiedUser);
+                        throw err;
+                    }
                 }}
             />
         </AuthShell>
