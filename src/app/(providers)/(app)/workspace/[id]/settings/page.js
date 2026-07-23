@@ -89,7 +89,7 @@ export default function WorkspaceSettingsPage({ params }) {
 
     useEffect(() => {
         if (!workspace) return;
-        setName(workspace.name);
+        setName(workspace?.name);
         setColor(resolveWorkspaceColor(workspace));
     }, [workspace]);
 
@@ -181,11 +181,11 @@ export default function WorkspaceSettingsPage({ params }) {
 
     const handleDeleteWorkspace = async () => {
         const ok = await confirm({
-            title: `¿Eliminar "${workspace.name}"?`,
+            title: `¿Eliminar "${workspace?.name}"?`,
             description: 'Se borra todo lo que contiene — casas, locations, items, tags, todo. Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
-            confirmText: workspace.name,
+            confirmText: workspace?.name,
         });
         if (!ok) return;
         deleteWorkspace(id);
@@ -230,7 +230,7 @@ export default function WorkspaceSettingsPage({ params }) {
                             Ajustes
                         </p>
                         <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
-                            {workspace.name}
+                            {workspace?.name}
                         </h1>
                     </div>
                 </div>
