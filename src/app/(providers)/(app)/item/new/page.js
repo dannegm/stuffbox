@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { WarningIcon } from '@phosphor-icons/react/ssr';
+import { WarningIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -15,6 +15,8 @@ import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
+import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
+import { SkuBarcodeDisplay } from '@/components/items/sku-barcode-display';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { getLocationIcon } from '@/helpers/location';
 import { PhotoGallery } from '@/ui/photo-gallery';
@@ -29,7 +31,13 @@ import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/ui/input-group';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+    InputGroupText,
+} from '@/ui/input-group';
 
 export default function NewItemPage() {
     const router = useRouter();
@@ -69,6 +77,7 @@ export default function NewItemPage() {
     const [sentimentalValue, setSentimentalValue] = useState(null);
     const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState(null);
+    const [isScanOpen, setIsScanOpen] = useState(false);
 
     const resetForm = () => {
         setName('');
@@ -290,11 +299,28 @@ export default function NewItemPage() {
 
                             <Field>
                                 <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
-                                <Input
-                                    id='item-sku'
-                                    value={sku}
-                                    onChange={event => setSku(event.target.value)}
-                                    placeholder='Opcional'
+                                <InputGroup>
+                                    <InputGroupInput
+                                        id='item-sku'
+                                        value={sku}
+                                        onChange={event => setSku(event.target.value)}
+                                        placeholder='Opcional'
+                                    />
+                                    <InputGroupAddon align='inline-end'>
+                                        <InputGroupButton
+                                            size='icon-xs'
+                                            aria-label='Escanear código'
+                                            onClick={() => setIsScanOpen(true)}
+                                        >
+                                            <ScanIcon />
+                                        </InputGroupButton>
+                                    </InputGroupAddon>
+                                </InputGroup>
+                                <SkuBarcodeDisplay value={sku} onChange={setSku} />
+                                <ScanSkuDialog
+                                    open={isScanOpen}
+                                    onOpenChange={setIsScanOpen}
+                                    onScan={setSku}
                                 />
                             </Field>
                         </FieldGroup>

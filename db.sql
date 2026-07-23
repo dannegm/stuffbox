@@ -823,7 +823,8 @@ grant execute on function stuffbox.location_total_price(text) to authenticated;
 -- similarity) because it scores the best-matching word/substring within the
 -- name rather than the whole string, since names are usually longer than the
 -- query. Results rank by word_similarity when a query is present, else by
--- name (plain alphabetical browse).
+-- name (plain alphabetical browse). Items also match on sku, ilike-only (no
+-- word_similarity) per the same short-query unreliability noted above.
 create or replace function stuffbox.search_workspace(
   p_workspace_id text,
   p_query        text default null,
@@ -877,6 +878,7 @@ as $$
         p_query is null
         or i.name ilike '%' || p_query || '%'
         or word_similarity(p_query, i.name) > 0.3
+        or i.sku ilike '%' || p_query || '%'
       )
       and (p_packed is null or (i.active_move_id is not null) = p_packed)
       and (p_house_ids is null or lr.root_id = any(p_house_ids))
@@ -987,6 +989,7 @@ create index if not exists idx_profiles_is_super_admin        on stuffbox.profil
 -- double as an ilike '%...%' accelerator (pg_trgm's documented use case).
 create index if not exists idx_locations_name_trgm on stuffbox.locations using gin (name gin_trgm_ops);
 create index if not exists idx_items_name_trgm     on stuffbox.items using gin (name gin_trgm_ops);
+create index if not exists idx_items_sku_trgm      on stuffbox.items using gin (sku gin_trgm_ops);
 
 
 -- -----------------------------------------------------------------------------

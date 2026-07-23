@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useQueryState, parseAsString, parseAsArrayOf, parseAsBoolean } from 'nuqs';
-import { MagnifyingGlassIcon, WarningCircleIcon } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlassIcon, WarningCircleIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { searchQuery, SEARCH_PAGE_SIZE } from '@/queries/search';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { SearchFilters } from '@/components/search/search-filters';
 import { SearchResultRow } from '@/components/search/search-result-row';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
+import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
+import { parseSku } from '@/helpers/barcode';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
@@ -56,6 +58,16 @@ export default function SearchPage() {
         if (debouncedInput !== q) setQ(debouncedInput || null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedInput]);
+
+    const [isScanOpen, setIsScanOpen] = useState(false);
+    // Scanned values are `type|code` (see helpers/barcode.js) — only the bare
+    // code is useful as a search term, and setting both skips the 300ms
+    // debounce for this discrete action instead of waiting on it like typing.
+    const handleScan = scanned => {
+        const { code } = parseSku(scanned);
+        setInputValue(code);
+        setQ(code || null);
+    };
 
     const [limit, setLimit] = useState(SEARCH_PAGE_SIZE);
     useEffect(() => {
@@ -122,7 +134,17 @@ export default function SearchPage() {
                         onChange={event => setInputValue(event.target.value)}
                         placeholder='Nombre de un item o lugar…'
                     />
+                    <InputGroupAddon align='inline-end'>
+                        <InputGroupButton
+                            size='icon-xs'
+                            aria-label='Escanear código'
+                            onClick={() => setIsScanOpen(true)}
+                        >
+                            <ScanIcon />
+                        </InputGroupButton>
+                    </InputGroupAddon>
                 </InputGroup>
+                <ScanSkuDialog open={isScanOpen} onOpenChange={setIsScanOpen} onScan={handleScan} />
             </div>
 
             <SearchFilters

@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { WarningIcon, ArrowsLeftRightIcon, PackageIcon } from '@phosphor-icons/react/ssr';
+import { WarningIcon, ArrowsLeftRightIcon, PackageIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import {
@@ -24,6 +24,8 @@ import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
+import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
+import { SkuBarcodeDisplay } from '@/components/items/sku-barcode-display';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { HeartRating } from '@/ui/heart-rating';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
@@ -40,7 +42,13 @@ import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { FALLBACK_ITEM_ICON, FALLBACK_TAG_ICON } from '@/constants/location-icons';
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/ui/input-group';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+    InputGroupText,
+} from '@/ui/input-group';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='ItemLoading'>
@@ -101,6 +109,7 @@ export default function ItemPage({ params }) {
     const [pickerOpen, setPickerOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
+    const [isScanOpen, setIsScanOpen] = useState(false);
 
     useEffect(() => {
         if (!item) return;
@@ -422,11 +431,28 @@ export default function ItemPage({ params }) {
 
                             <Field>
                                 <FieldLabel htmlFor='item-sku'>SKU</FieldLabel>
-                                <Input
-                                    id='item-sku'
-                                    value={sku}
-                                    onChange={event => setSku(event.target.value)}
-                                    placeholder='Opcional'
+                                <InputGroup>
+                                    <InputGroupInput
+                                        id='item-sku'
+                                        value={sku}
+                                        onChange={event => setSku(event.target.value)}
+                                        placeholder='Opcional'
+                                    />
+                                    <InputGroupAddon align='inline-end'>
+                                        <InputGroupButton
+                                            size='icon-xs'
+                                            aria-label='Escanear código'
+                                            onClick={() => setIsScanOpen(true)}
+                                        >
+                                            <ScanIcon />
+                                        </InputGroupButton>
+                                    </InputGroupAddon>
+                                </InputGroup>
+                                <SkuBarcodeDisplay value={sku} onChange={setSku} />
+                                <ScanSkuDialog
+                                    open={isScanOpen}
+                                    onOpenChange={setIsScanOpen}
+                                    onScan={setSku}
                                 />
                             </Field>
                         </FieldGroup>
