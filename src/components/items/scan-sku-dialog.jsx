@@ -10,15 +10,22 @@ import {
     ResponsiveDialogHeader,
     ResponsiveDialogTitle,
 } from '@/ui/responsive-dialog';
+import { VideoCameraIcon, CaretDownIcon } from '@phosphor-icons/react/ssr';
 import { FieldError } from '@/ui/field';
-import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+} from '@/ui/dropdown-menu';
 import { getBarcodeTypeFromZxingFormat, formatSku, DEFAULT_BARCODE_TYPE } from '@/helpers/barcode';
 
 const getCameraLabel = (device, index) => {
     const label = device.label.toLowerCase();
     if (/back|rear|environment/.test(label)) return 'Trasera';
     if (/front|user|face/.test(label)) return 'Frontal';
-    return `Cam #${index + 1}`;
+    return `Cámara ${index + 1}`;
 };
 
 // Own <video> + ZXing continuous decode instead of a library-owned widget
@@ -131,6 +138,10 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
         }
     };
 
+    const activeDeviceIndex = devices.findIndex(device => device.deviceId === activeDeviceId);
+    const activeCameraLabel =
+        activeDeviceIndex === -1 ? null : getCameraLabel(devices[activeDeviceIndex], activeDeviceIndex);
+
     return (
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
             <ResponsiveDialogContent data-block='ScanSkuDialog'>
@@ -141,7 +152,7 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
                     </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
                 <div
-                    className='relative overflow-hidden rounded-lg bg-black'
+                    className='relative mx-4 overflow-hidden rounded-lg bg-black sm:mx-0'
                     data-block='ScanSkuViewfinder'
                     onClick={handleFocusTap}
                 >
@@ -169,24 +180,39 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
                     </div>
                 </div>
                 {devices.length > 1 && (
-                    <Tabs
-                        value={activeDeviceId ?? ''}
-                        onValueChange={setSelectedDeviceId}
-                        className='px-4 sm:px-0'
-                        data-block='ScanSkuCameraSwitcher'
-                    >
-                        <TabsList className='w-full'>
-                            {devices.map((device, index) => (
-                                <TabsTrigger
-                                    key={device.deviceId}
-                                    value={device.deviceId}
-                                    className='truncate'
+                    <div className='px-4 sm:px-0' data-block='ScanSkuCameraSwitcher'>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <button
+                                        type='button'
+                                        className='flex h-9 w-full items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-left text-sm shadow-xs transition-colors hover:bg-muted'
+                                    />
+                                }
+                            >
+                                <VideoCameraIcon className='text-muted-foreground' />
+                                <span className='flex-1 truncate'>
+                                    {activeCameraLabel ?? 'Cámara'}
+                                </span>
+                                <CaretDownIcon className='text-muted-foreground' />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align='start' className='min-w-56'>
+                                <DropdownMenuRadioGroup
+                                    value={activeDeviceId ?? ''}
+                                    onValueChange={setSelectedDeviceId}
                                 >
-                                    {getCameraLabel(device, index)}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
+                                    {devices.map((device, index) => (
+                                        <DropdownMenuRadioItem
+                                            key={device.deviceId}
+                                            value={device.deviceId}
+                                        >
+                                            {getCameraLabel(device, index)}
+                                        </DropdownMenuRadioItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 )}
                 {error && <FieldError className='px-4 sm:px-0'>{error}</FieldError>}
             </ResponsiveDialogContent>

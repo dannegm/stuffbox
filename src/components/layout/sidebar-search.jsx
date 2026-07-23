@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlassIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
-import { SidebarGroup } from '@/ui/sidebar';
+import { SidebarGroup, useSidebar } from '@/ui/sidebar';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { parseSku } from '@/helpers/barcode';
 import { matchDeepLink } from '@/helpers/deep-link';
@@ -14,6 +14,7 @@ import { matchDeepLink } from '@/helpers/deep-link';
 // labels — a text input has nowhere to go in a size-8 icon rail.
 export const SidebarSearch = () => {
     const router = useRouter();
+    const { setOpenMobile } = useSidebar();
     const [value, setValue] = useState('');
     const [isScanOpen, setIsScanOpen] = useState(false);
 
@@ -21,6 +22,7 @@ export const SidebarSearch = () => {
         event.preventDefault();
         const q = value.trim();
         router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+        setOpenMobile(false);
     };
 
     // A scanned QR might be one of our own printed-label deep links
@@ -35,11 +37,13 @@ export const SidebarSearch = () => {
         const deepLink = matchDeepLink(scanned);
         if (deepLink) {
             router.push(`/${deepLink.kind}/${deepLink.id}`);
+            setOpenMobile(false);
             return;
         }
 
         const { code } = parseSku(scanned);
         router.push(`/search?q=${encodeURIComponent(code)}`);
+        setOpenMobile(false);
     };
 
     return (
