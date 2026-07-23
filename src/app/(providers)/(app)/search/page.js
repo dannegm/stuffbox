@@ -144,6 +144,7 @@ export default function SearchPage() {
                         autoFocus
                         value={inputValue}
                         onChange={event => setInputValue(event.target.value)}
+                        onFocus={event => event.target.select()}
                         placeholder='Nombre de un item o lugar…'
                     />
                     <InputGroupAddon align='inline-end'>
