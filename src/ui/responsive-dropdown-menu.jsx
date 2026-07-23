@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { cloneElement, createContext, useContext } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
     DropdownMenu,
@@ -35,21 +35,28 @@ export const ResponsiveDropdownMenu = ({ children, ...props }) => {
     );
 };
 
-export const ResponsiveDropdownMenuTrigger = ({ render, ...props }) => {
+// Same render+children splice as ResponsivePopoverTrigger: callers like the
+// workspace switcher or a row's "…" menu pass `render` as a bare shell
+// (SidebarMenuButton, Button) and the actual visible content as separate
+// `children` — Base UI's Trigger renders that content inside the resolved
+// element, but vaul's asChild only clones `render` verbatim, so `children`
+// has to be spliced in by hand. Skipped when no separate children were
+// passed at all, so a `render` that's already a fully-formed element (with
+// its own content) isn't stripped.
+export const ResponsiveDropdownMenuTrigger = ({ render, children, ...props }) => {
     const isMobile = useResponsiveDropdownMenuMobile();
     if (isMobile) {
+        const triggerElement = children !== undefined ? cloneElement(render, {}, children) : render;
         return (
             <DrawerTrigger asChild data-slot='responsive-dropdown-menu-trigger' {...props}>
-                {render}
+                {triggerElement}
             </DrawerTrigger>
         );
     }
     return (
-        <DropdownMenuTrigger
-            data-slot='responsive-dropdown-menu-trigger'
-            render={render}
-            {...props}
-        />
+        <DropdownMenuTrigger data-slot='responsive-dropdown-menu-trigger' render={render} {...props}>
+            {children}
+        </DropdownMenuTrigger>
     );
 };
 
@@ -96,7 +103,9 @@ const ITEM_CLASS =
 // wrapping each row in one gets both for free: asChild when composing a
 // caller-supplied element (e.g. a Link, for navigation items), bare
 // otherwise so Close renders its own default button (for plain onClick
-// actions like "Eliminar").
+// actions like "Eliminar"). Same render+children splice as the Trigger above
+// — a `render={<Link/>}` here is typically an empty shell too, with the
+// actual icon+label passed as separate `children`.
 export const ResponsiveDropdownMenuItem = ({
     render,
     variant = 'default',
@@ -113,9 +122,10 @@ export const ResponsiveDropdownMenuItem = ({
             ...props,
         };
         if (render) {
+            const itemElement = children !== undefined ? cloneElement(render, {}, children) : render;
             return (
                 <DrawerClose asChild {...itemProps}>
-                    {render}
+                    {itemElement}
                 </DrawerClose>
             );
         }

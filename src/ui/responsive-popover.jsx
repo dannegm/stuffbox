@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { cloneElement, createContext, useContext } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/ui/drawer';
@@ -26,24 +26,40 @@ export const ResponsivePopover = ({ children, ...props }) => {
     );
 };
 
-// Same render-vs-children/asChild normalization as ResponsiveDialogTrigger.
-export const ResponsivePopoverTrigger = ({ render, ...props }) => {
+// Same render-vs-children/asChild normalization as ResponsiveDialogTrigger,
+// plus one more wrinkle: Popover's `render` convention is a bare shell
+// element (e.g. an empty <button/>) with the actual visible content passed
+// as `children` alongside it — Base UI renders that content *inside* the
+// resolved element. vaul's asChild has no such second slot, it only clones
+// `render` verbatim, so `children` has to be spliced into it by hand here —
+// but only when the caller actually used the two-prop shape; some callers
+// (IconPicker, ColorPicker) pass one fully-formed element as `render` with
+// no separate `children` at all, and cloning would wipe out its content.
+export const ResponsivePopoverTrigger = ({ render, children, ...props }) => {
     const isMobile = useResponsivePopoverMobile();
     if (isMobile) {
+        const triggerElement = children !== undefined ? cloneElement(render, {}, children) : render;
         return (
             <DrawerTrigger asChild data-slot='responsive-popover-trigger' {...props}>
-                {render}
+                {triggerElement}
             </DrawerTrigger>
         );
     }
-    return <PopoverTrigger data-slot='responsive-popover-trigger' render={render} {...props} />;
+    return (
+        <PopoverTrigger data-slot='responsive-popover-trigger' render={render} {...props}>
+            {children}
+        </PopoverTrigger>
+    );
 };
 
 // align/side/sideOffset only mean something for a floating Popover — a
 // Drawer is always a full-width bottom sheet, so they're dropped rather than
-// leaked as unknown DOM attributes. className's own width utility (e.g.
-// w-64) is overridden to w-full on mobile; cn() puts that override last so
-// twMerge lets it win while every other passed-in class still applies.
+// leaked as unknown DOM attributes. PopoverContent always bakes in its own
+// p-4, but DrawerContent has none of its own (every other Drawer user adds
+// padding on its own sub-sections instead) — 'p-4' here is only a fallback
+// default, ahead of className so a caller's own padding (e.g. SelectSearch's
+// gap-2 p-2) still wins; 'w-full' is last so it always overrides any width
+// utility in className, regardless of what the caller passed.
 export const ResponsivePopoverContent = ({
     className,
     align,
@@ -57,7 +73,7 @@ export const ResponsivePopoverContent = ({
         return (
             <DrawerContent
                 data-slot='responsive-popover-content'
-                className={cn(className, 'w-full')}
+                className={cn('p-4', className, 'w-full')}
                 {...props}
             />
         );
