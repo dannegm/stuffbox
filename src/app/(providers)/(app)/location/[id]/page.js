@@ -849,6 +849,9 @@ export default function LocationPage({ params }) {
 
                             {filteredChildren.length > 0 && (
                                 <div className='flex flex-col gap-2'>
+                                    <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                                        Locations
+                                    </h2>
                                     {filteredChildren.map(child => (
                                         <LocationListItem
                                             key={child.id}
@@ -862,12 +865,11 @@ export default function LocationPage({ params }) {
                                 </div>
                             )}
 
-                            {filteredChildren.length > 0 && filteredItems.length > 0 && (
-                                <Separator />
-                            )}
-
                             {filteredItems.length > 0 && (
                                 <div className='flex flex-col gap-2'>
+                                    <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
+                                        Items
+                                    </h2>
                                     {filteredItems.map(item => (
                                         <ItemListRow
                                             key={item.id}

@@ -13,7 +13,7 @@ import {
     ResponsiveDropdownMenuItem,
     ResponsiveDropdownMenuTrigger,
 } from '@/ui/responsive-dropdown-menu';
-import { useIsAndroid } from '@/hooks/use-is-android';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ADD_TRIGGER_CLASS =
     'flex size-24 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground';
@@ -39,7 +39,7 @@ export const PhotoGallery = ({
     const all = [...photos, ...pending];
     const [openIndex, setOpenIndex] = useState(null);
     const [editingPhoto, setEditingPhoto] = useState(null);
-    const isAndroid = useIsAndroid();
+    const isMobile = useIsMobile();
     const $cameraInput = useRef(null);
     const $galleryInput = useRef(null);
 
@@ -89,11 +89,13 @@ export const PhotoGallery = ({
                 </div>
             ))}
 
-            {isAndroid ? (
-                // Chrome on Android doesn't reliably offer a camera shortcut
-                // from a plain accept='image/*' input (unlike iOS Safari) —
-                // a two-option menu with its own capture=environment input
-                // is the only reliable way to force the camera open there.
+            {isMobile ? (
+                // Explicit either/or on every mobile browser (not just
+                // Android — behavior is inconsistent enough across mobile
+                // browsers/OSes that picking one deterministic path beats
+                // guessing per-platform) — its own capture=environment input
+                // forces the camera open, the other is the same gallery
+                // input desktop uses directly.
                 <ResponsiveDropdownMenu>
                     <ResponsiveDropdownMenuTrigger
                         render={
@@ -147,7 +149,7 @@ export const PhotoGallery = ({
                 </label>
             )}
 
-            {isAndroid && (
+            {isMobile && (
                 <>
                     {/* Kept outside the menu, in PhotoGallery's own scope, so
                     closing the drawer never unmounts these mid-pick. */}

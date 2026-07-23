@@ -108,23 +108,48 @@ export default function InvitePage({ params }) {
     // visits, even if the invite row itself has since expired or been
     // deleted: the link becomes a direct shortcut back into the workspace.
     const cachedWorkspaceId = inviteLinks.get(token);
-    const alreadyJoined = !!user && !!cachedWorkspaceId;
+    const hasCachedWorkspaceId = !!cachedWorkspaceId;
 
-    // Invite is dead and this browser has no memory of ever using it — the
-    // only helpful thing left to do for a signed-in visitor is drop them on
-    // a workspace they already belong to, instead of a dead end.
-    const needsFallback = !!user && !isInvitePending && !invite?.valid && !cachedWorkspaceId;
+    // Only knowable once workspaces finishes loading — the cache only proves
+    // "you joined this workspace before," not that you still belong to it
+    // (an owner may have removed you since). `workspaces` already only lists
+    // memberships RLS still grants, so checking against it catches a stale
+    // entry left over from a removed member. Split into three explicit
+    // states rather than one boolean so the redirect below only ever fires
+    // once membership is actually confirmed, never while still checking —
+    // otherwise a since-removed member would get bounced to the workspace
+    // before its own staleness check ever got a chance to run.
+    const isVerifyingCachedMembership = !!user && hasCachedWorkspaceId && isWorkspacesPending;
+    const isStillMemberOfCached =
+        hasCachedWorkspaceId &&
+        !isWorkspacesPending &&
+        !!workspaces?.some(workspace => workspace.id === cachedWorkspaceId);
+    const cacheIsStale =
+        !!user && hasCachedWorkspaceId && !isWorkspacesPending && !isStillMemberOfCached;
+
+    // Confirmed valid cache hit — no confirmation screen, straight into the
+    // workspace.
+    const alreadyJoined = !!user && hasCachedWorkspaceId && isStillMemberOfCached;
+
     const fallbackWorkspaceId = workspaces?.[0]?.id ?? null;
+
+    // Two situations land here, same outcome: a dead invite this browser
+    // never used (nothing to confirm), or a cache that turned out to be
+    // stale (removed from that workspace since). Either way: drop them on
+    // another workspace they still belong to, or send them to create a new
+    // one if they have none at all.
+    const needsInvalidFallback = !!user && !isInvitePending && !invite?.valid && !hasCachedWorkspaceId;
+    const needsFallback = needsInvalidFallback || cacheIsStale;
 
     useEffect(() => {
         if (alreadyJoined) router.replace(`/workspace/${cachedWorkspaceId}`);
     }, [alreadyJoined, cachedWorkspaceId, router]);
 
     useEffect(() => {
-        if (needsFallback && !isWorkspacesPending && fallbackWorkspaceId) {
-            router.replace(`/workspace/${fallbackWorkspaceId}`);
-        }
-    }, [needsFallback, isWorkspacesPending, fallbackWorkspaceId, router]);
+        if (!needsFallback || isWorkspacesPending) return;
+        if (cacheIsStale) inviteLinks.remove(token);
+        router.replace(fallbackWorkspaceId ? `/workspace/${fallbackWorkspaceId}` : '/workspace/new');
+    }, [needsFallback, cacheIsStale, isWorkspacesPending, fallbackWorkspaceId, token, router]);
 
     // Set as soon as the page mounts for an unauthenticated visitor, well
     // before the OTP verifies — see provision-account.js for why this needs
@@ -157,15 +182,18 @@ export default function InvitePage({ params }) {
         return <Loading />;
     }
 
-    // Already a member via this exact link — redirecting above, nothing to
-    // confirm.
-    if (alreadyJoined) {
+    // Either still confirming the cached membership is real, or it just was
+    // — redirecting above, nothing to confirm either way.
+    if (isVerifyingCachedMembership || alreadyJoined) {
         return <Loading label='Entrando al espacio…' />;
     }
 
     // Returning visitor, session expired — a plain login (no identity/
-    // registration step, they already have a profile) then straight into
-    // the workspace, skipping the "Unirse" confirmation entirely.
+    // registration step, they already have a profile). No direct redirect
+    // here on purpose: once `user` populates, this component re-renders and
+    // falls through to the alreadyJoined/cacheIsStale logic above, so a
+    // removed membership gets caught the same way whether or not the
+    // session had to be re-established first.
     if (!user && cachedWorkspaceId) {
         return (
             <AuthShell>
@@ -176,21 +204,23 @@ export default function InvitePage({ params }) {
                     codeSubmitLabel='Entrar'
                     onVerified={async () => {
                         clearPendingInviteToken();
-                        router.replace(`/workspace/${cachedWorkspaceId}`);
                     }}
                 />
             </AuthShell>
         );
     }
 
+    if (needsFallback) {
+        // fallbackWorkspaceId only means anything once workspaces has
+        // loaded — the redirect effect itself waits for the same thing, so
+        // treat "still loading" and "loaded, found one" as the same label.
+        const knowsTheresNoFallback = !isWorkspacesPending && !fallbackWorkspaceId;
+        return (
+            <Loading label={knowsTheresNoFallback ? 'Preparando tu espacio…' : 'Buscando tu espacio…'} />
+        );
+    }
+
     if (!invite?.valid) {
-        if (needsFallback) {
-            return fallbackWorkspaceId ? (
-                <Loading label='Buscando tu espacio…' />
-            ) : (
-                <InvalidInviteCard />
-            );
-        }
         return <InvalidInviteCard />;
     }
 

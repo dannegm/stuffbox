@@ -26,4 +26,13 @@ export const inviteLinks = {
         all[token] = workspaceId;
         setAll(all);
     },
+    // Called once the invite page proves a cached entry no longer reflects
+    // real membership (e.g. an owner removed this person from that
+    // workspace) — without this, the shortcut would keep pointing at a
+    // workspace RLS no longer lets them read.
+    remove: token => {
+        const all = getAll();
+        delete all[token];
+        setAll(all);
+    },
 };
