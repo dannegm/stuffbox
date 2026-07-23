@@ -68,7 +68,14 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { Stat } from '@/ui/stat';
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+import {
+    Empty,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+    EmptyDescription,
+    EmptyContent,
+} from '@/ui/empty';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
@@ -714,6 +721,24 @@ export default function LocationPage({ params }) {
                         <EmptyTitle>Vacío por ahora</EmptyTitle>
                         <EmptyDescription>Agrega algo dentro para empezar.</EmptyDescription>
                     </EmptyHeader>
+                    <EmptyContent className='flex-row'>
+                        <Button variant='outline' render={<Link href={`/item/new?location=${id}`} />}>
+                            <PlusIcon />
+                            <LeafIcon />
+                            Item
+                        </Button>
+                        <CreateLocationDialog
+                            workspaceId={location.workspace_id}
+                            parentId={id}
+                            title='Agregar dentro'
+                        >
+                            <Button variant='outline'>
+                                <PlusIcon />
+                                <PackageIcon />
+                                Location
+                            </Button>
+                        </CreateLocationDialog>
+                    </EmptyContent>
                 </Empty>
             ) : (
                 <div className={cn('flex flex-col gap-4', isDesktop && 'min-h-0 flex-1')}>
@@ -785,9 +810,24 @@ export default function LocationPage({ params }) {
                                                     <EmptyDescription>
                                                         {locationSearch.trim()
                                                             ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Arrastra una location aquí para moverla a este nivel.'}
+                                                            : 'Agrega una location para organizar lo que guardes aquí.'}
                                                     </EmptyDescription>
                                                 </EmptyHeader>
+                                                {!locationSearch.trim() && (
+                                                    <EmptyContent>
+                                                        <CreateLocationDialog
+                                                            workspaceId={location.workspace_id}
+                                                            parentId={id}
+                                                            title='Agregar dentro'
+                                                        >
+                                                            <Button size='sm' variant='outline'>
+                                                                <PlusIcon />
+                                                                <PackageIcon />
+                                                                Location
+                                                            </Button>
+                                                        </CreateLocationDialog>
+                                                    </EmptyContent>
+                                                )}
                                             </Empty>
                                         )}
                                     </div>
@@ -834,9 +874,22 @@ export default function LocationPage({ params }) {
                                                     <EmptyDescription>
                                                         {itemSearch.trim()
                                                             ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Arrastra un item aquí para moverlo a este nivel.'}
+                                                            : 'Agrega un item para empezar a guardar cosas aquí.'}
                                                     </EmptyDescription>
                                                 </EmptyHeader>
+                                                {!itemSearch.trim() && (
+                                                    <EmptyContent>
+                                                        <Button
+                                                            size='sm'
+                                                            variant='outline'
+                                                            render={<Link href={`/item/new?location=${id}`} />}
+                                                        >
+                                                            <PlusIcon />
+                                                            <LeafIcon />
+                                                            Item
+                                                        </Button>
+                                                    </EmptyContent>
+                                                )}
                                             </Empty>
                                         )}
                                     </div>
