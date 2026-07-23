@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import { workspacesQuery } from '@/queries/workspaces';
+import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import {
     workspaceMembersQuery,
     workspaceInvitesQuery,
@@ -41,6 +42,7 @@ import { Field, FieldGroup, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { SelectSearch } from '@/ui/select-search';
 import { Separator } from '@/ui/separator';
+import { cn } from '@/helpers/utils';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 const INVITE_FORM_ID = 'invite-form';
@@ -140,7 +142,7 @@ const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
 // plain link) — this row is often the entire "how do I invite someone" UI
 // for a workspace, so the CTA should read as one, not as an afterthought
 // next to the link text.
-const InviteRow = ({ invite, onDelete }) => {
+const InviteRow = ({ invite, onDelete, canDelete }) => {
     const [copied, setCopied] = useState(false);
     const link = `${APP_URL}/invite/${invite.token}`;
     const isExpired = new Date(invite.expires_at) < new Date();
@@ -175,7 +177,11 @@ const InviteRow = ({ invite, onDelete }) => {
                 </div>
             </div>
             <div className='flex items-center gap-2'>
-                <Button size='sm' onClick={handleCopy} className='flex-1'>
+                <Button
+                    size='sm'
+                    onClick={handleCopy}
+                    className={cn({ 'flex-1': canDelete, 'w-full': !canDelete })}
+                >
                     {copied ? (
                         <CheckIcon data-icon='inline-start' />
                     ) : (
@@ -183,14 +189,16 @@ const InviteRow = ({ invite, onDelete }) => {
                     )}
                     {copied ? 'Copiado' : 'Copiar enlace'}
                 </Button>
-                <Button
-                    size='icon-sm'
-                    variant='outline'
-                    onClick={() => onDelete(invite.id)}
-                    aria-label='Eliminar invitación'
-                >
-                    <TrashIcon />
-                </Button>
+                {canDelete && (
+                    <Button
+                        size='icon-sm'
+                        variant='outline'
+                        onClick={() => onDelete(invite.id)}
+                        aria-label='Eliminar invitación'
+                    >
+                        <TrashIcon />
+                    </Button>
+                )}
             </div>
         </div>
     );
@@ -267,6 +275,9 @@ export default function CollaboratorsPage() {
     const { data: invites, isPending: isInvitesPending } = useQuery(
         workspaceInvitesQuery(workspace?.id, { enabled: !!workspace }),
     );
+    const { data: collaborationSettings, isPending: isCollabPending } = useQuery(
+        workspaceSettingQuery(workspace?.id, 'collaborationSettings', { enabled: !!workspace }),
+    );
 
     const { mutate: removeMember } = useMutation(
         removeWorkspaceMemberMutation({
@@ -306,12 +317,18 @@ export default function CollaboratorsPage() {
         isMembersPending ||
         !members ||
         isInvitesPending ||
-        !invites
+        !invites ||
+        isCollabPending
     ) {
         return <Loading />;
     }
 
     const isOwner = workspace.owner_id === user.id;
+    // The owner always can; a regular member only when the owner has turned
+    // the corresponding collaborationSettings toggle on (RLS enforces both
+    // regardless of what the UI shows — see migrations/014).
+    const canInvite = isOwner || !!collaborationSettings?.allowMemberInvites;
+    const canRemoveOthers = isOwner || !!collaborationSettings?.allowMemberRemove;
 
     return (
         <div
@@ -331,7 +348,7 @@ export default function CollaboratorsPage() {
                             {workspace.name}
                         </h1>
                     </div>
-                    {isOwner && (
+                    {canInvite && (
                         <Button
                             size='sm'
                             variant='outline'
@@ -377,23 +394,23 @@ export default function CollaboratorsPage() {
                 <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
                     Miembros
                 </h2>
-                {members.map(member => (
-                    <MemberRow
-                        key={member.user_id}
-                        member={member}
-                        isOwnerRow={member.user_id === workspace.owner_id}
-                        isSelf={member.user_id === user.id}
-                        canRemove={
-                            isOwner
-                                ? member.user_id !== workspace.owner_id
-                                : member.user_id === user.id
-                        }
-                        onRemove={() => handleRemoveMember(member)}
-                    />
-                ))}
+                {members.map(member => {
+                    const isOwnerRow = member.user_id === workspace.owner_id;
+                    const isSelf = member.user_id === user.id;
+                    return (
+                        <MemberRow
+                            key={member.user_id}
+                            member={member}
+                            isOwnerRow={isOwnerRow}
+                            isSelf={isSelf}
+                            canRemove={isSelf || (!isOwnerRow && canRemoveOthers)}
+                            onRemove={() => handleRemoveMember(member)}
+                        />
+                    );
+                })}
             </div>
 
-            {isOwner && (
+            {canInvite && (
                 <>
                     <Separator />
                     <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
@@ -418,6 +435,7 @@ export default function CollaboratorsPage() {
                                     key={invite.id}
                                     invite={invite}
                                     onDelete={deleteInvite}
+                                    canDelete={isOwner}
                                 />
                             ))}
                         </div>

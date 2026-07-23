@@ -298,6 +298,36 @@ returns boolean as $$
   );
 $$ language sql security definer stable;
 
+-- Helper: does this workspace's 'collaborationSettings' value allow regular
+-- members (not just the owner) to create invite links? Missing key/value
+-- coalesces to false — the safe default until an owner explicitly turns it on.
+create or replace function stuffbox.workspace_allows_member_invites(p_workspace_id text)
+returns boolean as $$
+  select coalesce(
+    (
+      select (value->>'allowMemberInvites')::boolean
+      from stuffbox.workspace_settings
+      where workspace_id = p_workspace_id and key = 'collaborationSettings'
+    ),
+    false
+  );
+$$ language sql security definer stable;
+
+-- Helper: same shape, for "can regular members remove other members?" —
+-- removing the owner's own row is still blocked elsewhere regardless of this
+-- setting (see the workspace_members delete policy below).
+create or replace function stuffbox.workspace_allows_member_removal(p_workspace_id text)
+returns boolean as $$
+  select coalesce(
+    (
+      select (value->>'allowMemberRemove')::boolean
+      from stuffbox.workspace_settings
+      where workspace_id = p_workspace_id and key = 'collaborationSettings'
+    ),
+    false
+  );
+$$ language sql security definer stable;
+
 -- profiles
 create policy "profiles: self access"
   on stuffbox.profiles for select
@@ -351,13 +381,23 @@ create policy "workspace_members: self insert"
   on stuffbox.workspace_members for insert
   with check (user_id = auth.uid());
 
-create policy "workspace_members: owner or self delete"
+-- owner, self, or (when the workspace's collaborationSettings.allowMemberRemove
+-- is on) any other member removing someone who isn't the owner
+create policy "workspace_members: owner, self, or allowed member delete"
   on stuffbox.workspace_members for delete
   using (
     user_id = auth.uid()
     or exists (
       select 1 from stuffbox.workspaces w
       where w.id = workspace_id and w.owner_id = auth.uid()
+    )
+    or (
+      stuffbox.workspace_allows_member_removal(workspace_id)
+      and stuffbox.is_workspace_member(workspace_id, auth.uid())
+      and not exists (
+        select 1 from stuffbox.workspaces w
+        where w.id = workspace_id and w.owner_id = workspace_members.user_id
+      )
     )
   );
 
@@ -369,11 +409,34 @@ create policy "workspace_members: admin full access"
 -- workspace_invites (no public select — a stranger following a link isn't a
 -- member yet; the read-only landing and the join both go through the
 -- security-definer RPCs below, which expose only the single row for the
--- exact token supplied, never the table)
-create policy "workspace_invites: member access"
-  on stuffbox.workspace_invites for all
-  using (stuffbox.is_workspace_member(workspace_id, auth.uid()))
-  with check (stuffbox.is_workspace_member(workspace_id, auth.uid()));
+-- exact token supplied, never the table). Deleting an invite is owner-only
+-- no matter what; creating one can be relaxed to regular members via
+-- collaborationSettings.allowMemberInvites.
+create policy "workspace_invites: member select"
+  on stuffbox.workspace_invites for select
+  using (stuffbox.is_workspace_member(workspace_id, auth.uid()));
+
+create policy "workspace_invites: owner or allowed member insert"
+  on stuffbox.workspace_invites for insert
+  with check (
+    stuffbox.is_workspace_member(workspace_id, auth.uid())
+    and (
+      exists (
+        select 1 from stuffbox.workspaces w
+        where w.id = workspace_id and w.owner_id = auth.uid()
+      )
+      or stuffbox.workspace_allows_member_invites(workspace_id)
+    )
+  );
+
+create policy "workspace_invites: owner delete"
+  on stuffbox.workspace_invites for delete
+  using (
+    exists (
+      select 1 from stuffbox.workspaces w
+      where w.id = workspace_id and w.owner_id = auth.uid()
+    )
+  );
 
 create policy "workspace_invites: admin full access"
   on stuffbox.workspace_invites for all
@@ -509,11 +572,58 @@ create policy "app_settings: admin can write"
   using (stuffbox.requesting_user_is_admin())
   with check (stuffbox.requesting_user_is_admin());
 
--- workspace_settings
-create policy "workspace_settings: member access"
-  on stuffbox.workspace_settings for all
-  using (stuffbox.is_workspace_member(workspace_id, auth.uid()))
-  with check (stuffbox.is_workspace_member(workspace_id, auth.uid()));
+-- workspace_settings (the 'collaborationSettings' key is owner-write-only —
+-- otherwise any member could grant themselves the two permissions it
+-- controls directly via the API, bypassing the settings-page owner gate;
+-- every other key, e.g. mapDefaultViewport, stays member-writable as before)
+create policy "workspace_settings: member select"
+  on stuffbox.workspace_settings for select
+  using (stuffbox.is_workspace_member(workspace_id, auth.uid()));
+
+create policy "workspace_settings: member write other keys"
+  on stuffbox.workspace_settings for insert
+  with check (
+    stuffbox.is_workspace_member(workspace_id, auth.uid())
+    and key <> 'collaborationSettings'
+  );
+
+create policy "workspace_settings: member update other keys"
+  on stuffbox.workspace_settings for update
+  using (
+    stuffbox.is_workspace_member(workspace_id, auth.uid())
+    and key <> 'collaborationSettings'
+  )
+  with check (
+    stuffbox.is_workspace_member(workspace_id, auth.uid())
+    and key <> 'collaborationSettings'
+  );
+
+create policy "workspace_settings: owner write collaboration key"
+  on stuffbox.workspace_settings for insert
+  with check (
+    key = 'collaborationSettings'
+    and exists (
+      select 1 from stuffbox.workspaces w
+      where w.id = workspace_id and w.owner_id = auth.uid()
+    )
+  );
+
+create policy "workspace_settings: owner update collaboration key"
+  on stuffbox.workspace_settings for update
+  using (
+    key = 'collaborationSettings'
+    and exists (
+      select 1 from stuffbox.workspaces w
+      where w.id = workspace_id and w.owner_id = auth.uid()
+    )
+  )
+  with check (
+    key = 'collaborationSettings'
+    and exists (
+      select 1 from stuffbox.workspaces w
+      where w.id = workspace_id and w.owner_id = auth.uid()
+    )
+  );
 
 create policy "workspace_settings: admin full access"
   on stuffbox.workspace_settings for all
