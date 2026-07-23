@@ -7,6 +7,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '
 import { SidebarGroup } from '@/ui/sidebar';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { parseSku } from '@/helpers/barcode';
+import { matchDeepLink } from '@/helpers/deep-link';
 
 // Submitting takes you to /search — filtering/paginating happens there, not
 // inline in the sidebar. Hidden in collapsed-icon mode, same as SidebarGroup
@@ -22,11 +23,21 @@ export const SidebarSearch = () => {
         router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
     };
 
-    // Scanned values come back as `type|code` (see helpers/barcode.js) — only
-    // the bare code is useful as a search term, since search_workspace's
-    // `sku ilike` matches substrings and a manually-typed sku on some item
-    // may not carry the same type prefix a scan would produce.
+    // A scanned QR might be one of our own printed-label deep links
+    // (`{APP_URL}/i/{id}` or `/l/{id}`) — in that case we already know
+    // exactly which item/location it is, so go straight there instead of
+    // routing through search. Otherwise, scanned values come back as
+    // `type|code` (see helpers/barcode.js); only the bare code is useful as
+    // a search term, since search_workspace's `sku ilike` matches substrings
+    // and a manually-typed sku on some item may not carry the same type
+    // prefix a scan would produce.
     const handleScan = scanned => {
+        const deepLink = matchDeepLink(scanned);
+        if (deepLink) {
+            router.push(`/${deepLink.kind}/${deepLink.id}`);
+            return;
+        }
+
         const { code } = parseSku(scanned);
         router.push(`/search?q=${encodeURIComponent(code)}`);
     };

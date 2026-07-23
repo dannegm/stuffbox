@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useQueryState, parseAsString, parseAsArrayOf, parseAsBoolean } from 'nuqs';
 import { MagnifyingGlassIcon, WarningCircleIcon, ScanIcon } from '@phosphor-icons/react/ssr';
@@ -13,6 +13,7 @@ import { SearchFilters } from '@/components/search/search-filters';
 import { SearchResultRow } from '@/components/search/search-result-row';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { parseSku } from '@/helpers/barcode';
+import { matchDeepLink } from '@/helpers/deep-link';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
@@ -35,6 +36,7 @@ const Loading = () => (
 
 export default function SearchPage() {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, isLoading: isAuthLoading } = useAuth();
 
     const [q, setQ] = useQueryState('q', parseAsString.withDefault(''));
@@ -60,10 +62,20 @@ export default function SearchPage() {
     }, [debouncedInput]);
 
     const [isScanOpen, setIsScanOpen] = useState(false);
-    // Scanned values are `type|code` (see helpers/barcode.js) — only the bare
-    // code is useful as a search term, and setting both skips the 300ms
+    // A scanned QR might be one of our own printed-label deep links
+    // (`{APP_URL}/i/{id}` or `/l/{id}`) — in that case we already know
+    // exactly which item/location it is, so go straight there instead of
+    // showing it as a search result. Otherwise, scanned values are
+    // `type|code` (see helpers/barcode.js) — only the bare code is useful as
+    // a search term, and setting both q and inputValue skips the 300ms
     // debounce for this discrete action instead of waiting on it like typing.
     const handleScan = scanned => {
+        const deepLink = matchDeepLink(scanned);
+        if (deepLink) {
+            router.push(`/${deepLink.kind}/${deepLink.id}`);
+            return;
+        }
+
         const { code } = parseSku(scanned);
         setInputValue(code);
         setQ(code || null);
