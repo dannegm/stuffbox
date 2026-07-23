@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { CameraIcon, PencilSimpleIcon, XIcon } from '@phosphor-icons/react/ssr';
+import { useRef, useState } from 'react';
+import { CameraIcon, ImagesIcon, PencilSimpleIcon, XIcon } from '@phosphor-icons/react/ssr';
 import { cn } from '@/helpers/utils';
 import { Spinner } from '@/ui/spinner';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { PhotoCropDialog } from '@/components/photos/photo-crop-dialog';
 import { CroppedPhoto } from '@/ui/cropped-photo';
+import {
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
+import { useIsAndroid } from '@/hooks/use-is-android';
+
+const ADD_TRIGGER_CLASS =
+    'flex size-24 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground';
 
 const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 
@@ -29,6 +39,14 @@ export const PhotoGallery = ({
     const all = [...photos, ...pending];
     const [openIndex, setOpenIndex] = useState(null);
     const [editingPhoto, setEditingPhoto] = useState(null);
+    const isAndroid = useIsAndroid();
+    const $cameraInput = useRef(null);
+    const $galleryInput = useRef(null);
+
+    const handleFiles = event => {
+        onAddFiles(event.target.files);
+        event.target.value = '';
+    };
 
     return (
         <div className='flex flex-wrap gap-3' data-block='PhotoGallery'>
@@ -71,25 +89,86 @@ export const PhotoGallery = ({
                 </div>
             ))}
 
-            <label
-                className={cn(
-                    'flex size-24 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground',
-                    isProcessing && 'pointer-events-none opacity-60',
-                )}
-            >
-                {isProcessing ? <Spinner className='size-4' /> : <CameraIcon className='size-5' />}
-                <span className='text-xs'>Agregar</span>
-                <input
-                    type='file'
-                    accept='image/*'
-                    multiple
-                    className='sr-only'
-                    onChange={event => {
-                        onAddFiles(event.target.files);
-                        event.target.value = '';
-                    }}
-                />
-            </label>
+            {isAndroid ? (
+                // Chrome on Android doesn't reliably offer a camera shortcut
+                // from a plain accept='image/*' input (unlike iOS Safari) —
+                // a two-option menu with its own capture=environment input
+                // is the only reliable way to force the camera open there.
+                <ResponsiveDropdownMenu>
+                    <ResponsiveDropdownMenuTrigger
+                        render={
+                            <button
+                                type='button'
+                                disabled={isProcessing}
+                                className={cn(
+                                    ADD_TRIGGER_CLASS,
+                                    isProcessing && 'pointer-events-none opacity-60',
+                                )}
+                            />
+                        }
+                    >
+                        {isProcessing ? (
+                            <Spinner className='size-4' />
+                        ) : (
+                            <CameraIcon className='size-5' />
+                        )}
+                        <span className='text-xs'>Agregar</span>
+                    </ResponsiveDropdownMenuTrigger>
+                    <ResponsiveDropdownMenuContent align='start'>
+                        <ResponsiveDropdownMenuItem onClick={() => $cameraInput.current?.click()}>
+                            <CameraIcon />
+                            Tomar foto
+                        </ResponsiveDropdownMenuItem>
+                        <ResponsiveDropdownMenuItem onClick={() => $galleryInput.current?.click()}>
+                            <ImagesIcon />
+                            Elegir de la galería
+                        </ResponsiveDropdownMenuItem>
+                    </ResponsiveDropdownMenuContent>
+                </ResponsiveDropdownMenu>
+            ) : (
+                <label
+                    className={cn(ADD_TRIGGER_CLASS, 'cursor-pointer', {
+                        'pointer-events-none opacity-60': isProcessing,
+                    })}
+                >
+                    {isProcessing ? (
+                        <Spinner className='size-4' />
+                    ) : (
+                        <CameraIcon className='size-5' />
+                    )}
+                    <span className='text-xs'>Agregar</span>
+                    <input
+                        type='file'
+                        accept='image/*'
+                        multiple
+                        className='sr-only'
+                        onChange={handleFiles}
+                    />
+                </label>
+            )}
+
+            {isAndroid && (
+                <>
+                    {/* Kept outside the menu, in PhotoGallery's own scope, so
+                    closing the drawer never unmounts these mid-pick. */}
+                    <input
+                        ref={$cameraInput}
+                        type='file'
+                        accept='image/*'
+                        capture='environment'
+                        className='sr-only'
+                        onChange={handleFiles}
+                    />
+                    <input
+                        ref={$galleryInput}
+                        type='file'
+                        accept='image/*'
+                        multiple
+                        className='sr-only'
+                        onChange={handleFiles}
+                    />
+                </>
+            )}
 
             <PhotoLightbox
                 photos={all.map(photo => ({ src: photoSrc(photo), photo }))}
