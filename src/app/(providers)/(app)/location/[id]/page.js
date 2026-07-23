@@ -721,7 +721,7 @@ export default function LocationPage({ params }) {
                         <EmptyTitle>Vacío por ahora</EmptyTitle>
                         <EmptyDescription>Agrega algo dentro para empezar.</EmptyDescription>
                     </EmptyHeader>
-                    <EmptyContent className='flex-row'>
+                    <EmptyContent className='flex-row justify-center'>
                         <Button variant='outline' render={<Link href={`/item/new?location=${id}`} />}>
                             <PlusIcon />
                             <LeafIcon />
