@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { CaretLeftIcon, GearSixIcon, SignOutIcon, TrashIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -107,6 +108,10 @@ export default function WorkspaceSettingsPage({ params }) {
             onSuccess: updated => {
                 queryClient.setQueryData(['workspace', id], updated);
                 queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+                // The one mutation every submit always fires (map default and
+                // collaboration settings are conditional) — a single toast
+                // here instead of one per mutation avoids stacking up to 3.
+                toast.success('Ajustes guardados');
             },
         }),
     );

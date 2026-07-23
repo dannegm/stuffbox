@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
 import { SignOutIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
@@ -72,7 +73,10 @@ export default function ProfilePage() {
 
     const { mutate, isPending: isSaving } = useMutation(
         updateProfileMutation({
-            onSuccess: updated => queryClient.setQueryData(['profile', user?.id], updated),
+            onSuccess: updated => {
+                queryClient.setQueryData(['profile', user?.id], updated);
+                toast.success('Perfil actualizado');
+            },
         }),
     );
 
