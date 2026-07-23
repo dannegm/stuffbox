@@ -54,21 +54,6 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
     // trigger a restart, it's purely for highlighting the right tab.
     const [activeDeviceId, setActiveDeviceId] = useState(null);
 
-    // Populates the camera switcher. Independent of the capture session
-    // effect below — just reads the device list, never touches the stream.
-    useEffect(() => {
-        if (!open) return;
-        let cancelled = false;
-        BrowserMultiFormatReader.listVideoInputDevices()
-            .then(list => {
-                if (!cancelled) setDevices(list);
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-        };
-    }, [open]);
-
     useEffect(() => {
         if (!open) return;
         setError(null);
@@ -94,6 +79,18 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
                 if (!cancelled) {
                     const settings = $video.current?.srcObject?.getVideoTracks?.()[0]?.getSettings?.();
                     if (settings?.deviceId) setActiveDeviceId(settings.deviceId);
+                    // Only listable with real labels once permission is
+                    // granted — decodeFromVideoDevice just resolved, so
+                    // that's guaranteed true here. Listing on dialog-open
+                    // instead (before the getUserMedia prompt resolves, on a
+                    // first-ever grant) used to come back blank and never
+                    // get retried, so the switcher only appeared on a second
+                    // open of the dialog.
+                    BrowserMultiFormatReader.listVideoInputDevices()
+                        .then(list => {
+                            if (!cancelled) setDevices(list);
+                        })
+                        .catch(() => {});
                 }
                 return controls;
             } catch (err) {
@@ -151,70 +148,75 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
                         Apunta la cámara al código de barras o QR del producto.
                     </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
-                <div
-                    className='relative mx-4 overflow-hidden rounded-lg bg-black sm:mx-0'
-                    data-block='ScanSkuViewfinder'
-                    onClick={handleFocusTap}
-                >
-                    <video
-                        ref={$video}
-                        className='aspect-square w-full object-cover'
-                        muted
-                        playsInline
-                    />
-                    <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
-                        <div className='relative size-3/5 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]'>
-                            <span className='absolute top-0 left-0 size-6 border-t-4 border-l-4 border-white' />
-                            <span className='absolute top-0 right-0 size-6 border-t-4 border-r-4 border-white' />
-                            <span className='absolute bottom-0 left-0 size-6 border-b-4 border-l-4 border-white' />
-                            <span className='absolute right-0 bottom-0 size-6 border-r-4 border-b-4 border-white' />
+                {/* DrawerContent (mobile) has no gap between children, unlike
+                    DialogContent's own gap-4 (desktop) — this wrapper carries
+                    its own gap so spacing stays consistent either way. */}
+                <div className='flex flex-col gap-4'>
+                    <div
+                        className='relative mx-4 overflow-hidden rounded-lg bg-black sm:mx-0'
+                        data-block='ScanSkuViewfinder'
+                        onClick={handleFocusTap}
+                    >
+                        <video
+                            ref={$video}
+                            className='aspect-square w-full object-cover'
+                            muted
+                            playsInline
+                        />
+                        <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
+                            <div className='relative size-3/5 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]'>
+                                <span className='absolute top-0 left-0 size-6 border-t-4 border-l-4 border-white' />
+                                <span className='absolute top-0 right-0 size-6 border-t-4 border-r-4 border-white' />
+                                <span className='absolute bottom-0 left-0 size-6 border-b-4 border-l-4 border-white' />
+                                <span className='absolute right-0 bottom-0 size-6 border-r-4 border-b-4 border-white' />
+                            </div>
+                            {focusPoint && (
+                                <span
+                                    key={focusPoint.id}
+                                    className='absolute size-16 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-white animate-focus-ring'
+                                    style={{ left: focusPoint.x, top: focusPoint.y }}
+                                    onAnimationEnd={() => setFocusPoint(null)}
+                                />
+                            )}
                         </div>
-                        {focusPoint && (
-                            <span
-                                key={focusPoint.id}
-                                className='absolute size-16 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-white animate-focus-ring'
-                                style={{ left: focusPoint.x, top: focusPoint.y }}
-                                onAnimationEnd={() => setFocusPoint(null)}
-                            />
-                        )}
                     </div>
-                </div>
-                {devices.length > 1 && (
-                    <div className='px-4 sm:px-0' data-block='ScanSkuCameraSwitcher'>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={
-                                    <button
-                                        type='button'
-                                        className='flex h-9 w-full items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-left text-sm shadow-xs transition-colors hover:bg-muted'
-                                    />
-                                }
-                            >
-                                <VideoCameraIcon className='text-muted-foreground' />
-                                <span className='flex-1 truncate'>
-                                    {activeCameraLabel ?? 'Cámara'}
-                                </span>
-                                <CaretDownIcon className='text-muted-foreground' />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align='start' className='min-w-56'>
-                                <DropdownMenuRadioGroup
-                                    value={activeDeviceId ?? ''}
-                                    onValueChange={setSelectedDeviceId}
+                    {devices.length > 1 && (
+                        <div className='px-4 sm:px-0' data-block='ScanSkuCameraSwitcher'>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    render={
+                                        <button
+                                            type='button'
+                                            className='flex h-9 w-full items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-left text-sm shadow-xs transition-colors hover:bg-muted'
+                                        />
+                                    }
                                 >
-                                    {devices.map((device, index) => (
-                                        <DropdownMenuRadioItem
-                                            key={device.deviceId}
-                                            value={device.deviceId}
-                                        >
-                                            {getCameraLabel(device, index)}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                )}
-                {error && <FieldError className='px-4 sm:px-0'>{error}</FieldError>}
+                                    <VideoCameraIcon className='text-muted-foreground' />
+                                    <span className='flex-1 truncate'>
+                                        {activeCameraLabel ?? 'Cámara'}
+                                    </span>
+                                    <CaretDownIcon className='text-muted-foreground' />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='start' className='min-w-56'>
+                                    <DropdownMenuRadioGroup
+                                        value={activeDeviceId ?? ''}
+                                        onValueChange={setSelectedDeviceId}
+                                    >
+                                        {devices.map((device, index) => (
+                                            <DropdownMenuRadioItem
+                                                key={device.deviceId}
+                                                value={device.deviceId}
+                                            >
+                                                {getCameraLabel(device, index)}
+                                            </DropdownMenuRadioItem>
+                                        ))}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    )}
+                    {error && <FieldError className='px-4 sm:px-0'>{error}</FieldError>}
+                </div>
             </ResponsiveDialogContent>
         </ResponsiveDialog>
     );
