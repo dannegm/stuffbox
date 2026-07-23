@@ -52,7 +52,9 @@ export default function WorkspacePage({ params }) {
         }),
     );
 
-    if (isAuthLoading || !user || isWorkspacePending || isHousesPending) return <Loading />;
+    if (isAuthLoading || !user || isWorkspacePending || !workspace || isHousesPending) {
+        return <Loading />;
+    }
 
     return (
         <div className='flex flex-1 flex-col gap-4 p-4' data-block='WorkspacePage'>
