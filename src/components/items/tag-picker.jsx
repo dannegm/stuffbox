@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CheckIcon } from '@phosphor-icons/react/ssr';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { InputGroup, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { DynamicIcon } from '@/ui/dynamic-icon';
@@ -28,8 +32,8 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
     const selectedTags = tags.filter(tag => value.includes(tag.id));
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
+        <ResponsivePopover open={open} onOpenChange={setOpen}>
+            <ResponsivePopoverTrigger
                 render={
                     <button
                         type='button'
@@ -51,8 +55,8 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                         </span>
                     ))
                 )}
-            </PopoverTrigger>
-            <PopoverContent className='w-64 gap-2 p-2' align='start'>
+            </ResponsivePopoverTrigger>
+            <ResponsivePopoverContent className='w-64 gap-2 p-2' align='start'>
                 <InputGroup>
                     <InputGroupInput
                         ref={focusRef}
@@ -91,7 +95,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                         )}
                     </div>
                 </ScrollArea>
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

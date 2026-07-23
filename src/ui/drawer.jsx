@@ -3,8 +3,17 @@ import { Drawer as DrawerPrimitive } from 'vaul';
 
 import { cn } from '@/helpers/utils';
 
+// repositionInputs (vaul's default) rewrites the drawer content's inline
+// height/bottom on keyboard open based on visualViewport size. For
+// short-content drawers (a form that isn't tall enough to cross vaul's own
+// "is this drawer tall enough" threshold) it misfires: the box gets stretched
+// to near-full-viewport height and shoved upward, and since DrawerFooter is
+// `mt-auto` in a flex column, the footer gets pushed down to fill that
+// artificial height — a big empty gap opens up right where the focused input
+// should be visible. Off by default; the browser's native scroll-into-view
+// already keeps a focused input in view without vaul's own repositioning.
 function Drawer({ ...props }) {
-    return <DrawerPrimitive.Root data-slot='drawer' {...props} />;
+    return <DrawerPrimitive.Root data-slot='drawer' repositionInputs={false} {...props} />;
 }
 
 function DrawerTrigger({ ...props }) {

@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TagIcon, CheckIcon, MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
@@ -48,8 +52,8 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
               : `${selectedTags.length} tags`;
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
+        <ResponsivePopover open={open} onOpenChange={setOpen}>
+            <ResponsivePopoverTrigger
                 render={
                     <button
                         type='button'
@@ -78,8 +82,8 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
                         {value.length}
                     </span>
                 )}
-            </PopoverTrigger>
-            <PopoverContent className='w-64 gap-2 p-2' align='start'>
+            </ResponsivePopoverTrigger>
+            <ResponsivePopoverContent className='w-64 gap-2 p-2' align='start'>
                 <InputGroup>
                     <InputGroupAddon>
                         <MagnifyingGlassIcon />
@@ -136,7 +140,7 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
                         </Button>
                     </>
                 )}
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

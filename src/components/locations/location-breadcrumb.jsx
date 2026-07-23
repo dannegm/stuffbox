@@ -10,11 +10,11 @@ import {
     BreadcrumbSeparator,
 } from '@/ui/breadcrumb';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
 import { Button } from '@/ui/button';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
@@ -112,25 +112,25 @@ export const LocationBreadcrumb = ({
                 {middleAncestors.length > 0 && (
                     <>
                         <BreadcrumbItem className='sm:hidden'>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
+                            <ResponsiveDropdownMenu>
+                                <ResponsiveDropdownMenuTrigger
                                     render={<Button variant='ghost' size='icon-sm' />}
                                 >
                                     <BreadcrumbEllipsis />
                                     <span className='sr-only'>Mostrar ruta completa</span>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='start'>
+                                </ResponsiveDropdownMenuTrigger>
+                                <ResponsiveDropdownMenuContent align='start'>
                                     {middleAncestors.map(ancestor => (
-                                        <DropdownMenuItem
+                                        <ResponsiveDropdownMenuItem
                                             key={ancestor.id}
                                             render={<Link href={`/location/${ancestor.id}`} />}
                                         >
                                             <DynamicIcon icon={getLocationIcon(ancestor)} />
                                             {ancestor.name}
-                                        </DropdownMenuItem>
+                                        </ResponsiveDropdownMenuItem>
                                     ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                </ResponsiveDropdownMenuContent>
+                            </ResponsiveDropdownMenu>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator className='sm:hidden' />
                     </>

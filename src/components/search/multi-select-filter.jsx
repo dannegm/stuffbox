@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { CheckIcon, MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
@@ -53,8 +57,8 @@ export const MultiSelectFilter = ({
               : countLabel(selected.length);
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
+        <ResponsivePopover open={open} onOpenChange={setOpen}>
+            <ResponsivePopoverTrigger
                 render={
                     <button
                         type='button'
@@ -85,8 +89,8 @@ export const MultiSelectFilter = ({
                         {value.length}
                     </span>
                 )}
-            </PopoverTrigger>
-            <PopoverContent className='w-64 gap-2 p-2' align='start'>
+            </ResponsivePopoverTrigger>
+            <ResponsivePopoverContent className='w-64 gap-2 p-2' align='start'>
                 <InputGroup>
                     <InputGroupAddon>
                         <MagnifyingGlassIcon />
@@ -144,7 +148,7 @@ export const MultiSelectFilter = ({
                         </Button>
                     </>
                 )}
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

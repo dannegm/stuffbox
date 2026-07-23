@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
@@ -56,14 +60,14 @@ export const SelectSearch = ({
     };
 
     return (
-        <Popover
+        <ResponsivePopover
             open={open}
             onOpenChange={next => {
                 setOpen(next);
                 if (!next) setQuery('');
             }}
         >
-            <PopoverTrigger
+            <ResponsivePopoverTrigger
                 render={
                     <button
                         type='button'
@@ -81,8 +85,11 @@ export const SelectSearch = ({
                 ) : (
                     <span className='flex-1 truncate text-muted-foreground'>{placeholder}</span>
                 )}
-            </PopoverTrigger>
-            <PopoverContent className={cn('w-64 gap-2 p-2', contentClassName)} align='start'>
+            </ResponsivePopoverTrigger>
+            <ResponsivePopoverContent
+                className={cn('w-64 gap-2 p-2', contentClassName)}
+                align='start'
+            >
                 {showSearch && (
                     <InputGroup>
                         <InputGroupAddon>
@@ -115,7 +122,7 @@ export const SelectSearch = ({
                         )}
                     </div>
                 </ScrollArea>
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

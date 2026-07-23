@@ -73,11 +73,11 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationLoading'>
@@ -624,23 +624,28 @@ export default function LocationPage({ params }) {
                                 </Button>
                             </CreateLocationDialog>
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
+                            <ResponsiveDropdownMenu>
+                                <ResponsiveDropdownMenuTrigger
                                     render={<Button size='icon-sm' variant='outline' />}
                                 >
                                     <DotsThreeVerticalIcon />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='end'>
-                                    <DropdownMenuItem render={<Link href={`/location/${id}/edit`} />}>
+                                </ResponsiveDropdownMenuTrigger>
+                                <ResponsiveDropdownMenuContent align='end'>
+                                    <ResponsiveDropdownMenuItem
+                                        render={<Link href={`/location/${id}/edit`} />}
+                                    >
                                         <PencilSimpleIcon />
                                         Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                    </ResponsiveDropdownMenuItem>
+                                    <ResponsiveDropdownMenuItem
+                                        variant='destructive'
+                                        onClick={handleDelete}
+                                    >
                                         <TrashIcon />
                                         Eliminar
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                    </ResponsiveDropdownMenuItem>
+                                </ResponsiveDropdownMenuContent>
+                            </ResponsiveDropdownMenu>
                         </>
                     )}
                 </div>

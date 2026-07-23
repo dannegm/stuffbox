@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { ColorSelector } from '@/ui/color-selector';
 
 export const ColorPicker = ({ value, onChange, children }) => {
@@ -17,11 +21,11 @@ export const ColorPicker = ({ value, onChange, children }) => {
     };
 
     return (
-        <Popover>
-            <PopoverTrigger render={children} />
-            <PopoverContent className='w-54'>
+        <ResponsivePopover>
+            <ResponsivePopoverTrigger render={children} />
+            <ResponsivePopoverContent className='w-54'>
                 <ColorSelector value={localColor} onChange={handleChange} />
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -120,9 +124,13 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     }, [suggestedIcons]);
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger render={children} />
-            <PopoverContent className='w-96 gap-2 p-2' data-block='IconPicker' align={align}>
+        <ResponsivePopover open={open} onOpenChange={setOpen}>
+            <ResponsivePopoverTrigger render={children} />
+            <ResponsivePopoverContent
+                className='w-96 gap-2 p-2'
+                data-block='IconPicker'
+                align={align}
+            >
                 {uniqueSuggestions.length > 0 && !query.trim() && (
                     <SuggestedIcons icons={uniqueSuggestions} onSelect={handleSelect} />
                 )}
@@ -154,7 +162,7 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
                         </TabsContent>
                     ))}
                 </Tabs>
-            </PopoverContent>
-        </Popover>
+            </ResponsivePopoverContent>
+        </ResponsivePopover>
     );
 };

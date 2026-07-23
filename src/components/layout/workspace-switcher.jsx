@@ -6,13 +6,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, CaretUpDownIcon } from '@phosphor-icons/react/ssr';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuLabel,
+    ResponsiveDropdownMenuSeparator,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -130,8 +130,8 @@ export const WorkspaceSwitcher = () => {
     return (
         <SidebarMenu data-block='WorkspaceSwitcher'>
             <SidebarMenuItem>
-                <DropdownMenu>
-                    <DropdownMenuTrigger render={<SidebarMenuButton size='lg' />}>
+                <ResponsiveDropdownMenu>
+                    <ResponsiveDropdownMenuTrigger render={<SidebarMenuButton size='lg' />}>
                         {current ? (
                             <>
                                 <WorkspaceAvatar workspace={current} />
@@ -143,27 +143,27 @@ export const WorkspaceSwitcher = () => {
                             <span className='text-muted-foreground'>Sin espacio</span>
                         )}
                         <CaretUpDownIcon className='ml-auto text-muted-foreground' />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className='w-64' side='bottom' align='start'>
-                        <DropdownMenuLabel>Espacios</DropdownMenuLabel>
+                    </ResponsiveDropdownMenuTrigger>
+                    <ResponsiveDropdownMenuContent className='w-64' side='bottom' align='start'>
+                        <ResponsiveDropdownMenuLabel>Espacios</ResponsiveDropdownMenuLabel>
                         {workspaces?.map(workspace => (
-                            <DropdownMenuItem
+                            <ResponsiveDropdownMenuItem
                                 key={workspace.id}
                                 render={<Link href={`/workspace/${workspace.id}`} />}
                             >
                                 <WorkspaceAvatar workspace={workspace} size='sm' />
                                 <span className='truncate'>{workspace.name}</span>
-                            </DropdownMenuItem>
+                            </ResponsiveDropdownMenuItem>
                         ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setCreateOpen(true)}>
+                        <ResponsiveDropdownMenuSeparator />
+                        <ResponsiveDropdownMenuItem onClick={() => setCreateOpen(true)}>
                             <span className='flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground'>
                                 <PlusIcon />
                             </span>
                             Crear nuevo
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        </ResponsiveDropdownMenuItem>
+                    </ResponsiveDropdownMenuContent>
+                </ResponsiveDropdownMenu>
             </SidebarMenuItem>
             <CreateWorkspaceDialog open={createOpen} onOpenChange={setCreateOpen} />
         </SidebarMenu>
