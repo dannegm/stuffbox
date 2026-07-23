@@ -10,11 +10,7 @@ import { Spinner } from '@/ui/spinner';
 import { EmailCodeCard } from '@/components/auth/email-code-card';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/services/supabase';
-import {
-    ensureAccountProvisioned,
-    setPendingInviteToken,
-    clearPendingInviteToken,
-} from '@/services/provision-account';
+import { ensureAccountProvisioned } from '@/services/provision-account';
 import { inviteLinks } from '@/services/invite-links';
 import { workspacesQuery } from '@/queries/workspaces';
 import { cn } from '@/helpers/utils';
@@ -151,13 +147,6 @@ export default function InvitePage({ params }) {
         router.replace(fallbackWorkspaceId ? `/workspace/${fallbackWorkspaceId}` : '/workspace/new');
     }, [needsFallback, cacheIsStale, isWorkspacesPending, fallbackWorkspaceId, token, router]);
 
-    // Set as soon as the page mounts for an unauthenticated visitor, well
-    // before the OTP verifies — see provision-account.js for why this needs
-    // to beat AuthProvider's fire-and-forget SIGNED_IN listener.
-    useEffect(() => {
-        if (!user) setPendingInviteToken(token);
-    }, [token, user]);
-
     const claimInvite = async () => {
         const { error: claimError } = await supabase().rpc('claim_workspace_invite', {
             p_token: token,
@@ -202,9 +191,7 @@ export default function InvitePage({ params }) {
                     description='Escribe tu correo para volver a entrar a tu espacio.'
                     emailSubmitLabel='Enviar código'
                     codeSubmitLabel='Entrar'
-                    onVerified={async () => {
-                        clearPendingInviteToken();
-                    }}
+                    onVerified={async () => {}}
                 />
             </AuthShell>
         );
@@ -276,18 +263,12 @@ export default function InvitePage({ params }) {
                     // claim_workspace_invite's insert has an FK to profiles —
                     // must wait for provisioning before claiming, can't rely
                     // on AuthProvider's own fire-and-forget call for that.
+                    // If the claim fails (invite exhausted/expired in a
+                    // race), the account is left with a profile and no
+                    // workspace — same normal empty state as any other
+                    // account with none, no auto-created fallback.
                     await ensureAccountProvisioned(supabase(), verifiedUser);
-                    try {
-                        await claimInvite();
-                        clearPendingInviteToken();
-                    } catch (err) {
-                        // Claim failed (invite got exhausted/expired in the
-                        // race) — clear the flag and re-run provisioning so
-                        // this account still ends up with a workspace.
-                        clearPendingInviteToken();
-                        await ensureAccountProvisioned(supabase(), verifiedUser);
-                        throw err;
-                    }
+                    await claimInvite();
                 }}
             />
         </AuthShell>

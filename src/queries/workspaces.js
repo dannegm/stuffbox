@@ -26,9 +26,10 @@ export const workspaceQuery = (id, opts = {}) => ({
     ...opts,
 });
 
-// Same three-step sequence as ensureAccountProvisioned's first workspace
-// (workspace insert -> self-join workspace_members -> seed option_lists),
-// just user-triggered instead of automatic.
+// Three-step sequence (workspace insert -> self-join workspace_members ->
+// seed option_lists) — the only way a workspace ever comes into existence,
+// always from an explicit user action (this mutation, or claim_workspace_
+// invite via an invite link). Nothing auto-creates one on signup/login.
 export const createWorkspaceMutation = (opts = {}) => ({
     mutationFn: async ({ name, userId }) => {
         const client = supabase();

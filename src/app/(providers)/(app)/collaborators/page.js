@@ -283,7 +283,13 @@ export default function CollaboratorsPage() {
         removeWorkspaceMemberMutation({
             onSuccess: removedUserId => {
                 queryClient.invalidateQueries({ queryKey: ['workspace-members', workspace?.id] });
-                if (removedUserId === user.id) router.replace('/');
+                if (removedUserId === user.id) {
+                    // Otherwise Home's redirect-to-single-workspace effect
+                    // reads the stale cached list (still containing the one
+                    // just left) and bounces straight back into it.
+                    queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+                    router.replace('/');
+                }
             },
         }),
     );

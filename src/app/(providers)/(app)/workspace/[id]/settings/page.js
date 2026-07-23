@@ -139,7 +139,13 @@ export default function WorkspaceSettingsPage({ params }) {
 
     const { mutate: leaveWorkspace, isPending: isLeaving } = useMutation(
         removeWorkspaceMemberMutation({
-            onSuccess: () => router.replace('/'),
+            onSuccess: () => {
+                // Otherwise Home's redirect-to-single-workspace effect reads
+                // the stale cached list (still containing the one just
+                // left) and bounces straight back into it.
+                queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+                router.replace('/');
+            },
         }),
     );
 

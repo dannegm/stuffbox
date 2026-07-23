@@ -4,11 +4,18 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { HouseIcon, CaretRightIcon } from '@phosphor-icons/react/ssr';
+import { HouseIcon, CaretRightIcon, PlusIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
-import { Spinner } from '@/ui/spinner';
+import {
+    Empty,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+    EmptyDescription,
+    EmptyContent,
+} from '@/ui/empty';
+import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 
@@ -43,8 +50,16 @@ export default function Home() {
                         <HouseIcon />
                     </EmptyMedia>
                     <EmptyTitle>Sin espacios todavía</EmptyTitle>
-                    <EmptyDescription>Tu espacio se está preparando.</EmptyDescription>
+                    <EmptyDescription>
+                        Crea tu primer espacio para empezar a organizar tu inventario.
+                    </EmptyDescription>
                 </EmptyHeader>
+                <EmptyContent>
+                    <Button render={<Link href='/workspace/new' />}>
+                        <PlusIcon data-icon='inline-start' />
+                        Crear espacio
+                    </Button>
+                </EmptyContent>
             </Empty>
         );
     }
