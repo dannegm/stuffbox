@@ -24,6 +24,7 @@ import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
+import { cn } from '@/helpers/utils';
 
 // LocationMapPicker only hands back {lat,lng} (no zoom control) — fixed here
 // rather than adding a zoom picker just for this one workspace-level default.
@@ -86,6 +87,7 @@ export default function WorkspaceSettingsPage({ params }) {
     // RLS helpers' own coalesce(..., false) on the DB side.
     const [allowMemberInvites, setAllowMemberInvites] = useState(false);
     const [allowMemberRemove, setAllowMemberRemove] = useState(false);
+    const [allowMemberEditSettings, setAllowMemberEditSettings] = useState(false);
 
     useEffect(() => {
         if (!workspace) return;
@@ -101,6 +103,7 @@ export default function WorkspaceSettingsPage({ params }) {
     useEffect(() => {
         setAllowMemberInvites(collaborationSettings?.allowMemberInvites ?? false);
         setAllowMemberRemove(collaborationSettings?.allowMemberRemove ?? false);
+        setAllowMemberEditSettings(collaborationSettings?.allowMemberEditSettings ?? false);
     }, [collaborationSettings]);
 
     const { mutate: saveWorkspace, isPending: isSavingWorkspace } = useMutation(
@@ -163,7 +166,7 @@ export default function WorkspaceSettingsPage({ params }) {
             saveCollaborationSettings({
                 workspaceId: id,
                 key: 'collaborationSettings',
-                value: { allowMemberInvites, allowMemberRemove },
+                value: { allowMemberInvites, allowMemberRemove, allowMemberEditSettings },
             });
         }
     };
@@ -210,6 +213,10 @@ export default function WorkspaceSettingsPage({ params }) {
     }
 
     const isOwner = workspace.owner_id === user.id;
+    // The owner always can; a regular member only when collaborationSettings.
+    // allowMemberEditSettings is on. Collaboración and the danger zone below
+    // stay owner-only regardless — this only ever gates General/Mapa.
+    const canEditGeneralSettings = isOwner || !!collaborationSettings?.allowMemberEditSettings;
     const isPending = isSavingWorkspace || isSavingMap || isSavingCollab;
 
     return (
@@ -246,13 +253,15 @@ export default function WorkspaceSettingsPage({ params }) {
                                     <button
                                         type='button'
                                         aria-label='Elegir color'
-                                        className='size-9 shrink-0 rounded-md border border-input bg-(--workspace-color)'
+                                        disabled={!canEditGeneralSettings}
+                                        className='size-9 shrink-0 rounded-md border border-input bg-(--workspace-color) disabled:opacity-60'
                                         style={{ '--workspace-color': color }}
                                     />
                                 </ColorPicker>
                                 <Input
                                     id='workspace-settings-name'
                                     value={name}
+                                    disabled={!canEditGeneralSettings}
                                     onChange={event => setName(event.target.value)}
                                 />
                             </div>
@@ -267,10 +276,25 @@ export default function WorkspaceSettingsPage({ params }) {
                             <FieldDescription>
                                 Vista inicial al abrir el selector de ubicación en este espacio.
                             </FieldDescription>
-                            <LocationMapPicker value={center} onChange={setCenter} />
+                            {/* LocationMapPicker has no disabled prop of its own —
+                            pointer-events-none blocks the map/search interaction,
+                            same visual muting as the disabled inputs above. */}
+                            <div
+                                className={cn({
+                                    'pointer-events-none opacity-60': !canEditGeneralSettings,
+                                })}
+                            >
+                                <LocationMapPicker value={center} onChange={setCenter} />
+                            </div>
                         </Field>
                     </FieldGroup>
                 </SectionCard>
+
+                {!isOwner && !canEditGeneralSettings && (
+                    <p className='text-xs text-muted-foreground'>
+                        El dueño del espacio no te ha dado permiso para modificar estos ajustes.
+                    </p>
+                )}
 
                 {isOwner && (
                     <SectionCard label='Colaboración'>
@@ -307,11 +331,30 @@ export default function WorkspaceSettingsPage({ params }) {
                                     onCheckedChange={setAllowMemberRemove}
                                 />
                             </Field>
+                            <Field orientation='horizontal'>
+                                <FieldContent>
+                                    <FieldLabel htmlFor='workspace-settings-allow-edit'>
+                                        Colaboradores pueden modificar ajustes
+                                    </FieldLabel>
+                                    <FieldDescription>
+                                        Podrán editar General y Mapa. Esta sección de Colaboración
+                                        y eliminar el espacio siguen siendo solo tuyas.
+                                    </FieldDescription>
+                                </FieldContent>
+                                <Switch
+                                    id='workspace-settings-allow-edit'
+                                    checked={allowMemberEditSettings}
+                                    onCheckedChange={setAllowMemberEditSettings}
+                                />
+                            </Field>
                         </FieldGroup>
                     </SectionCard>
                 )}
 
-                <Button type='submit' disabled={isPending || !name.trim()}>
+                <Button
+                    type='submit'
+                    disabled={isPending || !name.trim() || !canEditGeneralSettings}
+                >
                     {isPending && <Spinner data-icon='inline-start' />}
                     Guardar
                 </Button>

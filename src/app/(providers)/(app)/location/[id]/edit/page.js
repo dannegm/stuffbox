@@ -162,6 +162,10 @@ export default function LocationEditPage({ params }) {
     }
 
     const previewIcon = getLocationIcon({ icon, type });
+    // Only the workspace owner can delete a house (a root location, no
+    // parent) — collaborators can still delete anything nested inside one.
+    const isOwner = workspace.owner_id === user.id;
+    const canDeleteLocation = !isRoot || isOwner;
 
     return (
         <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='LocationEditPage'>
@@ -351,16 +355,18 @@ export default function LocationEditPage({ params }) {
                     )}
 
                     <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
-                        <Button
-                            type='button'
-                            variant='destructive'
-                            disabled={isSaving || isDeleting}
-                            onClick={handleDelete}
-                            className='sm:mr-auto'
-                        >
-                            {isDeleting && <Spinner data-icon='inline-start' />}
-                            Eliminar
-                        </Button>
+                        {canDeleteLocation && (
+                            <Button
+                                type='button'
+                                variant='destructive'
+                                disabled={isSaving || isDeleting}
+                                onClick={handleDelete}
+                                className='sm:mr-auto'
+                            >
+                                {isDeleting && <Spinner data-icon='inline-start' />}
+                                Eliminar
+                            </Button>
+                        )}
                         <Button type='submit' disabled={isSaving || isDeleting || !name.trim()}>
                             {isSaving && <Spinner data-icon='inline-start' />}
                             Guardar cambios

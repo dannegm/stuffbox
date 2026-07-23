@@ -328,6 +328,21 @@ returns boolean as $$
   );
 $$ language sql security definer stable;
 
+-- Helper: same shape, for "can regular members edit the non-collaboration
+-- settings (name/color, map default)?" — the collaboration section itself
+-- and deleting the workspace stay owner-only regardless of this setting.
+create or replace function stuffbox.workspace_allows_member_edit_settings(p_workspace_id text)
+returns boolean as $$
+  select coalesce(
+    (
+      select (value->>'allowMemberEditSettings')::boolean
+      from stuffbox.workspace_settings
+      where workspace_id = p_workspace_id and key = 'collaborationSettings'
+    ),
+    false
+  );
+$$ language sql security definer stable;
+
 -- profiles
 create policy "profiles: self access"
   on stuffbox.profiles for select
@@ -361,7 +376,9 @@ create policy "profiles: owner can update"
 -- workspaces (member WITH CHECK also allows owner_id = auth.uid() so the
 -- owner can insert the very first row, before any workspace_members exists;
 -- deleting the entire workspace, which cascades to everything it contains,
--- is owner-only, unlike select/insert/update which stay open to any member)
+-- is owner-only; updating is owner-only unless collaborationSettings.
+-- allowMemberEditSettings opts regular members in — select/insert stay open
+-- to any member as before)
 create policy "workspaces: member select"
   on stuffbox.workspaces for select
   using (stuffbox.is_workspace_member(id, auth.uid()));
@@ -370,10 +387,16 @@ create policy "workspaces: member insert"
   on stuffbox.workspaces for insert
   with check (owner_id = auth.uid() or stuffbox.is_workspace_member(id, auth.uid()));
 
-create policy "workspaces: member update"
+create policy "workspaces: owner or allowed member update"
   on stuffbox.workspaces for update
   using (stuffbox.is_workspace_member(id, auth.uid()))
-  with check (owner_id = auth.uid() or stuffbox.is_workspace_member(id, auth.uid()));
+  with check (
+    owner_id = auth.uid()
+    or (
+      stuffbox.is_workspace_member(id, auth.uid())
+      and stuffbox.workspace_allows_member_edit_settings(id)
+    )
+  );
 
 create policy "workspaces: owner delete"
   on stuffbox.workspaces for delete
@@ -591,29 +614,48 @@ create policy "app_settings: admin can write"
   with check (stuffbox.requesting_user_is_admin());
 
 -- workspace_settings (the 'collaborationSettings' key is owner-write-only —
--- otherwise any member could grant themselves the two permissions it
--- controls directly via the API, bypassing the settings-page owner gate;
--- every other key, e.g. mapDefaultViewport, stays member-writable as before)
+-- otherwise any member could grant themselves the permissions it controls
+-- directly via the API, bypassing the settings-page owner gate; every other
+-- key, e.g. mapDefaultViewport, is owner-writable or, when
+-- collaborationSettings.allowMemberEditSettings is on, member-writable too)
 create policy "workspace_settings: member select"
   on stuffbox.workspace_settings for select
   using (stuffbox.is_workspace_member(workspace_id, auth.uid()));
 
-create policy "workspace_settings: member write other keys"
+create policy "workspace_settings: owner or allowed member write other keys"
   on stuffbox.workspace_settings for insert
   with check (
-    stuffbox.is_workspace_member(workspace_id, auth.uid())
-    and key <> 'collaborationSettings'
+    key <> 'collaborationSettings'
+    and (
+      exists (
+        select 1 from stuffbox.workspaces w
+        where w.id = workspace_id and w.owner_id = auth.uid()
+      )
+      or (
+        stuffbox.is_workspace_member(workspace_id, auth.uid())
+        and stuffbox.workspace_allows_member_edit_settings(workspace_id)
+      )
+    )
   );
 
-create policy "workspace_settings: member update other keys"
+create policy "workspace_settings: owner or allowed member update other keys"
   on stuffbox.workspace_settings for update
   using (
     stuffbox.is_workspace_member(workspace_id, auth.uid())
     and key <> 'collaborationSettings'
   )
   with check (
-    stuffbox.is_workspace_member(workspace_id, auth.uid())
-    and key <> 'collaborationSettings'
+    key <> 'collaborationSettings'
+    and (
+      exists (
+        select 1 from stuffbox.workspaces w
+        where w.id = workspace_id and w.owner_id = auth.uid()
+      )
+      or (
+        stuffbox.is_workspace_member(workspace_id, auth.uid())
+        and stuffbox.workspace_allows_member_edit_settings(workspace_id)
+      )
+    )
   );
 
 create policy "workspace_settings: owner write collaboration key"

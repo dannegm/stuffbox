@@ -422,6 +422,10 @@ export default function LocationPage({ params }) {
     }
 
     const isEmpty = children.length === 0 && items.length === 0;
+    // Only the workspace owner can delete a house (a root location, no
+    // parent) — collaborators can still delete anything nested inside one.
+    const isOwner = workspace.owner_id === user.id;
+    const canDeleteLocation = !!location.parent_id || isOwner;
 
     const matchesPackFilter = entity => {
         if (packFilter === 'packed') return !!entity.active_move_id;
@@ -638,13 +642,15 @@ export default function LocationPage({ params }) {
                                         <PencilSimpleIcon />
                                         Editar
                                     </ResponsiveDropdownMenuItem>
-                                    <ResponsiveDropdownMenuItem
-                                        variant='destructive'
-                                        onClick={handleDelete}
-                                    >
-                                        <TrashIcon />
-                                        Eliminar
-                                    </ResponsiveDropdownMenuItem>
+                                    {canDeleteLocation && (
+                                        <ResponsiveDropdownMenuItem
+                                            variant='destructive'
+                                            onClick={handleDelete}
+                                        >
+                                            <TrashIcon />
+                                            Eliminar
+                                        </ResponsiveDropdownMenuItem>
+                                    )}
                                 </ResponsiveDropdownMenuContent>
                             </ResponsiveDropdownMenu>
                         </>
