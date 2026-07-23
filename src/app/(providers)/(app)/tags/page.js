@@ -74,6 +74,7 @@ export default function TagsPage() {
             description: 'Se quita de todos los items que lo tengan.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
+            confirmText: tag.name || 'eliminar',
         });
         if (!ok) return;
         destroy(tag.id);

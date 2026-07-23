@@ -304,9 +304,26 @@ export default function CollaboratorsPage() {
             title,
             confirmLabel: isSelf ? 'Salir' : 'Quitar',
             variant: 'destructive',
+            // No clear "name" for leaving your own membership — falls back
+            // to the word, same as every nameless delete action elsewhere.
+            confirmText: isSelf ? 'eliminar' : member.profiles.name,
         });
         if (!ok) return;
         removeMember({ workspaceId: workspace?.id, userId: member.user_id });
+    };
+
+    // Previously fired deleteInvite with no confirmation at all — brought in
+    // line with every other destructive delete in the app.
+    const handleDeleteInvite = async inviteId => {
+        const ok = await confirm({
+            title: '¿Eliminar esta invitación?',
+            description: 'El enlace deja de funcionar de inmediato.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+            confirmText: 'eliminar',
+        });
+        if (!ok) return;
+        deleteInvite(inviteId);
     };
 
     if (
@@ -397,13 +414,17 @@ export default function CollaboratorsPage() {
                 {members.map(member => {
                     const isOwnerRow = member.user_id === workspace.owner_id;
                     const isSelf = member.user_id === user.id;
+                    // The owner can never be removed, including by
+                    // themselves — they leave by deleting the workspace
+                    // instead (Settings), never by "leaving" it.
+                    const canRemove = !isOwnerRow && (isSelf || canRemoveOthers);
                     return (
                         <MemberRow
                             key={member.user_id}
                             member={member}
                             isOwnerRow={isOwnerRow}
                             isSelf={isSelf}
-                            canRemove={isSelf || (!isOwnerRow && canRemoveOthers)}
+                            canRemove={canRemove}
                             onRemove={() => handleRemoveMember(member)}
                         />
                     );
@@ -434,7 +455,7 @@ export default function CollaboratorsPage() {
                                 <InviteRow
                                     key={invite.id}
                                     invite={invite}
-                                    onDelete={deleteInvite}
+                                    onDelete={handleDeleteInvite}
                                     canDelete={isOwner}
                                 />
                             ))}

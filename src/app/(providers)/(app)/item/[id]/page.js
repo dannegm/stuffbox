@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { WarningIcon, ArrowsLeftRightIcon, PackageIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -135,6 +136,13 @@ export default function ItemPage({ params }) {
                     queryKey: ['items', 'by-location', updated.location_id],
                 });
                 setError(null);
+                // Back to the container rather than staying on the item's
+                // own page — the toast's "Ver" action is what actually
+                // reopens it, same shape as the create flow.
+                router.replace(`/location/${updated.location_id}`);
+                toast.success(`"${updated.name}" actualizado`, {
+                    action: { label: 'Ver', onClick: () => router.push(`/item/${id}`) },
+                });
             },
             onError: err => setError(err.message),
         }),
@@ -218,6 +226,7 @@ export default function ItemPage({ params }) {
             description: 'Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
+            confirmText: item?.name,
         });
         if (!ok) return;
         destroy(id);

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -25,6 +27,7 @@ const FORM_ID = 'create-location-form';
 // Shared by the workspace page (creating houses, parentId null) and the
 // location page (creating children) — same insert, only parentId changes.
 export const CreateLocationDialog = ({ workspaceId, parentId = null, title, children }) => {
+    const router = useRouter();
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
@@ -33,12 +36,22 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
 
     const { mutate, isPending } = useMutation(
         createLocationMutation({
-            onSuccess: () => {
+            onSuccess: location => {
                 queryClient.invalidateQueries({ queryKey: ['locations', workspaceId, parentId] });
                 setName('');
                 setType(LOCATION_TYPE_PRESETS[0]);
                 setError(null);
                 setOpen(false);
+                // Stays put (this dialog is opened from wherever it already
+                // was — house list, a parent location) rather than
+                // navigating away on its own, so the toast is the only way
+                // to actually jump into the thing that was just created.
+                toast.success(`"${location.name}" creada`, {
+                    action: {
+                        label: 'Ver',
+                        onClick: () => router.push(`/location/${location.id}`),
+                    },
+                });
             },
             onError: err => setError(err.message),
         }),

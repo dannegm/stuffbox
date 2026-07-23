@@ -140,6 +140,7 @@ export default function AdminWorkspacesPage() {
             description: 'Se borra todo lo que contiene. Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
+            confirmText: workspace.name || 'eliminar',
         });
         if (!ok) return;
         destroy(workspace.id);

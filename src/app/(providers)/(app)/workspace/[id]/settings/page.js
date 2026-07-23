@@ -4,10 +4,14 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CaretLeftIcon, GearSixIcon, SignOutIcon } from '@phosphor-icons/react/ssr';
+import { CaretLeftIcon, GearSixIcon, SignOutIcon, TrashIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
-import { workspaceQuery, updateWorkspaceMutation } from '@/queries/workspaces';
+import {
+    workspaceQuery,
+    updateWorkspaceMutation,
+    deleteWorkspaceMutation,
+} from '@/queries/workspaces';
 import { workspaceSettingQuery, setWorkspaceSettingMutation } from '@/queries/workspace-settings';
 import { removeWorkspaceMemberMutation } from '@/queries/collaborators';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
@@ -131,6 +135,12 @@ export default function WorkspaceSettingsPage({ params }) {
         }),
     );
 
+    const { mutate: deleteWorkspace, isPending: isDeletingWorkspace } = useMutation(
+        deleteWorkspaceMutation({
+            onSuccess: () => router.replace('/'),
+        }),
+    );
+
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
@@ -158,9 +168,22 @@ export default function WorkspaceSettingsPage({ params }) {
             title: '¿Salir de este espacio?',
             confirmLabel: 'Salir',
             variant: 'destructive',
+            confirmText: 'eliminar',
         });
         if (!ok) return;
         leaveWorkspace({ workspaceId: id, userId: user.id });
+    };
+
+    const handleDeleteWorkspace = async () => {
+        const ok = await confirm({
+            title: `¿Eliminar "${workspace.name}"?`,
+            description: 'Se borra todo lo que contiene — casas, locations, items, tags, todo. Esto no se puede deshacer.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+            confirmText: workspace.name,
+        });
+        if (!ok) return;
+        deleteWorkspace(id);
     };
 
     // Waits for `center` to actually reflect the DB-saved default (not just
@@ -186,7 +209,7 @@ export default function WorkspaceSettingsPage({ params }) {
 
     return (
         <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4 pb-12'
             data-block='WorkspaceSettingsPage'
         >
             <div
@@ -314,6 +337,37 @@ export default function WorkspaceSettingsPage({ params }) {
                             <SignOutIcon data-icon='inline-start' />
                         )}
                         Abandonar espacio
+                    </Button>
+                </div>
+            )}
+
+            {isOwner && (
+                <div
+                    className='flex flex-col items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4'
+                    data-block='DeleteWorkspaceCard'
+                >
+                    <div>
+                        <h2 className='text-xs font-medium tracking-wide text-destructive uppercase'>
+                            Zona de riesgo
+                        </h2>
+                        <p className='mt-1 text-sm text-muted-foreground'>
+                            Se borra todo lo que contiene — casas, locations, items, tags, todo.
+                            Esto no se puede deshacer. Como dueño, no puedes salir de este espacio;
+                            solo eliminarlo.
+                        </p>
+                    </div>
+                    <Button
+                        type='button'
+                        variant='destructive'
+                        disabled={isDeletingWorkspace}
+                        onClick={handleDeleteWorkspace}
+                    >
+                        {isDeletingWorkspace ? (
+                            <Spinner data-icon='inline-start' />
+                        ) : (
+                            <TrashIcon data-icon='inline-start' />
+                        )}
+                        Eliminar espacio
                     </Button>
                 </div>
             )}

@@ -91,6 +91,7 @@ export default function MovePage({ params }) {
             description: 'Se desempaca todo lo suelto.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
+            confirmText: move?.name || 'eliminar',
         });
         if (!ok) return;
         destroyMove(id);

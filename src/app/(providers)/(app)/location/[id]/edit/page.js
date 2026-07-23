@@ -151,6 +151,7 @@ export default function LocationEditPage({ params }) {
             description: 'Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
+            confirmText: location?.name,
         });
         if (!ok) return;
         destroy(id);

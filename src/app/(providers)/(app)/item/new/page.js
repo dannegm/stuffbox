@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { WarningIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
@@ -121,17 +122,35 @@ export default function NewItemPage() {
         router.replace(`/location/${locationId}`);
     };
 
+    // Both save actions land somewhere that isn't the new item's own page
+    // (its container, or the same blank form for another item), so the
+    // toast's "Ver" action is the only direct way to actually open it.
+    const notifyCreated = item =>
+        toast.success(`"${item.name}" creado`, {
+            action: { label: 'Ver', onClick: () => router.push(`/item/${item.id}`) },
+        });
+
     const handleSaveAndFinish = event => {
         event.preventDefault();
         const variables = buildVariables();
         if (!variables) return;
-        mutate(variables, { onSuccess: item => router.replace(`/item/${item.id}`) });
+        mutate(variables, {
+            onSuccess: item => {
+                router.replace(`/location/${location.id}`);
+                notifyCreated(item);
+            },
+        });
     };
 
     const handleSaveAndCreateAnother = () => {
         const variables = buildVariables();
         if (!variables) return;
-        mutate(variables, { onSuccess: resetForm });
+        mutate(variables, {
+            onSuccess: item => {
+                resetForm();
+                notifyCreated(item);
+            },
+        });
     };
 
     if (isAuthLoading || !user || isLocationPending || !location || !workspace) {

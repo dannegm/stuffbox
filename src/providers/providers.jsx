@@ -11,6 +11,7 @@ import { DebugProvider } from './debug-provider';
 import { ThemeProvider } from './theme-provider';
 import { AuthProvider } from './auth-provider';
 import { ConfirmProvider } from './confirm-provider';
+import { Toaster } from '@/ui/sonner';
 
 // 'use client' alone doesn't skip SSR — a client component still pre-renders
 // on the server and hydrates, which is where hydration errors come from.
@@ -35,8 +36,13 @@ const AppProviders = createProviders([
     [ConfirmProvider],
 ]);
 
+// Toaster isn't a context provider (it doesn't wrap children, it just
+// renders its own fixed-position portal), so it sits as a sibling here
+// instead of joining the AppProviders array — same mount-gated subtree as
+// everything else, since it reads the resolved theme via useSettings.
 export const Providers = ({ children }) => (
     <ClientComponent>
         <AppProviders>{children}</AppProviders>
+        <Toaster />
     </ClientComponent>
 );

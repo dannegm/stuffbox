@@ -359,11 +359,25 @@ create policy "profiles: owner can update"
   with check (uuid = auth.uid() and is_super_admin = false);
 
 -- workspaces (member WITH CHECK also allows owner_id = auth.uid() so the
--- owner can insert the very first row, before any workspace_members exists)
-create policy "workspaces: member access"
-  on stuffbox.workspaces for all
+-- owner can insert the very first row, before any workspace_members exists;
+-- deleting the entire workspace, which cascades to everything it contains,
+-- is owner-only, unlike select/insert/update which stay open to any member)
+create policy "workspaces: member select"
+  on stuffbox.workspaces for select
+  using (stuffbox.is_workspace_member(id, auth.uid()));
+
+create policy "workspaces: member insert"
+  on stuffbox.workspaces for insert
+  with check (owner_id = auth.uid() or stuffbox.is_workspace_member(id, auth.uid()));
+
+create policy "workspaces: member update"
+  on stuffbox.workspaces for update
   using (stuffbox.is_workspace_member(id, auth.uid()))
   with check (owner_id = auth.uid() or stuffbox.is_workspace_member(id, auth.uid()));
+
+create policy "workspaces: owner delete"
+  on stuffbox.workspaces for delete
+  using (owner_id = auth.uid());
 
 create policy "workspaces: admin full access"
   on stuffbox.workspaces for all
@@ -372,7 +386,9 @@ create policy "workspaces: admin full access"
 
 -- workspace_members (insert allows self-join, which is only reachable via a
 -- valid claim_workspace_invite() call — see RPCs below; delete restricted to
--- the workspace owner or the member removing themself, per the plan)
+-- the workspace owner or the member removing themself, per the plan — and no
+-- clause below may ever target the owner's own row: an owner can only leave
+-- by deleting the whole workspace, never by deleting their own membership)
 create policy "workspace_members: member select"
   on stuffbox.workspace_members for select
   using (stuffbox.is_workspace_member(workspace_id, auth.uid()));
@@ -386,17 +402,19 @@ create policy "workspace_members: self insert"
 create policy "workspace_members: owner, self, or allowed member delete"
   on stuffbox.workspace_members for delete
   using (
-    user_id = auth.uid()
-    or exists (
+    not exists (
       select 1 from stuffbox.workspaces w
-      where w.id = workspace_id and w.owner_id = auth.uid()
+      where w.id = workspace_id and w.owner_id = workspace_members.user_id
     )
-    or (
-      stuffbox.workspace_allows_member_removal(workspace_id)
-      and stuffbox.is_workspace_member(workspace_id, auth.uid())
-      and not exists (
+    and (
+      user_id = auth.uid()
+      or exists (
         select 1 from stuffbox.workspaces w
-        where w.id = workspace_id and w.owner_id = workspace_members.user_id
+        where w.id = workspace_id and w.owner_id = auth.uid()
+      )
+      or (
+        stuffbox.workspace_allows_member_removal(workspace_id)
+        and stuffbox.is_workspace_member(workspace_id, auth.uid())
       )
     )
   );

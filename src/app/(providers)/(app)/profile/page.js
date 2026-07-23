@@ -88,7 +88,7 @@ export default function ProfilePage() {
 
     return (
         <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 p-4'
+            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 p-4 pb-12'
             data-block='ProfilePage'
         >
             <div className='min-w-0'>

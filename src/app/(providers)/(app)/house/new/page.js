@@ -66,7 +66,7 @@ export default function NewHousePage() {
 
     return (
         <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4 pb-12'
             data-block='NewHousePage'
         >
             <div
