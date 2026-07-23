@@ -9,6 +9,7 @@ import {
     UsersIcon,
     GearIcon,
     ShieldCheckIcon,
+    PlusIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
@@ -80,6 +81,11 @@ export const AppSidebar = () => {
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const activeWorkspace =
         workspaces?.find(workspace => workspace.id === activeWorkspaceId) ?? workspaces?.[0];
+    // Everything workspace-scoped (search, houses, Mudanzas/Tags/Colaboradores,
+    // Ajustes) only makes sense once a workspace actually exists — with none,
+    // the sidebar collapses down to just the switcher, an "Añadir espacio"
+    // shortcut, and whatever's workspace-independent (Admin, theme, profile).
+    const hasWorkspace = !!activeWorkspace;
     const settingsItem = activeWorkspace && {
         href: `/workspace/${activeWorkspace.id}/settings`,
         label: 'Ajustes',
@@ -99,32 +105,66 @@ export const AppSidebar = () => {
                 <WorkspaceSwitcher />
             </SidebarHeader>
             <SidebarContent>
-                <SidebarSearch />
-                <HousesNav />
-                <SidebarSeparator />
-                <SidebarGroup>
-                    <SidebarMenu>
-                        {[...NAV_ITEMS, settingsItem, adminItem].filter(Boolean).map(item => {
-                            const active = item.match.test(pathname);
-                            return (
-                                <SidebarMenuItem key={item.href}>
+                {hasWorkspace ? (
+                    <>
+                        <SidebarSearch />
+                        <HousesNav />
+                        <SidebarSeparator />
+                        <SidebarGroup>
+                            <SidebarMenu>
+                                {[...NAV_ITEMS, settingsItem, adminItem].filter(Boolean).map(item => {
+                                    const active = item.match.test(pathname);
+                                    return (
+                                        <SidebarMenuItem key={item.href}>
+                                            <SidebarMenuButton
+                                                tooltip={item.label}
+                                                isActive={active}
+                                                render={<Link href={item.href} />}
+                                            >
+                                                <NavIcon
+                                                    icon={item.icon}
+                                                    active={active}
+                                                    accent={item.accent}
+                                                />
+                                                <span>{item.label}</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    </>
+                ) : (
+                    <SidebarGroup>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    tooltip='Añadir espacio'
+                                    render={<Link href='/workspace/new' />}
+                                    className='border border-dashed border-sidebar-primary/40 text-sidebar-primary hover:bg-sidebar-primary/10'
+                                >
+                                    <NavIcon icon={PlusIcon} />
+                                    <span>Añadir espacio</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            {adminItem && (
+                                <SidebarMenuItem>
                                     <SidebarMenuButton
-                                        tooltip={item.label}
-                                        isActive={active}
-                                        render={<Link href={item.href} />}
+                                        tooltip={adminItem.label}
+                                        isActive={adminItem.match.test(pathname)}
+                                        render={<Link href={adminItem.href} />}
                                     >
                                         <NavIcon
-                                            icon={item.icon}
-                                            active={active}
-                                            accent={item.accent}
+                                            icon={adminItem.icon}
+                                            active={adminItem.match.test(pathname)}
                                         />
-                                        <span>{item.label}</span>
+                                        <span>{adminItem.label}</span>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            );
-                        })}
-                    </SidebarMenu>
-                </SidebarGroup>
+                            )}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                )}
             </SidebarContent>
             <SidebarSeparator />
             <SidebarFooter>

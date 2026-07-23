@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, CaretUpDownIcon } from '@phosphor-icons/react/ssr';
+import { PlusIcon, CaretUpDownIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDropdownMenu,
     ResponsiveDropdownMenuContent,
@@ -156,6 +156,12 @@ export const WorkspaceSwitcher = () => {
                             </ResponsiveDropdownMenuItem>
                         ))}
                         <ResponsiveDropdownMenuSeparator />
+                        <ResponsiveDropdownMenuItem render={<Link href='/workspaces' />}>
+                            <span className='flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground'>
+                                <SquaresFourIcon />
+                            </span>
+                            Ver todos los espacios
+                        </ResponsiveDropdownMenuItem>
                         <ResponsiveDropdownMenuItem onClick={() => setCreateOpen(true)}>
                             <span className='flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground'>
                                 <PlusIcon />
