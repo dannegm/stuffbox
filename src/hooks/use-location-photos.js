@@ -8,6 +8,7 @@ import {
     locationPhotosQuery,
     createLocationPhotosMutation,
     deleteLocationPhotoMutation,
+    reorderLocationPhotosMutation,
     updateLocationPhotoCropMutation,
 } from '@/queries/location-photos';
 
@@ -39,6 +40,9 @@ export const useLocationPhotos = ({ locationId, workspaceId }) => {
     );
     const { mutate: persistCrop } = useMutation(
         updateLocationPhotoCropMutation({ onSuccess: invalidate }),
+    );
+    const { mutate: persistReorder } = useMutation(
+        reorderLocationPhotosMutation({ onSuccess: invalidate }),
     );
 
     const addFiles = async fileList => {
@@ -118,5 +122,17 @@ export const useLocationPhotos = ({ locationId, workspaceId }) => {
             persistCrop({ id: photo.id, ...cropValues }, { onSuccess: resolve, onError: reject });
         });
 
-    return { photos, isProcessing, addFiles, removePhoto, updateCrop };
+    // A location always exists by the time its gallery is editable (see
+    // module comment), so newOrder is always fully persisted rows — no
+    // pending-vs-persisted split to handle here, unlike useItemPhotos. The
+    // query cache is written to directly so the grid reflects the new order
+    // immediately, instead of snapping back until the mutation's refetch
+    // lands.
+    const reorderPhotos = newOrder => {
+        const reordered = newOrder.map((photo, index) => ({ ...photo, order: index }));
+        queryClient.setQueryData(['location-photos', locationId], reordered);
+        persistReorder(reordered.map(photo => ({ id: photo.id, order: photo.order })));
+    };
+
+    return { photos, isProcessing, addFiles, removePhoto, updateCrop, reorderPhotos };
 };

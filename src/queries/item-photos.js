@@ -48,6 +48,24 @@ export const deleteItemPhotoMutation = (opts = {}) => ({
     ...opts,
 });
 
+// One update call per photo, not a single bulk statement — each row gets a
+// different `order` value, unlike bulk.js's shared-value-across-many-ids
+// updates.
+export const reorderItemPhotosMutation = (opts = {}) => ({
+    mutationFn: async photos => {
+        await Promise.all(
+            photos.map(async ({ id, order }) => {
+                const { error } = await supabase()
+                    .from('item_photos')
+                    .update({ order })
+                    .eq('id', id);
+                if (error) throw error;
+            }),
+        );
+    },
+    ...opts,
+});
+
 export const updateItemPhotoCropMutation = (opts = {}) => ({
     mutationFn: async ({ id, crop_x, crop_y, zoom }) => {
         const { data, error } = await supabase()

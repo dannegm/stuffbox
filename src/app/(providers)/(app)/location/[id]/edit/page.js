@@ -315,6 +315,7 @@ export default function LocationEditPage({ params }) {
                                             onAddFiles={photos.addFiles}
                                             onRemove={photos.removePhoto}
                                             onUpdateCrop={photos.updateCrop}
+                                            onReorder={photos.reorderPhotos}
                                         />
                                     </Field>
                                 </FieldGroup>

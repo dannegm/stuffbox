@@ -1,7 +1,19 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import {
+    closestCenter,
+    DndContext,
+    DragOverlay,
+    PointerSensor,
+    useDraggable,
+    useDroppable,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    BookmarkSimpleIcon,
     CameraIcon,
     ImagesIcon,
     PencilSimpleIcon,
@@ -28,12 +40,124 @@ const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
 
 const photoSrc = photo => photo.previewUrl ?? `${R2_PUBLIC_URL}/${photo.r2_key}`;
 
+// Same identity rule used for the React `key` below and for dnd-kit's
+// draggable/droppable ids — a pending photo has no `.id` yet.
+const getPhotoKey = photo => photo.id ?? photo.r2Key;
+
+const moveItem = (list, fromIndex, toIndex) => {
+    const next = [...list];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    return next;
+};
+
+// useDraggable/useDroppable can't be called from inside PhotoGallery's
+// `all.map(...)` (hooks can't run in a loop), hence its own component. The
+// same node is both draggable (to pick this thumb up) and droppable (to be
+// a drop target another thumb lands on, so dnd-kit's onDragOver can tell
+// where the pointer is) — dnd-kit gives each its own ref callback, merged by
+// hand since there's no built-in way to combine two.
+// `touch-none` (touch-action: none) is required by dnd-kit's PointerSensor
+// on touch devices — without it the browser's own scroll gesture wins the
+// pointer before the drag sensor's activation distance is ever reached.
+//
+// `isGhost` is true for the one thumb currently being dragged — PhotoGallery
+// already live-reorders the grid on every onDragOver, so this slot IS the
+// insertion point, not the photo's old spot; it renders as an empty box with
+// an inner shadow (the actual photo is what DragOverlay shows floating under
+// the pointer) so the gap the other thumbs shifted open around reads as
+// "drop here," not as a second copy of the photo sitting mid-shuffle.
+//
+// `layout` (motion.div, not a plain div) is what animates that shift — the
+// grid is a normal flex-wrap of independently-positioned boxes, so
+// reordering the array alone would make every other thumb instantly snap to
+// its new slot; `layout` diffs each box's position across renders (FLIP
+// under the hood) and tweens it instead.
+const PhotoThumb = ({ photo, photoKey, isCover, isGhost, isWiggling, onView, onEdit, onRemove }) => {
+    const { attributes, listeners, setNodeRef: setDraggableRef } = useDraggable({
+        id: photoKey,
+    });
+    const { setNodeRef: setDroppableRef } = useDroppable({ id: photoKey });
+    const setRefs = node => {
+        setDraggableRef(node);
+        setDroppableRef(node);
+    };
+
+    if (isGhost) {
+        return (
+            <motion.div
+                layout
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                ref={setRefs}
+                {...listeners}
+                {...attributes}
+                className='size-24 shrink-0 touch-none rounded-lg bg-primary/5 shadow-inner shadow-primary/30'
+            />
+        );
+    }
+
+    return (
+        <motion.div
+            layout
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            ref={setRefs}
+            {...listeners}
+            {...attributes}
+            className={cn(
+                'group relative size-24 shrink-0 touch-none overflow-hidden rounded-lg border bg-muted shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10',
+                isWiggling && 'animate-photo-duplicate-wiggle',
+            )}
+        >
+            {isCover && (
+                <span className='absolute top-1.5 left-1.5 z-10 flex size-6 items-center justify-center rounded-full bg-background/90 text-primary shadow-xs shadow-black/20 ring-1 ring-foreground/10 [&_svg]:size-3.5'>
+                    <BookmarkSimpleIcon weight='fill' />
+                    <span className='sr-only'>Foto de portada</span>
+                </span>
+            )}
+
+            <button
+                type='button'
+                aria-label='Ver foto'
+                onClick={onView}
+                className='relative block size-full overflow-hidden'
+            >
+                <CroppedPhoto src={photoSrc(photo)} photo={photo} />
+            </button>
+
+            <button
+                type='button'
+                aria-label='Editar foto'
+                onClick={event => {
+                    event.stopPropagation();
+                    onEdit();
+                }}
+                className='absolute bottom-1.5 left-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-xs shadow-black/20 ring-1 ring-foreground/10 transition-opacity group-hover:opacity-100 touch:opacity-100 [&_svg]:size-3.5'
+            >
+                <PencilSimpleIcon />
+            </button>
+            <button
+                type='button'
+                aria-label='Quitar foto'
+                onClick={event => {
+                    event.stopPropagation();
+                    onRemove();
+                }}
+                className='absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-xs shadow-black/20 ring-1 ring-foreground/10 transition-opacity group-hover:opacity-100 touch:opacity-100 [&_svg]:size-3.5'
+            >
+                <XIcon />
+            </button>
+        </motion.div>
+    );
+};
+
 // Shared by item and location photo galleries — `pending` (uploaded but not
 // yet persisted to a row) only applies to the item flow, where photos can be
 // added before the item itself exists; pass an empty array otherwise.
 // `onUpdateCrop(photo, { crop_x, crop_y, zoom })` backs the "Editar" button
 // on both the thumb here and inside PhotoLightbox — one PhotoCropDialog
-// instance serves both entry points.
+// instance serves both entry points. `onReorder(newOrderedAll)` fires with
+// the full reordered array after a drag — callers (useItemPhotos/
+// useLocationPhotos) turn that back into `order` values per row.
 export const PhotoGallery = ({
     photos = [],
     pending = [],
@@ -41,16 +165,66 @@ export const PhotoGallery = ({
     onAddFiles,
     onRemove,
     onUpdateCrop,
+    onReorder,
 }) => {
     const all = [...photos, ...pending];
     const [openIndex, setOpenIndex] = useState(null);
     const [editingPhoto, setEditingPhoto] = useState(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [wigglingKeys, setWigglingKeys] = useState([]);
+    const [activeId, setActiveId] = useState(null);
+    // Live-reordered preview of `all` while a drag is in progress — null
+    // outside of a drag, so the grid otherwise just tracks `all` directly.
+    // Updated on every onDragOver (not only on drop) so the other thumbs
+    // visibly shift to open a gap at the pointer's current target, instead
+    // of only a static "this is the swap target" highlight.
+    const [dragOrder, setDragOrder] = useState(null);
     const isMobile = useIsMobile();
     const $cameraInput = useRef(null);
     const $galleryInput = useRef(null);
     const dragCounter = useRef(0);
+    // Same activation constraint as the item/location drag-to-move DnD
+    // (location/[id]/page.js) — a small movement threshold before the
+    // gesture engages, so a plain tap still opens the lightbox instead of
+    // always arming a drag.
+    const reorderSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+    const displayList = dragOrder ?? all;
+    const activePhoto = activeId ? all.find(photo => getPhotoKey(photo) === activeId) : null;
+
+    const handleReorderDragStart = ({ active }) => {
+        setActiveId(active.id);
+        setDragOrder(all);
+    };
+
+    const handleReorderDragOver = ({ active, over }) => {
+        if (!over || active.id === over.id) return;
+        setDragOrder(current => {
+            const list = current ?? all;
+            const fromIndex = list.findIndex(photo => getPhotoKey(photo) === active.id);
+            const toIndex = list.findIndex(photo => getPhotoKey(photo) === over.id);
+            if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return list;
+            return moveItem(list, fromIndex, toIndex);
+        });
+    };
+
+    const handleReorderDragEnd = () => {
+        setActiveId(null);
+        // dragOrder already reflects the final target position — every
+        // onDragOver up to (and including) the one that landed here already
+        // applied it, so there's nothing left to compute at drop time.
+        if (dragOrder && onReorder) {
+            const changed = dragOrder.some(
+                (photo, index) => getPhotoKey(photo) !== getPhotoKey(all[index]),
+            );
+            if (changed) onReorder(dragOrder);
+        }
+        setDragOrder(null);
+    };
+
+    const handleReorderDragCancel = () => {
+        setActiveId(null);
+        setDragOrder(null);
+    };
 
     // Shared by the click-to-pick inputs and the drop zone below — flags any
     // file that matches one already uploaded this session (see
@@ -115,48 +289,41 @@ export const PhotoGallery = ({
                 </div>
             )}
 
-            {all.map((photo, index) => (
-                <div
-                    key={photo.id ?? photo.r2Key}
-                    className={cn(
-                        'group relative size-24 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10',
-                        wigglingKeys.includes(photo.r2Key ?? photo.r2_key) &&
-                            'animate-photo-duplicate-wiggle',
+            <DndContext
+                sensors={reorderSensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleReorderDragStart}
+                onDragOver={handleReorderDragOver}
+                onDragEnd={handleReorderDragEnd}
+                onDragCancel={handleReorderDragCancel}
+            >
+                {displayList.map((photo, index) => (
+                    <PhotoThumb
+                        key={getPhotoKey(photo)}
+                        photoKey={getPhotoKey(photo)}
+                        photo={photo}
+                        isCover={index === 0}
+                        isGhost={activeId === getPhotoKey(photo)}
+                        isWiggling={wigglingKeys.includes(photo.r2Key ?? photo.r2_key)}
+                        onView={() => setOpenIndex(index)}
+                        onEdit={() => setEditingPhoto(photo)}
+                        onRemove={() => onRemove(photo)}
+                    />
+                ))}
+                {/* Sized to 2/3 of the real size-24 thumb (size-16 = 4rem)
+                    and 'relative' (not just sized) — CroppedPhoto positions
+                    itself `absolute inset-0`, so without a positioned
+                    ancestor of its own it was escaping this box entirely,
+                    losing the square crop and covering whatever sat behind
+                    the cursor. */}
+                <DragOverlay>
+                    {activePhoto && (
+                        <div className='relative size-16 overflow-hidden rounded-lg border shadow-lg'>
+                            <CroppedPhoto src={photoSrc(activePhoto)} photo={activePhoto} />
+                        </div>
                     )}
-                >
-                    <button
-                        type='button'
-                        aria-label='Ver foto'
-                        onClick={() => setOpenIndex(index)}
-                        className='relative block size-full overflow-hidden'
-                    >
-                        <CroppedPhoto src={photoSrc(photo)} photo={photo} />
-                    </button>
-
-                    <button
-                        type='button'
-                        aria-label='Editar foto'
-                        onClick={event => {
-                            event.stopPropagation();
-                            setEditingPhoto(photo);
-                        }}
-                        className='absolute bottom-1.5 left-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-xs shadow-black/20 ring-1 ring-foreground/10 transition-opacity group-hover:opacity-100 touch:opacity-100 [&_svg]:size-3.5'
-                    >
-                        <PencilSimpleIcon />
-                    </button>
-                    <button
-                        type='button'
-                        aria-label='Quitar foto'
-                        onClick={event => {
-                            event.stopPropagation();
-                            onRemove(photo);
-                        }}
-                        className='absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-xs shadow-black/20 ring-1 ring-foreground/10 transition-opacity group-hover:opacity-100 touch:opacity-100 [&_svg]:size-3.5'
-                    >
-                        <XIcon />
-                    </button>
-                </div>
-            ))}
+                </DragOverlay>
+            </DndContext>
 
             {isMobile ? (
                 // Explicit either/or on every mobile browser (not just

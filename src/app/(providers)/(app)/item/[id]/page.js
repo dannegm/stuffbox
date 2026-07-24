@@ -487,6 +487,7 @@ export default function ItemPage({ params }) {
                                     onAddFiles={itemPhotos.addFiles}
                                     onRemove={itemPhotos.removePhoto}
                                     onUpdateCrop={itemPhotos.updateCrop}
+                                    onReorder={itemPhotos.reorderPhotos}
                                 />
                             </Field>
                         </FieldGroup>

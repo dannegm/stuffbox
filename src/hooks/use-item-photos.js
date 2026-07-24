@@ -8,6 +8,7 @@ import {
     itemPhotosQuery,
     createItemPhotosMutation,
     deleteItemPhotoMutation,
+    reorderItemPhotosMutation,
     updateItemPhotoCropMutation,
 } from '@/queries/item-photos';
 
@@ -39,6 +40,9 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
     );
     const { mutate: persistCrop } = useMutation(
         updateItemPhotoCropMutation({ onSuccess: invalidate }),
+    );
+    const { mutate: persistReorder } = useMutation(
+        reorderItemPhotosMutation({ onSuccess: invalidate }),
     );
 
     const addFiles = async fileList => {
@@ -129,6 +133,24 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
         }
     };
 
+    // newOrder is the gallery's full reordered list (PhotoGallery's own
+    // `all` — pending photos included). Only one of the two branches ever
+    // actually applies: an existing item's `pending` is always empty (new
+    // uploads persist immediately once itemId exists — see addFiles above),
+    // and item/new has no itemId, so its `photos` is always empty too.
+    // The query cache is written to directly (not just invalidated) so the
+    // grid reflects the new order immediately, instead of snapping back
+    // until the persisted mutation's refetch lands.
+    const reorderPhotos = newOrder => {
+        if (itemId) {
+            const reordered = newOrder.map((photo, index) => ({ ...photo, order: index }));
+            queryClient.setQueryData(['item-photos', itemId], reordered);
+            persistReorder(reordered.map(photo => ({ id: photo.id, order: photo.order })));
+        } else {
+            setPending(newOrder.map((photo, index) => ({ ...photo, order: index })));
+        }
+    };
+
     const commitPending = newItemId => {
         if (pending.length === 0) return;
         persistPhotos({
@@ -162,5 +184,14 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
         return Promise.resolve();
     };
 
-    return { photos, pending, isProcessing, addFiles, removePhoto, commitPending, updateCrop };
+    return {
+        photos,
+        pending,
+        isProcessing,
+        addFiles,
+        removePhoto,
+        commitPending,
+        updateCrop,
+        reorderPhotos,
+    };
 };
