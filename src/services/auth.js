@@ -11,3 +11,20 @@ export const sendLoginCode = email =>
 
 export const verifyLoginCode = (email, token) =>
     supabase().auth.verifyOtp({ email, token, type: 'email' });
+
+// Read-only — lets the register/invite email step recognize an existing
+// account and reflect its saved name/gender/avatar/color on the identity
+// tag before the code is even sent, instead of showing a freshly generated
+// placeholder for someone who already has a profile. Never writes anything;
+// see stuffbox.get_profile_identity_by_email (migrations/019).
+export const getProfileIdentityByEmail = async email => {
+    const { data, error } = await supabase().rpc('get_profile_identity_by_email', {
+        p_email: email,
+    });
+    if (error) throw error;
+
+    const row = data?.[0];
+    if (!row) return null;
+
+    return { name: row.name, gender: row.gender, avatarSeed: row.avatar_seed, color: row.color };
+};

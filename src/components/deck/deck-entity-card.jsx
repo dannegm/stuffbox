@@ -37,8 +37,16 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
             <div className='relative m-3 aspect-square shrink-0 overflow-hidden rounded-2xl'>
                 <DeckCardPhotos photos={photos} icon={icon} seed={seed} />
                 <div className='pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-2'>
-                    <RatingAvatarStack ratings={dislikes} tone='dislike' className='pointer-events-auto' />
-                    <RatingAvatarStack ratings={likes} tone='like' className='pointer-events-auto' />
+                    {/* Two fixed slots, not just two children of a justify-between
+                        row — RatingAvatarStack returns null when empty, and with
+                        only one real child left, justify-between would collapse
+                        it to the start regardless of which side it was. */}
+                    <div className='pointer-events-auto'>
+                        <RatingAvatarStack ratings={dislikes} tone='dislike' chip />
+                    </div>
+                    <div className='pointer-events-auto'>
+                        <RatingAvatarStack ratings={likes} tone='like' chip />
+                    </div>
                 </div>
             </div>
             <div className='flex flex-1 flex-col gap-2 px-4 pt-1 pb-4'>

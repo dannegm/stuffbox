@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/ui/card';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -10,7 +10,7 @@ import { Spinner } from '@/ui/spinner';
 import { IdentityTag } from '@/components/auth/identity-tag';
 import { useEditableIdentity } from '@/hooks/use-editable-identity';
 import { setPendingIdentity } from '@/services/provision-account';
-import { sendLoginCode, verifyLoginCode } from '@/services/auth';
+import { sendLoginCode, verifyLoginCode, getProfileIdentityByEmail } from '@/services/auth';
 
 // Supabase's own default rate limit for resending an OTP email — matches
 // the cooldown enforced server-side, not an arbitrary UI choice.
@@ -30,11 +30,19 @@ export const EmailCodeCard = ({
     onVerified,
 }) => {
     const formId = useId();
-    const { identity, setName, setColor, setGender, regenerateName, regenerateAvatar } =
-        useEditableIdentity();
+    const {
+        identity,
+        setName,
+        setColor,
+        setGender,
+        regenerateName,
+        regenerateAvatar,
+        setIdentity,
+    } = useEditableIdentity();
 
     const [step, setStep] = useState('email');
     const [email, setEmail] = useState('');
+    const $latestEmail = useRef('');
     const [code, setCode] = useState('');
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState(null);
@@ -72,6 +80,26 @@ export const EmailCodeCard = ({
 
     const handleResend = () => {
         sendCode();
+    };
+
+    // Only meaningful on the identity step (register/invite) — recognizes an
+    // email that already has an account and swaps the freshly generated
+    // placeholder for that account's real name/gender/avatar/color, purely
+    // in the UI. Never writes anything back to the DB.
+    const handleEmailBlur = async event => {
+        if (!withIdentity) return;
+
+        const typedEmail = event.target.value.trim();
+        if (!typedEmail) return;
+
+        try {
+            const existing = await getProfileIdentityByEmail(typedEmail);
+            if (existing && $latestEmail.current === typedEmail) {
+                setIdentity(existing);
+            }
+        } catch {
+            // Lookup failing just leaves the generated placeholder identity in place.
+        }
     };
 
     const handleVerifyCode = async event => {
@@ -139,7 +167,11 @@ export const EmailCodeCard = ({
                                     autoComplete='email'
                                     placeholder='tu@correo.com'
                                     value={email}
-                                    onChange={event => setEmail(event.target.value)}
+                                    onChange={event => {
+                                        setEmail(event.target.value);
+                                        $latestEmail.current = event.target.value.trim();
+                                    }}
+                                    onBlur={handleEmailBlur}
                                     aria-invalid={!!error}
                                     className='h-11 sm:h-10'
                                 />

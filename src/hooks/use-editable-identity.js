@@ -20,6 +20,16 @@ export const useEditableIdentity = () => {
     const regenerateName = () => setName(generateName());
     const regenerateAvatar = () => setAvatarSeed(nanoid());
 
+    // Bulk-applies all four fields at once — used to replace the generated
+    // placeholder with a saved profile's real identity (register/invite
+    // email step recognizing an existing account), never partially.
+    const setIdentity = next => {
+        setName(next.name);
+        setColor(next.color);
+        setGender(next.gender);
+        setAvatarSeed(next.avatarSeed);
+    };
+
     return {
         identity: { name, color, gender, avatarSeed },
         setName,
@@ -27,5 +37,6 @@ export const useEditableIdentity = () => {
         setGender,
         regenerateName,
         regenerateAvatar,
+        setIdentity,
     };
 };
