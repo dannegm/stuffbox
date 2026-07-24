@@ -6,6 +6,7 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
+    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -19,8 +20,14 @@ const SEARCH_THRESHOLD = 10;
 // height:100% of this box, so a plain max-height alone can't shrink it below
 // 14rem (percentage heights don't resolve against max-height, only against
 // an explicit/definite height) — fit-content gives it a real definite height
-// that's still capped, so short lists shrink and long lists scroll.
-const LIST_HEIGHT = 'h-[fit-content(14rem)] max-h-56 overflow-auto';
+// that's still capped, so short lists shrink and long lists scroll. On
+// mobile (rendered inside a Drawer) that shrink is unwanted — a short list
+// leaves the sheet awkwardly small, so it's pinned to the same 14rem max
+// instead of tracking content.
+const LIST_HEIGHT = isMobile => ({
+    'h-56': isMobile,
+    'h-[fit-content(14rem)] max-h-56': !isMobile,
+});
 
 // A searchable option list in a Popover, modeled on pinia's CategorySelect
 // (src/components/categories/category-select.jsx) — generalized so every
@@ -43,6 +50,7 @@ export const SelectSearch = ({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
+    const isMobile = useResponsivePopoverMobile();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -103,7 +111,7 @@ export const SelectSearch = ({
                         />
                     </InputGroup>
                 )}
-                <ScrollArea className={LIST_HEIGHT}>
+                <ScrollArea className={cn('overflow-auto', LIST_HEIGHT(isMobile))}>
                     <div className='flex flex-col gap-0.5 p-0.5'>
                         {results.map(option => (
                             <button

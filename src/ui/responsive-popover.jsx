@@ -12,7 +12,10 @@ import { cn } from '@/helpers/utils';
 // search filters) that isn't really a form, so ResponsiveDialog doesn't fit,
 // but tapping a small anchored popup on a phone is still fiddly.
 const ResponsivePopoverMobileContext = createContext(false);
-const useResponsivePopoverMobile = () => useContext(ResponsivePopoverMobileContext);
+// Exported so content built by callers (SelectSearch, TagPicker, IconPicker)
+// can branch on the same mobile signal that already decides Drawer vs
+// Popover here, instead of re-deriving it with a second useIsMobile() call.
+export const useResponsivePopoverMobile = () => useContext(ResponsivePopoverMobileContext);
 
 export const ResponsivePopover = ({ children, ...props }) => {
     const isMobile = useIsMobile();

@@ -7,6 +7,7 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
+    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -14,6 +15,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { tagsQuery } from '@/queries/tags';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
+import { cn } from '@/helpers/utils';
 
 // Multi-select over pre-created tags only — tags are managed as their own
 // entity from /tags (name/color/icon, full CRUD), not created ad hoc here.
@@ -21,6 +23,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
+    const isMobile = useResponsivePopoverMobile();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId));
 
     const toggle = tagId => {
@@ -65,7 +68,12 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                         placeholder='Buscar tag'
                     />
                 </InputGroup>
-                <ScrollArea className='h-[fit-content(12rem)] max-h-48 overflow-auto'>
+                <ScrollArea
+                    className={cn('overflow-auto', {
+                        'h-48': isMobile,
+                        'h-[fit-content(12rem)] max-h-48': !isMobile,
+                    })}
+                >
                     <div className='flex flex-col gap-0.5 p-0.5'>
                         {results.map(tag => (
                             <button

@@ -6,6 +6,7 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
+    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
@@ -16,6 +17,7 @@ import { PHOSPHOR_ICONS } from '@/constants/phosphor-icons';
 import { HUGE_ICONS } from '@/constants/huge-icons';
 import { LUCIDE_ICONS } from '@/constants/lucide-icons';
 import { LUCIDE_LAB_ICONS } from '@/constants/lucide-lab-icons';
+import { cn } from '@/helpers/utils';
 
 // Every library DynamicIcon can resolve, searchable in one place. Ported
 // from pinia's lucide-only icon-picker.jsx — huge/phosphor have no upstream
@@ -107,6 +109,7 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     const [open, setOpen] = useState(false);
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
+    const isMobile = useResponsivePopoverMobile();
 
     const handleSelect = icon => {
         onChange?.(icon);
@@ -156,7 +159,12 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
 
                     {LIBRARIES.map(lib => (
                         <TabsContent key={lib.value} value={lib.value}>
-                            <ScrollArea className='h-[fit-content(16rem)] max-h-96 overflow-auto'>
+                            <ScrollArea
+                                className={cn('overflow-auto', {
+                                    'h-64': isMobile,
+                                    'h-[fit-content(16rem)] max-h-96': !isMobile,
+                                })}
+                            >
                                 <IconGrid library={lib} query={query} onSelect={handleSelect} />
                             </ScrollArea>
                         </TabsContent>
