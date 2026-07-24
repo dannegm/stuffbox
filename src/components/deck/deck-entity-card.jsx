@@ -41,7 +41,7 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
                     <RatingAvatarStack ratings={likes} tone='like' className='pointer-events-auto' />
                 </div>
             </div>
-            <div className='flex flex-1 flex-col gap-2 p-4'>
+            <div className='flex flex-1 flex-col gap-2 px-4 pt-1 pb-4'>
                 <h2 className='truncate font-heading text-lg font-semibold tracking-tight'>
                     {entity.name}
                 </h2>

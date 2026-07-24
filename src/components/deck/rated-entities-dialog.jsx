@@ -64,6 +64,11 @@ export const RatedEntitiesDialog = ({
     );
 
     const handleClearAll = async () => {
+        // Closed *before* confirming, not after — vaul's Drawer and Base UI's
+        // AlertDialog are two independent overlay systems that don't know
+        // about each other; leaving the drawer open underneath the confirm
+        // traps clicks on the confirm dialog until the drawer itself closes.
+        onOpenChange(false);
         const ok = await confirm({
             title: '¿Eliminar todas tus calificaciones?',
             description:

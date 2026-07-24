@@ -28,7 +28,7 @@ const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='DeckLoading'>
         <Skeleton className='h-4 w-32 rounded' />
         <div className='mx-auto flex w-full max-w-sm flex-1 items-center justify-center'>
-            <Skeleton className='aspect-[2/3] w-full rounded-2xl' />
+            <Skeleton className='aspect-2/3 w-full rounded-2xl' />
         </div>
     </div>
 );
@@ -186,7 +186,7 @@ export default function DeckPage() {
 
     return (
         <div
-            className='flex flex-1 touch-pan-y flex-col gap-4 overflow-y-auto overscroll-none bg-hero-mesh p-4'
+            className='fixed inset-x-0 top-12 -bottom-6 flex touch-none flex-col gap-4 overflow-hidden overscroll-none bg-hero-mesh p-4 md:static md:h-svh'
             data-block='DeckPage'
         >
             <div className='flex items-center justify-between'>
@@ -202,8 +202,8 @@ export default function DeckPage() {
                 </Button>
             </div>
 
-            <div className='flex min-h-0 flex-1 items-center justify-center pb-14'>
-                <div className='relative mx-auto aspect-[2/3] w-4/5 sm:w-full sm:max-w-sm'>
+            <div className='flex min-h-0 flex-1 items-center justify-center pb-4'>
+                <div className='relative mx-auto aspect-2/3 w-4/5 sm:w-full sm:max-w-sm'>
                     <Deck className='size-full'>
                         <DeckCards
                             currentIndex={currentIndex}
