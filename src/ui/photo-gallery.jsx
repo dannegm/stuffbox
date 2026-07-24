@@ -1,7 +1,13 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { CameraIcon, ImagesIcon, PencilSimpleIcon, XIcon } from '@phosphor-icons/react/ssr';
+import {
+    CameraIcon,
+    ImagesIcon,
+    PencilSimpleIcon,
+    UploadSimpleIcon,
+    XIcon,
+} from '@phosphor-icons/react/ssr';
 import { cn } from '@/helpers/utils';
 import { Spinner } from '@/ui/spinner';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
@@ -39,21 +45,84 @@ export const PhotoGallery = ({
     const all = [...photos, ...pending];
     const [openIndex, setOpenIndex] = useState(null);
     const [editingPhoto, setEditingPhoto] = useState(null);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [wigglingKeys, setWigglingKeys] = useState([]);
     const isMobile = useIsMobile();
     const $cameraInput = useRef(null);
     const $galleryInput = useRef(null);
+    const dragCounter = useRef(0);
+
+    // Shared by the click-to-pick inputs and the drop zone below — flags any
+    // file that matches one already uploaded this session (see
+    // useItemPhotos/useLocationPhotos) so its existing thumbnail can wiggle
+    // instead of silently re-uploading a copy.
+    const processFiles = async fileList => {
+        const result = await onAddFiles(fileList);
+        const duplicates = result?.duplicates ?? [];
+        if (duplicates.length === 0) return;
+
+        setWigglingKeys(current => [...new Set([...current, ...duplicates])]);
+        setTimeout(() => {
+            setWigglingKeys(current => current.filter(key => !duplicates.includes(key)));
+        }, 400);
+    };
 
     const handleFiles = event => {
-        onAddFiles(event.target.files);
+        processFiles(event.target.files);
         event.target.value = '';
     };
 
+    const handleDragEnter = event => {
+        event.preventDefault();
+        if (!Array.from(event.dataTransfer.types || []).includes('Files')) return;
+        dragCounter.current += 1;
+        setIsDraggingOver(true);
+    };
+
+    const handleDragOver = event => {
+        event.preventDefault();
+    };
+
+    const handleDragLeave = event => {
+        event.preventDefault();
+        dragCounter.current = Math.max(0, dragCounter.current - 1);
+        if (dragCounter.current === 0) setIsDraggingOver(false);
+    };
+
+    const handleDrop = event => {
+        event.preventDefault();
+        dragCounter.current = 0;
+        setIsDraggingOver(false);
+        processFiles(event.dataTransfer.files);
+    };
+
     return (
-        <div className='flex flex-wrap gap-3' data-block='PhotoGallery'>
+        <div
+            className={cn('relative flex flex-wrap gap-3 rounded-lg transition-colors', {
+                'outline-2 outline-dashed outline-primary/60 outline-offset-4 bg-primary/5':
+                    isDraggingOver,
+            })}
+            data-block='PhotoGallery'
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {isDraggingOver && (
+                <div className='pointer-events-none absolute -inset-2 z-10 flex items-center justify-center gap-2 rounded-lg text-sm font-medium text-primary'>
+                    <UploadSimpleIcon className='size-4' />
+                    Suelta las fotos aquí
+                </div>
+            )}
+
             {all.map((photo, index) => (
                 <div
                     key={photo.id ?? photo.r2Key}
-                    className='group relative size-24 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
+                    className={cn(
+                        'group relative size-24 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10',
+                        wigglingKeys.includes(photo.r2Key ?? photo.r2_key) &&
+                            'animate-photo-duplicate-wiggle',
+                    )}
                 >
                     <button
                         type='button'

@@ -1,3 +1,8 @@
+// Identifies a File across repeated selections/drops within the same editing
+// session (no content hash — name+size+lastModified is enough to catch the
+// "picked the same photo twice" case without reading the file).
+export const fileSignature = file => `${file.name}:${file.size}:${file.lastModified}`;
+
 // One canvas round-trip: createImageBitmap with imageOrientation: 'from-image'
 // bakes the EXIF rotation into pixels, and canvas.toBlob never carries EXIF
 // forward — so resizing here also strips metadata for free.

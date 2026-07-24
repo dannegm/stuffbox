@@ -52,3 +52,29 @@
 @utility animate-focus-ring {
     animation: focus-ring 0.6s ease-out both;
 }
+
+/* Nudges an existing thumbnail when a just-picked/dropped file turns out to
+   be a duplicate of one already added — one-shot, cleared on a timer (see
+   PhotoGallery in src/ui/photo-gallery.jsx). */
+@keyframes photo-duplicate-wiggle {
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+    20% {
+        transform: translateX(-4px) rotate(-3deg);
+    }
+    40% {
+        transform: translateX(4px) rotate(3deg);
+    }
+    60% {
+        transform: translateX(-3px) rotate(-2deg);
+    }
+    80% {
+        transform: translateX(3px) rotate(2deg);
+    }
+}
+
+@utility animate-photo-duplicate-wiggle {
+    animation: photo-duplicate-wiggle 0.4s ease-in-out;
+}
