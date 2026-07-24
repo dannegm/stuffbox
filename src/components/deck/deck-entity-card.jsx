@@ -1,6 +1,7 @@
 'use client';
 
-import { HeartIcon } from '@phosphor-icons/react/ssr';
+import Link from 'next/link';
+import { HeartIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { DeckItem } from '@/ui/deck';
 import { DeckCardPhotos } from '@/components/deck/deck-card-photos';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
@@ -21,6 +22,8 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
     const seed = getEntityRatingKey(entity.entityType, entity.entityId);
     // Locations have no item_tags row at all (tags only apply to items).
     const tags = (entity.item_tags ?? []).map(itemTag => itemTag.tags).slice(0, 3);
+    const editHref =
+        entity.entityType === 'item' ? `/item/${entity.entityId}` : `/location/${entity.entityId}/edit`;
 
     return (
         <DeckItem
@@ -36,6 +39,19 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
         >
             <div className='relative m-3 aspect-square shrink-0 overflow-hidden rounded-2xl'>
                 <DeckCardPhotos photos={photos} icon={icon} seed={seed} />
+                <Link
+                    href={editHref}
+                    aria-label='Editar'
+                    // The whole card sits inside DeckCards' drag="x" gesture —
+                    // without stopping propagation here, a tap on this button
+                    // also arms/starts that drag, so the link never gets a
+                    // clean click.
+                    onPointerDown={event => event.stopPropagation()}
+                    onClick={event => event.stopPropagation()}
+                    className='absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-background/80 text-foreground shadow-xs backdrop-blur-sm transition-colors hover:bg-background [&_svg]:size-4'
+                >
+                    <PencilSimpleIcon weight='bold' />
+                </Link>
                 <div className='pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-2'>
                     {/* Two fixed slots, not just two children of a justify-between
                         row — RatingAvatarStack returns null when empty, and with

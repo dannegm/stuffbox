@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { WarningIcon, CardsIcon } from '@phosphor-icons/react/ssr';
+import { WarningIcon, CardsThreeIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import {
@@ -271,7 +271,7 @@ export default function LocationEditPage({ params }) {
                                 className='rounded-lg border bg-muted/30 px-3 py-2.5'
                             >
                                 <FieldLabel htmlFor='location-is-item' className='flex-1'>
-                                    <CardsIcon className='text-muted-foreground' />
+                                    <CardsThreeIcon className='text-muted-foreground' />
                                     Aparece en el deck de calificar
                                 </FieldLabel>
                                 <Switch

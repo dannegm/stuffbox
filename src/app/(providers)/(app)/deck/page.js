@@ -7,7 +7,7 @@ import {
     ClockCounterClockwiseIcon,
     ThumbsUpIcon,
     ThumbsDownIcon,
-    ArrowClockwiseIcon,
+    ShuffleIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useSettings } from '@/hooks/use-settings';
@@ -113,6 +113,17 @@ export default function DeckPage() {
         if (!entity) return;
         rateEntity(entity, liked);
         setIndexChangeDirection(liked ? 'right' : 'left');
+        setCurrentIndex(index => index + 1);
+    };
+
+    // No rating written — just moves past a card the user isn't sure about
+    // yet, without it counting as "already rated" (buildDeckQueue only
+    // excludes ratedKeys, so a skipped entity resurfaces on the next
+    // reshuffle instead of being lost).
+    const handleSkip = () => {
+        const entity = queue?.[currentIndex];
+        if (!entity) return;
+        setIndexChangeDirection('left');
         setCurrentIndex(index => index + 1);
     };
 
@@ -237,7 +248,7 @@ export default function DeckPage() {
                                     size='sm'
                                     onClick={handleReshuffle}
                                 >
-                                    <ArrowClockwiseIcon data-icon='inline-start' />
+                                    <ShuffleIcon data-icon='inline-start' />
                                     Empezar de nuevo
                                 </Button>
                             </div>
@@ -255,8 +266,18 @@ export default function DeckPage() {
                         onClick={() => handleButtonRate(false)}
                         className='h-11 flex-1 justify-center rounded-full border-rose-500/30 text-rose-500 hover:bg-rose-500/10 [&_svg]:size-5'
                     >
-                        No me gusta
-                        <ThumbsDownIcon weight='bold' data-icon='inline-end' />
+                        <ThumbsDownIcon weight='bold' data-icon='inline-start' />
+                        NOPE
+                    </Button>
+                    <Button
+                        type='button'
+                        variant='outline'
+                        disabled={isExhausted}
+                        onClick={handleSkip}
+                        className='h-11 flex-1 justify-center rounded-full text-muted-foreground hover:bg-muted [&_svg]:size-5'
+                    >
+                        <ShuffleIcon weight='bold' data-icon='inline-start' />
+                        SKIP
                     </Button>
                     <Button
                         type='button'
@@ -266,7 +287,7 @@ export default function DeckPage() {
                         className='h-11 flex-1 justify-center rounded-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 [&_svg]:size-5'
                     >
                         <ThumbsUpIcon weight='bold' data-icon='inline-start' />
-                        Me gusta
+                        YUP
                     </Button>
                 </div>
             </div>

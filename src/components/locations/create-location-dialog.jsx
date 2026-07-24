@@ -13,7 +13,7 @@ import {
     ResponsiveDialogTitle,
     ResponsiveDialogTrigger,
 } from '@/ui/responsive-dialog';
-import { CardsIcon } from '@phosphor-icons/react/ssr';
+import { CardsThreeIcon } from '@phosphor-icons/react/ssr';
 import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -118,7 +118,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                             className='rounded-lg border bg-muted/30 px-3 py-2.5'
                         >
                             <FieldLabel htmlFor='location-is-item' className='flex-1'>
-                                <CardsIcon className='text-muted-foreground' />
+                                <CardsThreeIcon className='text-muted-foreground' />
                                 Aparece en el deck de calificar
                             </FieldLabel>
                             <Switch
