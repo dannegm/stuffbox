@@ -24,8 +24,8 @@ import {
     deleteWorkspaceInviteMutation,
     removeWorkspaceMemberMutation,
 } from '@/queries/collaborators';
-import { getAvatarUrl } from '@/helpers/avatar';
-import { Avatar, AvatarFallback, AvatarImage, AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
+import { AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
+import { UserAvatar } from '@/ui/user-avatar';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
@@ -211,16 +211,7 @@ const MemberRow = ({ member, isOwnerRow, isSelf, canRemove, onRemove }) => {
             className='flex items-center gap-3 rounded-xl border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5'
             data-block='MemberRow'
         >
-            <Avatar
-                className='size-9 bg-(--profile-color)'
-                style={{ '--profile-color': profile.color }}
-            >
-                <AvatarImage
-                    src={getAvatarUrl(profile.avatar_seed, profile.gender)}
-                    alt={profile.name}
-                />
-                <AvatarFallback>{profile.name.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
+            <UserAvatar user={profile} className='size-9' />
             <div className='min-w-0 flex-1'>
                 <p className='truncate font-medium'>
                     {profile.name}
@@ -388,23 +379,7 @@ export default function CollaboratorsPage() {
                     <Stat icon={UsersIcon} value={members.length} label='colaboradores' />
                     <AvatarGroup className='ml-auto'>
                         {members.slice(0, 4).map(member => (
-                            <Avatar
-                                key={member.user_id}
-                                size='sm'
-                                className='bg-(--profile-color)'
-                                style={{ '--profile-color': member.profiles?.color }}
-                            >
-                                <AvatarImage
-                                    src={getAvatarUrl(
-                                        member.profiles?.avatar_seed,
-                                        member.profiles?.gender,
-                                    )}
-                                    alt={member.profiles?.name ?? ''}
-                                />
-                                <AvatarFallback>
-                                    {member.profiles?.name?.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar key={member.user_id} user={member.profiles} size='sm' />
                         ))}
                         {members.length > 4 && (
                             <AvatarGroupCount>+{members.length - 4}</AvatarGroupCount>

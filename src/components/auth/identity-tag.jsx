@@ -4,9 +4,8 @@ import {
     GenderMaleIcon,
     GenderFemaleIcon,
 } from '@phosphor-icons/react/ssr';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
+import { UserAvatar } from '@/ui/user-avatar';
 import { ColorPicker } from '@/ui/color-picker';
-import { getAvatarUrl } from '@/helpers/avatar';
 import { cn } from '@/helpers/utils';
 
 const GenderToggle = ({ gender, onChange }) => (
@@ -52,18 +51,17 @@ export const IdentityTag = ({
         data-block='IdentityTag'
     >
         <div className='relative shrink-0'>
-            <Avatar
-                className='size-16 bg-(--identity-color)'
-                style={{ '--identity-color': identity.color }}
-            >
-                <AvatarImage
-                    key={`${identity.avatarSeed}:${identity.gender}`}
-                    src={getAvatarUrl(identity.avatarSeed, identity.gender)}
-                    alt={identity.name}
-                    className='animate-in fade-in zoom-in-50 duration-300'
-                />
-                <AvatarFallback>{identity.name.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+                key={`${identity.avatarSeed}:${identity.gender}`}
+                user={{
+                    avatar_seed: identity.avatarSeed,
+                    gender: identity.gender,
+                    color: identity.color,
+                    name: identity.name,
+                }}
+                className='size-16'
+                imageClassName='animate-in fade-in zoom-in-50 duration-300'
+            />
 
             <ColorPicker value={identity.color} onChange={onColorChange}>
                 <button

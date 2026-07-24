@@ -14,10 +14,10 @@ import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Stat } from '@/ui/stat';
-import { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
+import { AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
+import { UserAvatar } from '@/ui/user-avatar';
 import { DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
 import { DynamicIcon } from '@/ui/dynamic-icon';
-import { getAvatarUrl } from '@/helpers/avatar';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='WorkspaceLoading'>
@@ -97,18 +97,7 @@ export default function WorkspacePage({ params }) {
                             <Stat icon={UsersIcon} value={members.length} label='colaboradores' />
                             <AvatarGroup className='ml-auto'>
                                 {members.slice(0, 4).map(member => (
-                                    <Avatar key={member.user_id} size='sm'>
-                                        <AvatarImage
-                                            src={getAvatarUrl(
-                                                member.profiles?.avatar_seed,
-                                                member.profiles?.gender,
-                                            )}
-                                            alt={member.profiles?.name ?? ''}
-                                        />
-                                        <AvatarFallback>
-                                            {member.profiles?.name?.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar key={member.user_id} user={member.profiles} size='sm' />
                                 ))}
                                 {members.length > 4 && (
                                     <AvatarGroupCount>+{members.length - 4}</AvatarGroupCount>

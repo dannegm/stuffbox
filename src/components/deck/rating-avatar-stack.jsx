@@ -1,5 +1,5 @@
-import { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
-import { getAvatarUrl } from '@/helpers/avatar';
+import { AvatarGroup, AvatarGroupCount } from '@/ui/avatar';
+import { UserAvatar } from '@/ui/user-avatar';
 import { cn } from '@/helpers/utils';
 
 const MAX_VISIBLE = 3;
@@ -15,17 +15,12 @@ export const RatingAvatarStack = ({ ratings, tone, className }) => {
     return (
         <AvatarGroup className={className}>
             {visible.map(rating => (
-                <Avatar
+                <UserAvatar
                     key={rating.id}
+                    user={rating.profiles}
                     size='sm'
                     className={cn('ring-2', tone === 'like' ? 'ring-emerald-500' : 'ring-rose-500')}
-                >
-                    <AvatarImage
-                        src={getAvatarUrl(rating.profiles?.avatar_seed, rating.profiles?.gender)}
-                        alt={rating.profiles?.name}
-                    />
-                    <AvatarFallback>{rating.profiles?.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
+                />
             ))}
             {extra > 0 && <AvatarGroupCount>+{extra}</AvatarGroupCount>}
         </AvatarGroup>

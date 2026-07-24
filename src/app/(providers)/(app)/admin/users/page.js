@@ -16,8 +16,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/services/supabase';
 import { setSuperAdminMutation } from '@/queries/profiles';
 import { useConfirm } from '@/hooks/use-confirm';
-import { getAvatarUrl } from '@/helpers/avatar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
+import { UserAvatar } from '@/ui/user-avatar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/ui/table';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Button } from '@/ui/button';
@@ -265,21 +264,7 @@ export default function AdminUsersPage() {
                                 <TableRow key={profile.uuid} className='[&>td]:py-3'>
                                     <TableCell>
                                         <span className='flex items-center gap-2'>
-                                            <Avatar
-                                                className='size-6 bg-(--profile-color)'
-                                                style={{ '--profile-color': profile.color }}
-                                            >
-                                                <AvatarImage
-                                                    src={getAvatarUrl(
-                                                        profile.avatar_seed,
-                                                        profile.gender,
-                                                    )}
-                                                    alt={profile.name}
-                                                />
-                                                <AvatarFallback>
-                                                    {profile.name.charAt(0).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
+                                            <UserAvatar user={profile} className='size-6' />
                                             {profile.name}
                                         </span>
                                     </TableCell>
