@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Replaces the native `autoFocus` attribute inside Popover content — autoFocus
 // calls the browser's default .focus(), which scrolls the element into view
@@ -8,5 +9,18 @@ import { useCallback } from 'react';
 // scrolls all the way down to reveal that transient position, and never
 // reverts once the popover snaps to where it actually belongs.
 // `{ preventScroll: true }` skips that scroll entirely.
-export const useFocusWithoutScroll = () =>
-    useCallback(node => node?.focus({ preventScroll: true }), []);
+//
+// Skipped on mobile entirely — these callers render inside a Drawer there
+// (ResponsivePopover), and autofocusing pops the keyboard open the instant
+// the bottom sheet appears, which is jarring rather than helpful. The
+// scroll-jump problem this hook solves only exists for the floating Popover
+// on desktop in the first place.
+export const useFocusWithoutScroll = () => {
+    const isMobile = useIsMobile();
+    return useCallback(
+        node => {
+            if (!isMobile) node?.focus({ preventScroll: true });
+        },
+        [isMobile],
+    );
+};

@@ -53,7 +53,8 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
                         </span>
                     )}
                     {entity.entityType === 'item' && entity.condition && (
-                        <span className='rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground'>
+                        <span className='inline-flex items-center gap-1.5 text-sm text-muted-foreground'>
+                            <span className='size-1.5 shrink-0 rounded-full bg-muted-foreground' />
                             {entity.condition}
                         </span>
                     )}

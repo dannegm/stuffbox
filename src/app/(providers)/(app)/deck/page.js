@@ -15,8 +15,8 @@ import { workspacesQuery } from '@/queries/workspaces';
 import { deckQueueQuery, entityRatingsQuery, rateEntityMutation } from '@/queries/entity-ratings';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { buildDeckQueue } from '@/helpers/deck';
-import { getItemIcon } from '@/helpers/item';
-import { getLocationIcon } from '@/helpers/location';
+import { getItemIcon, getFirstItemPhoto, getItemPhotoUrl } from '@/helpers/item';
+import { getLocationIcon, getFirstLocationPhoto, getLocationPhotoUrl } from '@/helpers/location';
 import { Deck, DeckCards, DeckEmpty } from '@/ui/deck';
 import { DeckEntityCard } from '@/components/deck/deck-entity-card';
 import { RatedEntitiesDialog } from '@/components/deck/rated-entities-dialog';
@@ -28,7 +28,7 @@ const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='DeckLoading'>
         <Skeleton className='h-4 w-32 rounded' />
         <div className='mx-auto flex w-full max-w-sm flex-1 items-center justify-center'>
-            <Skeleton className='aspect-[3/4] w-full rounded-2xl' />
+            <Skeleton className='aspect-[2/3] w-full rounded-2xl' />
         </div>
     </div>
 );
@@ -122,6 +122,15 @@ export default function DeckPage() {
         setCurrentIndex(0);
     };
 
+    // After the danger-zone "clear all" action, ratedKeys is still stale
+    // (the entity-ratings invalidation it triggers refetches in the
+    // background) — resetting queue to null re-arms the build-once effect
+    // above, which rebuilds once the now-empty rated set actually lands.
+    const handleClearAll = () => {
+        setQueue(null);
+        setCurrentIndex(0);
+    };
+
     const ratingsByEntity = useMemo(() => groupRatingsByEntity(ratings ?? []), [ratings]);
 
     const entityByKey = useMemo(() => {
@@ -136,11 +145,14 @@ export default function DeckPage() {
         .filter(rating => rating.profile_id === user?.id)
         .map(rating => {
             const entity = entityByKey[getEntityRatingKey(rating.entity_type, rating.entity_id)];
+            const isItem = entity?.entityType === 'item';
             return {
                 rating,
                 entity: entity && {
                     name: entity.name,
-                    icon: entity.entityType === 'item' ? getItemIcon(entity) : getLocationIcon(entity),
+                    icon: isItem ? getItemIcon(entity) : getLocationIcon(entity),
+                    photo: isItem ? getFirstItemPhoto(entity) : getFirstLocationPhoto(entity),
+                    photoUrl: isItem ? getItemPhotoUrl(entity) : getLocationPhotoUrl(entity),
                 },
             };
         });
@@ -178,7 +190,7 @@ export default function DeckPage() {
             data-block='DeckPage'
         >
             <div className='flex items-center justify-between'>
-                <h1 className='font-heading text-lg font-semibold tracking-tight'>Calificar</h1>
+                <h1 className='font-heading text-lg font-semibold tracking-tight'>Cards</h1>
                 <Button
                     type='button'
                     variant='outline'
@@ -190,62 +202,73 @@ export default function DeckPage() {
                 </Button>
             </div>
 
-            <div className='relative mx-auto aspect-[3/4] w-full max-w-sm'>
-                <Deck className='size-full'>
-                    <DeckCards
-                        currentIndex={currentIndex}
-                        onCurrentIndexChange={setCurrentIndex}
-                        onSwipe={handleSwipe}
-                        indexChangeDirection={indexChangeDirection}
-                        stackSize={4}
-                        scale={0.06}
-                        className='size-full'
-                    >
-                        {queue.map(entity => {
-                            const key = getEntityRatingKey(entity.entityType, entity.entityId);
-                            return (
-                                <DeckEntityCard
-                                    key={key}
-                                    entity={entity}
-                                    likes={ratingsByEntity[key]?.likes ?? []}
-                                    dislikes={ratingsByEntity[key]?.dislikes ?? []}
-                                />
-                            );
-                        })}
-                    </DeckCards>
-                    <DeckEmpty className='rounded-4xl border-dashed'>
-                        <div className='flex flex-col items-center gap-3 p-6 text-center'>
-                            <p className='text-sm text-muted-foreground'>Ya no hay más por calificar.</p>
-                            <Button type='button' variant='outline' size='sm' onClick={handleReshuffle}>
-                                <ArrowClockwiseIcon data-icon='inline-start' />
-                                Empezar de nuevo
-                            </Button>
-                        </div>
-                    </DeckEmpty>
-                </Deck>
+            <div className='flex min-h-0 flex-1 items-center justify-center pb-14'>
+                <div className='relative mx-auto aspect-[2/3] w-4/5 sm:w-full sm:max-w-sm'>
+                    <Deck className='size-full'>
+                        <DeckCards
+                            currentIndex={currentIndex}
+                            onCurrentIndexChange={setCurrentIndex}
+                            onSwipe={handleSwipe}
+                            indexChangeDirection={indexChangeDirection}
+                            stackSize={4}
+                            scale={0.06}
+                            className='size-full'
+                        >
+                            {queue.map(entity => {
+                                const key = getEntityRatingKey(entity.entityType, entity.entityId);
+                                return (
+                                    <DeckEntityCard
+                                        key={key}
+                                        entity={entity}
+                                        likes={ratingsByEntity[key]?.likes ?? []}
+                                        dislikes={ratingsByEntity[key]?.dislikes ?? []}
+                                    />
+                                );
+                            })}
+                        </DeckCards>
+                        <DeckEmpty className='rounded-4xl border-dashed'>
+                            <div className='flex flex-col items-center gap-3 p-6 text-center'>
+                                <p className='text-sm text-muted-foreground'>
+                                    Ya no hay más por calificar.
+                                </p>
+                                <Button
+                                    type='button'
+                                    variant='outline'
+                                    size='sm'
+                                    onClick={handleReshuffle}
+                                >
+                                    <ArrowClockwiseIcon data-icon='inline-start' />
+                                    Empezar de nuevo
+                                </Button>
+                            </div>
+                        </DeckEmpty>
+                    </Deck>
+                </div>
             </div>
 
-            <div className='mx-auto flex w-full max-w-sm items-center gap-3'>
-                <Button
-                    type='button'
-                    variant='outline'
-                    disabled={isExhausted}
-                    onClick={() => handleButtonRate(false)}
-                    className='h-14 flex-1 justify-center rounded-full border-rose-500/30 text-rose-500 hover:bg-rose-500/10 [&_svg]:size-5'
-                >
-                    No me gusta
-                    <ThumbsDownIcon weight='bold' data-icon='inline-end' />
-                </Button>
-                <Button
-                    type='button'
-                    variant='outline'
-                    disabled={isExhausted}
-                    onClick={() => handleButtonRate(true)}
-                    className='h-14 flex-1 justify-center rounded-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 [&_svg]:size-5'
-                >
-                    <ThumbsUpIcon weight='bold' data-icon='inline-start' />
-                    Me gusta
-                </Button>
+            <div className='sticky bottom-0 -mx-4 -mb-4 border-t bg-background/80 px-4 py-3 backdrop-blur'>
+                <div className='mx-auto flex w-full max-w-sm items-center gap-3'>
+                    <Button
+                        type='button'
+                        variant='outline'
+                        disabled={isExhausted}
+                        onClick={() => handleButtonRate(false)}
+                        className='h-11 flex-1 justify-center rounded-full border-rose-500/30 text-rose-500 hover:bg-rose-500/10 [&_svg]:size-5'
+                    >
+                        No me gusta
+                        <ThumbsDownIcon weight='bold' data-icon='inline-end' />
+                    </Button>
+                    <Button
+                        type='button'
+                        variant='outline'
+                        disabled={isExhausted}
+                        onClick={() => handleButtonRate(true)}
+                        className='h-11 flex-1 justify-center rounded-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 [&_svg]:size-5'
+                    >
+                        <ThumbsUpIcon weight='bold' data-icon='inline-start' />
+                        Me gusta
+                    </Button>
+                </div>
             </div>
 
             <RatedEntitiesDialog
@@ -253,6 +276,8 @@ export default function DeckPage() {
                 onOpenChange={setRatedDialogOpen}
                 ratedItems={ratedItems}
                 workspaceId={workspace.id}
+                profileId={user.id}
+                onClearAll={handleClearAll}
             />
         </div>
     );

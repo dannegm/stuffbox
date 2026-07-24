@@ -10,7 +10,7 @@ import {
     GearIcon,
     ShieldCheckIcon,
     PlusIcon,
-    CardsIcon,
+    CardsThreeIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
@@ -44,7 +44,7 @@ const NAV_ITEMS = [
         accent: 'flourish',
     },
     { href: '/tags', label: 'Tags', icon: TagIcon, match: /^\/tags(\/|$)/ },
-    { href: '/deck', label: 'Calificar', icon: CardsIcon, match: /^\/deck(\/|$)/ },
+    { href: '/deck', label: 'Cards', icon: CardsThreeIcon, match: /^\/deck(\/|$)/ },
     {
         href: '/collaborators',
         label: 'Colaboradores',

@@ -113,3 +113,18 @@ export const deleteEntityRatingMutation = (opts = {}) => ({
     },
     ...opts,
 });
+
+// The "already rated" dialog's danger-zone action — wipes every vote *this
+// user* cast in the workspace (not other members'), so the deck queue treats
+// everything as unrated again.
+export const deleteAllEntityRatingsMutation = (opts = {}) => ({
+    mutationFn: async ({ workspaceId, profileId }) => {
+        const { error } = await supabase()
+            .from('entity_ratings')
+            .delete()
+            .eq('workspace_id', workspaceId)
+            .eq('profile_id', profileId);
+        if (error) throw error;
+    },
+    ...opts,
+});
