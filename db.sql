@@ -170,6 +170,9 @@ create table stuffbox.item_photos (
   crop_x      float not null default 0,
   crop_y      float not null default 0,
   zoom        float not null default 1,
+  rotation    int not null default 0,              -- degrees: 0/90/180/270, CSS-only like crop_x/crop_y/zoom
+  flip_x      boolean not null default false,
+  flip_y      boolean not null default false,
   "order"     int not null default 0,
   created_at  timestamptz not null default now()
 );
@@ -185,6 +188,9 @@ create table stuffbox.location_photos (
   crop_x      float not null default 0,
   crop_y      float not null default 0,
   zoom        float not null default 1,
+  rotation    int not null default 0,              -- degrees: 0/90/180/270, CSS-only like crop_x/crop_y/zoom
+  flip_x      boolean not null default false,
+  flip_y      boolean not null default false,
   "order"     int not null default 0,
   created_at  timestamptz not null default now()
 );

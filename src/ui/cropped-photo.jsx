@@ -1,4 +1,4 @@
-import { getPhotoCropStyle } from '@/helpers/photo-crop';
+import { getPhotoCropStyle, getPhotoFlipStyle } from '@/helpers/photo-crop';
 
 // Renders a photo panned/zoomed per crop_x/crop_y/zoom, clipped to whatever
 // shape the parent gives it — the parent must be `relative overflow-hidden`
@@ -21,16 +21,26 @@ import { getPhotoCropStyle } from '@/helpers/photo-crop';
 // previously-invisible edges of a rectangular photo, instead of being stuck
 // wherever object-fit:cover happened to crop it.
 export const CroppedPhoto = ({ src, photo }) => (
+    // Flip is its own outer layer, wrapping the pan/zoom/rotate stage rather
+    // than being folded into its transform — see getPhotoCropStyle's comment
+    // for why the ordering has to match PhotoCropDialog's editor preview
+    // exactly (flip applied to the *whole* already rotated/panned/zoomed
+    // square, not intermixed with it).
     <div
-        className='absolute inset-0 translate-x-(--photo-x) translate-y-(--photo-y) scale-(--photo-zoom)'
-        style={getPhotoCropStyle(photo)}
+        className='absolute inset-0 scale-x-(--photo-flip-x) scale-y-(--photo-flip-y)'
+        style={getPhotoFlipStyle(photo)}
     >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-            src={src}
-            alt=''
-            draggable={false}
-            className='absolute top-1/2 left-1/2 h-auto min-h-full w-auto min-w-full -translate-x-1/2 -translate-y-1/2'
-        />
+        <div
+            className='absolute inset-0 translate-x-(--photo-x) translate-y-(--photo-y) rotate-(--photo-rotate) scale-(--photo-zoom)'
+            style={getPhotoCropStyle(photo)}
+        >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={src}
+                alt=''
+                draggable={false}
+                className='absolute top-1/2 left-1/2 h-auto min-h-full w-auto min-w-full -translate-x-1/2 -translate-y-1/2'
+            />
+        </div>
     </div>
 );

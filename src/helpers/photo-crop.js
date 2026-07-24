@@ -16,13 +16,33 @@
 // resolves against the box it's applied to (CroppedPhoto's square "stage",
 // src/ui/cropped-photo.jsx), reproducing the same proportional shift at any
 // size.
+// rotation is baked into this same transform (not a separate wrapper) on
+// purpose — react-easy-crop's own media element uses exactly
+// `translate(x,y) rotate(rotation) scale(zoom)` in that order (its source,
+// not documented), and Tailwind's translate-x/translate-y/rotate/scale
+// utilities always compose into one `transform` in that same fixed order
+// regardless of class order — so keeping all four on one element here
+// reproduces react-easy-crop's own composition exactly. Flip is NOT part of
+// react-easy-crop's model at all (no native flip support) — it's applied as
+// a separate outer wrap in both the editor and CroppedPhoto (see
+// getPhotoFlipStyle/cropped-photo.jsx), which only stays visually
+// consistent between the two if flip wraps *around* this whole
+// translate+rotate+scale transform in both places, not intermixed with it.
 export const getPhotoCropStyle = photo => {
     const cropX = photo?.crop_x ?? 0;
     const cropY = photo?.crop_y ?? 0;
     const zoom = photo?.zoom ?? 1;
+    const rotation = photo?.rotation ?? 0;
     return {
         '--photo-zoom': zoom,
         '--photo-x': `${cropX * 100}%`,
         '--photo-y': `${cropY * 100}%`,
+        '--photo-rotate': `${rotation}deg`,
     };
 };
+
+// Separate from getPhotoCropStyle on purpose — see the comment above it.
+export const getPhotoFlipStyle = photo => ({
+    '--photo-flip-x': photo?.flip_x ? -1 : 1,
+    '--photo-flip-y': photo?.flip_y ? -1 : 1,
+});

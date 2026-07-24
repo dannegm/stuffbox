@@ -24,12 +24,16 @@ export const createItemPhotosMutation = (opts = {}) => ({
                     item_id: itemId,
                     r2_key: photo.r2Key,
                     order: photo.order ?? index,
-                    // Carries over crop_x/crop_y/zoom set on a pending (not
-                    // yet persisted) photo before the item existed — omitted
-                    // entirely when unset so the column defaults (0/0/1) apply.
+                    // Carries over crop_x/crop_y/zoom/rotation/flip_x/flip_y
+                    // set on a pending (not yet persisted) photo before the
+                    // item existed — omitted entirely when unset so the
+                    // column defaults (0/0/1/0/false/false) apply.
                     ...(photo.crop_x !== undefined && { crop_x: photo.crop_x }),
                     ...(photo.crop_y !== undefined && { crop_y: photo.crop_y }),
                     ...(photo.zoom !== undefined && { zoom: photo.zoom }),
+                    ...(photo.rotation !== undefined && { rotation: photo.rotation }),
+                    ...(photo.flip_x !== undefined && { flip_x: photo.flip_x }),
+                    ...(photo.flip_y !== undefined && { flip_y: photo.flip_y }),
                 })),
             )
             .select();
@@ -67,10 +71,10 @@ export const reorderItemPhotosMutation = (opts = {}) => ({
 });
 
 export const updateItemPhotoCropMutation = (opts = {}) => ({
-    mutationFn: async ({ id, crop_x, crop_y, zoom }) => {
+    mutationFn: async ({ id, crop_x, crop_y, zoom, rotation, flip_x, flip_y }) => {
         const { data, error } = await supabase()
             .from('item_photos')
-            .update({ crop_x, crop_y, zoom })
+            .update({ crop_x, crop_y, zoom, rotation, flip_x, flip_y })
             .eq('id', id)
             .select()
             .single();

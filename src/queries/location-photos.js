@@ -61,10 +61,10 @@ export const reorderLocationPhotosMutation = (opts = {}) => ({
 });
 
 export const updateLocationPhotoCropMutation = (opts = {}) => ({
-    mutationFn: async ({ id, crop_x, crop_y, zoom }) => {
+    mutationFn: async ({ id, crop_x, crop_y, zoom, rotation, flip_x, flip_y }) => {
         const { data, error } = await supabase()
             .from('location_photos')
-            .update({ crop_x, crop_y, zoom })
+            .update({ crop_x, crop_y, zoom, rotation, flip_x, flip_y })
             .eq('id', id)
             .select()
             .single();

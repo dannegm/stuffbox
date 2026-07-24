@@ -161,6 +161,9 @@ export const useItemPhotos = ({ itemId, workspaceId }) => {
                 crop_x: photo.crop_x,
                 crop_y: photo.crop_y,
                 zoom: photo.zoom,
+                rotation: photo.rotation,
+                flip_x: photo.flip_x,
+                flip_y: photo.flip_y,
             })),
         });
         setPending([]);
