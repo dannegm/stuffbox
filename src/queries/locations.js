@@ -112,6 +112,7 @@ export const createLocationMutation = (opts = {}) => ({
         icon = null,
         lat = null,
         lng = null,
+        isItem = false,
     }) => {
         const { data, error } = await supabase()
             .from('locations')
@@ -125,6 +126,7 @@ export const createLocationMutation = (opts = {}) => ({
                 lat,
                 lng,
                 is_container: isContainerType(type),
+                is_item: isItem,
             })
             .select()
             .single();
@@ -144,6 +146,7 @@ export const updateLocationMutation = (opts = {}) => ({
         isFragile = false,
         storageOrientation = null,
         sentimentalValue = null,
+        isItem = false,
         lat,
         lng,
     }) => {
@@ -158,6 +161,7 @@ export const updateLocationMutation = (opts = {}) => ({
                 is_fragile: isFragile,
                 storage_orientation: storageOrientation,
                 sentimental_value: sentimentalValue,
+                is_item: isItem,
                 // Only root locations get a map picker in the edit dialog —
                 // omitted (rather than defaulted to null) elsewhere so
                 // editing a room/box never clobbers coordinates it never had.

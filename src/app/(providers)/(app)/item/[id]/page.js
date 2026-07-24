@@ -4,7 +4,14 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { WarningIcon, ArrowsLeftRightIcon, PackageIcon, ScanIcon } from '@phosphor-icons/react/ssr';
+import {
+    WarningIcon,
+    ArrowsLeftRightIcon,
+    PackageIcon,
+    ScanIcon,
+    ThumbsUpIcon,
+    ThumbsDownIcon,
+} from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import {
@@ -20,6 +27,8 @@ import { workspaceQuery } from '@/queries/workspaces';
 import { optionListsQuery } from '@/queries/option-lists';
 import { itemTagsQuery, syncItemTagsMutation, tagsQuery } from '@/queries/tags';
 import { moveQuery } from '@/queries/moves';
+import { entityRatingsForEntityQuery } from '@/queries/entity-ratings';
+import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
 import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
@@ -93,6 +102,9 @@ export default function ItemPage({ params }) {
     const { data: packedMove } = useQuery(
         moveQuery(item?.active_move_id, { enabled: !!item?.active_move_id }),
     );
+    const { data: ratings } = useQuery(entityRatingsForEntityQuery('item', id));
+    const likes = (ratings ?? []).filter(rating => rating.liked);
+    const dislikes = (ratings ?? []).filter(rating => !rating.liked);
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -512,6 +524,37 @@ export default function ItemPage({ params }) {
                             </Field>
                         </FieldGroup>
                     </div>
+
+                    {(likes.length > 0 || dislikes.length > 0) && (
+                        <div
+                            className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                            data-block='ItemRatingsCard'
+                        >
+                            <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                                Calificaciones
+                            </h2>
+                            <div className='flex flex-wrap gap-6'>
+                                {likes.length > 0 && (
+                                    <div className='flex flex-col gap-1.5'>
+                                        <span className='flex items-center gap-1 text-xs text-emerald-600 [&_svg]:size-3.5'>
+                                            <ThumbsUpIcon weight='fill' />
+                                            {likes.length}
+                                        </span>
+                                        <RatingAvatarStack ratings={likes} tone='like' />
+                                    </div>
+                                )}
+                                {dislikes.length > 0 && (
+                                    <div className='flex flex-col gap-1.5'>
+                                        <span className='flex items-center gap-1 text-xs text-rose-600 [&_svg]:size-3.5'>
+                                            <ThumbsDownIcon weight='fill' />
+                                            {dislikes.length}
+                                        </span>
+                                        <RatingAvatarStack ratings={dislikes} tone='dislike' />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <div
                         className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'

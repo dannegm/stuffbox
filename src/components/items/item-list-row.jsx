@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useDraggable } from '@dnd-kit/core';
-import { CaretRightIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, ThumbsUpIcon, ThumbsDownIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
@@ -21,6 +21,8 @@ export const ItemListRow = ({
     onToggle,
     draggable = false,
     dragData,
+    likeCount = 0,
+    dislikeCount = 0,
 }) => {
     const photoUrl = getItemPhotoUrl(item);
     const photo = getFirstItemPhoto(item);
@@ -66,6 +68,22 @@ export const ItemListRow = ({
             <span className='min-w-0 flex-1 truncate font-medium'>{item.name}</span>
             {item.quantity > 1 && (
                 <span className='shrink-0 text-xs text-muted-foreground'>×{item.quantity}</span>
+            )}
+            {(likeCount > 0 || dislikeCount > 0) && (
+                <span className='flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground'>
+                    {likeCount > 0 && (
+                        <span className='flex items-center gap-0.5 text-emerald-600 [&_svg]:size-3'>
+                            <ThumbsUpIcon weight='fill' />
+                            {likeCount}
+                        </span>
+                    )}
+                    {dislikeCount > 0 && (
+                        <span className='flex items-center gap-0.5 text-rose-600 [&_svg]:size-3'>
+                            <ThumbsDownIcon weight='fill' />
+                            {dislikeCount}
+                        </span>
+                    )}
+                </span>
             )}
             {!selectable && <CaretRightIcon className='size-4 shrink-0 text-muted-foreground' />}
         </>

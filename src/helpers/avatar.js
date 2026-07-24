@@ -1,5 +1,6 @@
 import { createAvatar } from '@dicebear/core';
 import * as micah from '@dicebear/micah';
+import { pickBySeed } from '@/helpers/seed';
 
 // micah's own default palette (from its schema) for hair/facial-hair color —
 // reused here (not invented) so the picked color still looks native to the style.
@@ -32,13 +33,6 @@ const HAIR_BY_GENDER = {
 const EYEBROWS_BY_GENDER = {
     male: ['up', 'down'],
     female: ['eyelashesUp', 'eyelashesDown'],
-};
-
-// Deterministic per-seed pick — Math.random() here would re-roll the hair
-// color on every render instead of keeping it stable for a given seed.
-const pickBySeed = (seed, options) => {
-    const hash = [...seed].reduce((total, char) => total + char.charCodeAt(0), 0);
-    return options[hash % options.length];
 };
 
 export const getAvatarUrl = (seed, gender) => {

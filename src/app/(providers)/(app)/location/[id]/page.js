@@ -52,6 +52,8 @@ import {
 import { itemsAtLocationQuery } from '@/queries/items';
 import { bulkTransferMutation, bulkPackMutation, bulkUnpackMutation } from '@/queries/bulk';
 import { moveQuery } from '@/queries/moves';
+import { entityRatingsQuery } from '@/queries/entity-ratings';
+import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
@@ -193,6 +195,15 @@ export default function LocationPage({ params }) {
             enabled: !!children?.length,
         }),
     );
+    const { data: ratings } = useQuery(entityRatingsQuery(location?.workspace_id));
+    const ratingsByEntity = groupRatingsByEntity(ratings ?? []);
+    const getItemRatingCounts = itemId => {
+        const key = getEntityRatingKey('item', itemId);
+        return {
+            likeCount: ratingsByEntity[key]?.likes.length ?? 0,
+            dislikeCount: ratingsByEntity[key]?.dislikes.length ?? 0,
+        };
+    };
 
     const { mutate: transfer, isPending: isTransferring } = useMutation(
         transferLocationMutation({
@@ -855,6 +866,7 @@ export default function LocationPage({ params }) {
                                                     onToggle={toggleItemSelection}
                                                     draggable
                                                     dragData={getItemDragData(item)}
+                                                    {...getItemRatingCounts(item.id)}
                                                 />
                                             ))
                                         ) : (
@@ -937,6 +949,7 @@ export default function LocationPage({ params }) {
                                             selectable={selectionMode}
                                             selected={selectedItemIds.has(item.id)}
                                             onToggle={toggleItemSelection}
+                                            {...getItemRatingCounts(item.id)}
                                         />
                                     ))}
                                 </div>

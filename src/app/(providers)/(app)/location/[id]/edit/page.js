@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { WarningIcon } from '@phosphor-icons/react/ssr';
+import { WarningIcon, CardsIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import {
@@ -77,6 +77,7 @@ export default function LocationEditPage({ params }) {
     const [isFragile, setIsFragile] = useState(false);
     const [storageOrientation, setStorageOrientation] = useState('');
     const [sentimentalValue, setSentimentalValue] = useState(null);
+    const [isItem, setIsItem] = useState(false);
     const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
 
@@ -89,6 +90,7 @@ export default function LocationEditPage({ params }) {
         setIsFragile(location.is_fragile ?? false);
         setStorageOrientation(location.storage_orientation ?? '');
         setSentimentalValue(location.sentimental_value ?? null);
+        setIsItem(location.is_item ?? false);
         setCoords(location.lat != null ? { lat: location.lat, lng: location.lng } : null);
     }, [location]);
 
@@ -141,6 +143,7 @@ export default function LocationEditPage({ params }) {
             isFragile,
             storageOrientation: storageOrientation || null,
             sentimentalValue,
+            isItem,
             ...(isRoot && { lat: coords?.lat ?? null, lng: coords?.lng ?? null }),
         });
     };
@@ -262,6 +265,21 @@ export default function LocationEditPage({ params }) {
                                     />
                                 </Field>
                             )}
+
+                            <Field
+                                orientation='horizontal'
+                                className='rounded-lg border bg-muted/30 px-3 py-2.5'
+                            >
+                                <FieldLabel htmlFor='location-is-item' className='flex-1'>
+                                    <CardsIcon className='text-muted-foreground' />
+                                    Aparece en el deck de calificar
+                                </FieldLabel>
+                                <Switch
+                                    id='location-is-item'
+                                    checked={isItem}
+                                    onCheckedChange={setIsItem}
+                                />
+                            </Field>
                         </FieldGroup>
                     </div>
 

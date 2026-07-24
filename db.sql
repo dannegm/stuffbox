@@ -108,6 +108,7 @@ create table stuffbox.locations (
   active_move_id  text,                                   -- set when packed; FK added below
   ai_summary      text,                                   -- cached, regenerable
   is_container    boolean not null default false,          -- defaults true for box/shelf/toolbox/baggage (app-derived from type, not DB-enforced)
+  is_item         boolean not null default false,          -- lets this location also appear in the swipe/rate deck, like an item
   description     text,
   is_fragile      boolean not null default false,
   storage_orientation text,                                -- ref option_lists(field='orientation'), no hard FK
@@ -253,6 +254,22 @@ create table stuffbox.movement_log (
   created_at        timestamptz not null default now()
 );
 
+-- Polymorphic like/dislike ratings for the swipe/rate deck — entity_id points
+-- to either items or locations (is_item = true), same pattern as
+-- movement_log's entity_type/entity_id. Unique per (entity, profile) so a
+-- re-swipe upserts the existing vote instead of creating a duplicate.
+create table stuffbox.entity_ratings (
+  id           uuid primary key default gen_random_uuid(),
+  workspace_id text not null references stuffbox.workspaces(id) on delete cascade,
+  entity_type  text not null,                       -- 'item' | 'location'
+  entity_id    text not null,                        -- no hard FK — see comment above
+  profile_id   uuid not null references stuffbox.profiles(uuid) on delete cascade,
+  liked        boolean not null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (entity_type, entity_id, profile_id)
+);
+
 
 -- -----------------------------------------------------------------------------
 -- Row Level Security (RLS)
@@ -276,6 +293,7 @@ alter table stuffbox.app_settings       enable row level security;
 alter table stuffbox.workspace_settings enable row level security;
 alter table stuffbox.user_settings      enable row level security;
 alter table stuffbox.movement_log       enable row level security;
+alter table stuffbox.entity_ratings     enable row level security;
 
 -- Helper: is auth.uid() a member (or owner) of this workspace? security
 -- definer avoids recursive RLS. Owner is always also a workspace_members row
@@ -712,6 +730,17 @@ create policy "movement_log: admin full access"
   using (stuffbox.requesting_user_is_admin())
   with check (stuffbox.requesting_user_is_admin());
 
+-- entity_ratings
+create policy "entity_ratings: member access"
+  on stuffbox.entity_ratings for all
+  using (stuffbox.is_workspace_member(workspace_id, auth.uid()))
+  with check (stuffbox.is_workspace_member(workspace_id, auth.uid()));
+
+create policy "entity_ratings: admin full access"
+  on stuffbox.entity_ratings for all
+  using (stuffbox.requesting_user_is_admin())
+  with check (stuffbox.requesting_user_is_admin());
+
 
 -- -----------------------------------------------------------------------------
 -- Invite RPCs
@@ -983,6 +1012,9 @@ create index if not exists idx_location_photos_location_id    on stuffbox.locati
 create index if not exists idx_tags_workspace_id              on stuffbox.tags (workspace_id);
 create index if not exists idx_option_lists_workspace_field   on stuffbox.option_lists (workspace_id, field);
 create index if not exists idx_movement_log_workspace_id      on stuffbox.movement_log (workspace_id);
+create index if not exists idx_entity_ratings_workspace_id    on stuffbox.entity_ratings (workspace_id);
+create index if not exists idx_entity_ratings_entity          on stuffbox.entity_ratings (entity_type, entity_id);
+create index if not exists idx_entity_ratings_profile_id      on stuffbox.entity_ratings (profile_id);
 create index if not exists idx_profiles_is_super_admin        on stuffbox.profiles (is_super_admin);
 
 -- Trigram GIN indexes — back the fuzzy name match in search_workspace and
