@@ -6,6 +6,7 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
+    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -37,6 +38,7 @@ export const MultiSelectFilter = ({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
+    const isMobile = useResponsivePopoverMobile();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -102,7 +104,12 @@ export const MultiSelectFilter = ({
                         placeholder={searchPlaceholder}
                     />
                 </InputGroup>
-                <ScrollArea className='h-[fit-content(12rem)] max-h-48 overflow-auto'>
+                <ScrollArea
+                    className={cn('overflow-auto', {
+                        'h-48': isMobile,
+                        'h-[fit-content(12rem)] max-h-48': !isMobile,
+                    })}
+                >
                     <div className='flex flex-col gap-0.5 p-0.5'>
                         {results.map(option => {
                             const key = getKey(option);

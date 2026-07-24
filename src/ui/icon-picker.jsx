@@ -110,6 +110,10 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
     const isMobile = useResponsivePopoverMobile();
+    // On mobile the suggested-icons row stays put while typing instead of
+    // unmounting — it isn't wrapped in a fixed-height box like the grid
+    // below it, so hiding it on query would still shrink the drawer.
+    const showSuggestions = isMobile || !query.trim();
 
     const handleSelect = icon => {
         onChange?.(icon);
@@ -134,7 +138,7 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
                 data-block='IconPicker'
                 align={align}
             >
-                {uniqueSuggestions.length > 0 && !query.trim() && (
+                {uniqueSuggestions.length > 0 && showSuggestions && (
                     <SuggestedIcons icons={uniqueSuggestions} onSelect={handleSelect} />
                 )}
                 <InputGroup>
