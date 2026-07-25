@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react/ssr';
+import Fuse from 'fuse.js';
+import {
+    PlusIcon,
+    PencilSimpleIcon,
+    TrashIcon,
+    MagnifyingGlassIcon,
+} from '@phosphor-icons/react/ssr';
 import { TagIcon, TagsIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -13,6 +19,7 @@ import { TagDialog } from '@/components/tags/tag-dialog';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { Stat } from '@/ui/stat';
@@ -41,6 +48,7 @@ export default function TagsPage() {
     const confirm = useConfirm();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTag, setEditingTag] = useState(null);
+    const [search, setSearch] = useState('');
 
     const { data: workspaces, isPending: isWorkspacesPending } = useQuery(
         workspacesQuery({ enabled: !!user }),
@@ -84,6 +92,9 @@ export default function TagsPage() {
         return <Loading />;
     }
 
+    const fuse = new Fuse(tags, { keys: ['name'], threshold: 0.3 });
+    const filteredTags = search.trim() ? fuse.search(search.trim()).map(result => result.item) : tags;
+
     return (
         <div
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
@@ -122,6 +133,19 @@ export default function TagsPage() {
                 </div>
             </div>
 
+            {tags.length > 0 && (
+                <InputGroup>
+                    <InputGroupAddon>
+                        <MagnifyingGlassIcon />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        value={search}
+                        onChange={event => setSearch(event.target.value)}
+                        placeholder='Buscar tag'
+                    />
+                </InputGroup>
+            )}
+
             {tags.length === 0 ? (
                 <Empty className='flex-1' data-block='TagsEmpty'>
                     <EmptyHeader>
@@ -134,9 +158,19 @@ export default function TagsPage() {
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>
+            ) : filteredTags.length === 0 ? (
+                <Empty className='flex-1' data-block='TagsEmptySearch'>
+                    <EmptyHeader>
+                        <EmptyMedia variant='icon' className='bg-primary/10 text-primary'>
+                            <MagnifyingGlassIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>Sin resultados</EmptyTitle>
+                        <EmptyDescription>Ningún tag coincide con "{search.trim()}".</EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <div className='flex flex-col gap-2 mb-12'>
-                    {tags.map(tag => (
+                    {filteredTags.map(tag => (
                         <div
                             key={tag.id}
                             className='group relative flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
