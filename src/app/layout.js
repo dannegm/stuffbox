@@ -19,6 +19,18 @@ const geistMono = Geist_Mono({
 export const metadata = {
     title: 'Stuffbox',
     description: 'Inventario del hogar',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'Stuffbox',
+    },
+};
+
+export const viewport = {
+    themeColor: [
+        { media: '(prefers-color-scheme: light)', color: '#4c35e0' },
+        { media: '(prefers-color-scheme: dark)', color: '#372aac' },
+    ],
 };
 
 export default function RootLayout({ children }) {
