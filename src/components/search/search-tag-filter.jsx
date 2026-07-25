@@ -97,42 +97,46 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
                         placeholder='Buscar tag'
                     />
                 </InputGroup>
-                <ScrollArea
-                    className={cn('overflow-auto', {
+                <div
+                    className={cn({
                         'h-48': isMobile,
                         'h-[fit-content(12rem)] max-h-48': !isMobile,
                     })}
                 >
-                    <div className='flex flex-col gap-0.5 p-0.5'>
-                        {results.map(tag => {
-                            const active = value.includes(tag.id);
-                            return (
-                                <button
-                                    key={tag.id}
-                                    type='button'
-                                    onClick={() => toggle(tag.id)}
-                                    className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
-                                >
-                                    <span
-                                        className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'
-                                        style={{ '--tag-color': tag.color }}
+                    <ScrollArea className='size-full overflow-auto'>
+                        <div className='flex flex-col gap-0.5 p-0.5'>
+                            {results.map(tag => {
+                                const active = value.includes(tag.id);
+                                return (
+                                    <button
+                                        key={tag.id}
+                                        type='button'
+                                        onClick={() => toggle(tag.id)}
+                                        className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
                                     >
-                                        <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
-                                    </span>
-                                    <span className='min-w-0 flex-1 truncate'>{tag.name}</span>
-                                    {active && (
-                                        <CheckIcon className='size-4 shrink-0 text-primary' />
-                                    )}
-                                </button>
-                            );
-                        })}
-                        {results.length === 0 && (
-                            <p className='p-4 text-center text-sm text-muted-foreground'>
-                                {tags.length === 0 ? 'Sin tags todavía.' : 'Sin resultados.'}
-                            </p>
-                        )}
-                    </div>
-                </ScrollArea>
+                                        <span
+                                            className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'
+                                            style={{ '--tag-color': tag.color }}
+                                        >
+                                            <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
+                                        </span>
+                                        <span className='min-w-0 flex-1 truncate'>
+                                            {tag.name}
+                                        </span>
+                                        {active && (
+                                            <CheckIcon className='size-4 shrink-0 text-primary' />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                            {results.length === 0 && (
+                                <p className='p-4 text-center text-sm text-muted-foreground'>
+                                    {tags.length === 0 ? 'Sin tags todavía.' : 'Sin resultados.'}
+                                </p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
                 {hasSelection && (
                     <>
                         <Separator />

@@ -16,14 +16,15 @@ import { cn } from '@/helpers/utils';
 // Below this many options, scanning by eye beats typing — the search box
 // only earns its place once there's enough to actually search through.
 const SEARCH_THRESHOLD = 10;
-// fit-content(14rem) instead of a plain h-56: ScrollArea's viewport is
-// height:100% of this box, so a plain max-height alone can't shrink it below
-// 14rem (percentage heights don't resolve against max-height, only against
-// an explicit/definite height) — fit-content gives it a real definite height
-// that's still capped, so short lists shrink and long lists scroll. On
-// mobile (rendered inside a Drawer) that shrink is unwanted — a short list
-// leaves the sheet awkwardly small, so it's pinned to the same 14rem max
-// instead of tracking content.
+// The fixed/fit-content height lives on this wrapper, not on ScrollArea
+// itself — ScrollArea's viewport is height:100% of its Root, so the Root
+// needs a real definite height under it to resolve against; putting the
+// sizing one layer up and letting ScrollArea just fill it (size-full) keeps
+// that definite-height math from depending on ScrollArea's own internals.
+// fit-content(14rem) still lets short lists shrink and long lists scroll on
+// desktop; on mobile (rendered inside a Drawer) that shrink is unwanted — a
+// short list leaves the sheet awkwardly small, so it's pinned to the same
+// 14rem instead of tracking content.
 const LIST_HEIGHT = isMobile => ({
     'h-56': isMobile,
     'h-[fit-content(14rem)] max-h-56': !isMobile,
@@ -111,25 +112,27 @@ export const SelectSearch = ({
                         />
                     </InputGroup>
                 )}
-                <ScrollArea className={cn('overflow-auto', LIST_HEIGHT(isMobile))}>
-                    <div className='flex flex-col gap-0.5 p-0.5'>
-                        {results.map(option => (
-                            <button
-                                key={getKey(option)}
-                                type='button'
-                                onClick={() => handleSelect(option)}
-                                className='flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
-                            >
-                                {renderOption ? renderOption(option) : getLabel(option)}
-                            </button>
-                        ))}
-                        {results.length === 0 && (
-                            <p className='p-4 text-center text-sm text-muted-foreground'>
-                                {emptyLabel}
-                            </p>
-                        )}
-                    </div>
-                </ScrollArea>
+                <div className={cn(LIST_HEIGHT(isMobile))}>
+                    <ScrollArea className='size-full overflow-auto'>
+                        <div className='flex flex-col gap-0.5 p-0.5'>
+                            {results.map(option => (
+                                <button
+                                    key={getKey(option)}
+                                    type='button'
+                                    onClick={() => handleSelect(option)}
+                                    className='flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
+                                >
+                                    {renderOption ? renderOption(option) : getLabel(option)}
+                                </button>
+                            ))}
+                            {results.length === 0 && (
+                                <p className='p-4 text-center text-sm text-muted-foreground'>
+                                    {emptyLabel}
+                                </p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
             </ResponsivePopoverContent>
         </ResponsivePopover>
     );

@@ -163,14 +163,20 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
 
                     {LIBRARIES.map(lib => (
                         <TabsContent key={lib.value} value={lib.value}>
-                            <ScrollArea
-                                className={cn('overflow-auto', {
+                            <div
+                                className={cn({
                                     'h-64': isMobile,
                                     'h-[fit-content(16rem)] max-h-96': !isMobile,
                                 })}
                             >
-                                <IconGrid library={lib} query={query} onSelect={handleSelect} />
-                            </ScrollArea>
+                                <ScrollArea className='size-full overflow-auto'>
+                                    <IconGrid
+                                        library={lib}
+                                        query={query}
+                                        onSelect={handleSelect}
+                                    />
+                                </ScrollArea>
+                            </div>
                         </TabsContent>
                     ))}
                 </Tabs>

@@ -104,43 +104,47 @@ export const MultiSelectFilter = ({
                         placeholder={searchPlaceholder}
                     />
                 </InputGroup>
-                <ScrollArea
-                    className={cn('overflow-auto', {
+                <div
+                    className={cn({
                         'h-48': isMobile,
                         'h-[fit-content(12rem)] max-h-48': !isMobile,
                     })}
                 >
-                    <div className='flex flex-col gap-0.5 p-0.5'>
-                        {results.map(option => {
-                            const key = getKey(option);
-                            const active = value.includes(key);
-                            return (
-                                <button
-                                    key={key}
-                                    type='button'
-                                    onClick={() => toggle(key)}
-                                    className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
-                                >
-                                    <span className='flex min-w-0 flex-1 items-center gap-2'>
-                                        {renderOption ? (
-                                            renderOption(option)
-                                        ) : (
-                                            <span className='truncate'>{getLabel(option)}</span>
+                    <ScrollArea className='size-full overflow-auto'>
+                        <div className='flex flex-col gap-0.5 p-0.5'>
+                            {results.map(option => {
+                                const key = getKey(option);
+                                const active = value.includes(key);
+                                return (
+                                    <button
+                                        key={key}
+                                        type='button'
+                                        onClick={() => toggle(key)}
+                                        className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
+                                    >
+                                        <span className='flex min-w-0 flex-1 items-center gap-2'>
+                                            {renderOption ? (
+                                                renderOption(option)
+                                            ) : (
+                                                <span className='truncate'>
+                                                    {getLabel(option)}
+                                                </span>
+                                            )}
+                                        </span>
+                                        {active && (
+                                            <CheckIcon className='size-4 shrink-0 text-primary' />
                                         )}
-                                    </span>
-                                    {active && (
-                                        <CheckIcon className='size-4 shrink-0 text-primary' />
-                                    )}
-                                </button>
-                            );
-                        })}
-                        {results.length === 0 && (
-                            <p className='p-4 text-center text-sm text-muted-foreground'>
-                                {emptyLabel}
-                            </p>
-                        )}
-                    </div>
-                </ScrollArea>
+                                    </button>
+                                );
+                            })}
+                            {results.length === 0 && (
+                                <p className='p-4 text-center text-sm text-muted-foreground'>
+                                    {emptyLabel}
+                                </p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
                 {hasSelection && (
                     <>
                         <Separator />
