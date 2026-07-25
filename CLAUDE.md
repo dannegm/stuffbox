@@ -47,7 +47,7 @@ Effectively an SPA: Next.js (latest, App Router) is the bundler + host; **Vercel
 
 ### The `<ClientComponent>` wrapper (critical, read before touching `src/app/layout.js` or providers)
 
-`'use client'` alone does not skip SSR — a client component still pre-renders on the server and hydrates, which is where hydration errors come from. `src/app/layout.js` is the **only** real Server Component (minimal `<html><body>{children}</body></html>`). Immediately inside it, a `'use client'` provider wrapper, mounted-gated (`useState`+`useEffect` gate returning `null` until mounted), holds **all** providers: `QueryProvider` → `NuqsAdapter` → `BusProvider` → `DeviceProvider` → `DebugProvider` → `ThemeProvider` → `AuthProvider`. Everything below is client-only by inheritance. Accepted cost: the gated subtree isn't in initial HTML (skeleton until hydrate) — fine, since this is an inventory app behind login with no SEO surface.
+`'use client'` alone does not skip SSR — a client component still pre-renders on the server and hydrates, which is where hydration errors come from. `src/app/layout.js` is the **only** real Server Component (minimal `<html><body>{children}</body></html>`). Immediately inside it, a `'use client'` provider wrapper, mounted-gated (`useState`+`useEffect` gate returning `null` until mounted), holds **all** providers: `QueryProvider` → `NuqsAdapter` → `BusProvider` → `DeviceProvider` → `DebugProvider` → `ThemeProvider` → `HeadlessGuard` → `AuthProvider`. Everything below is client-only by inheritance. Accepted cost: the gated subtree isn't in initial HTML (skeleton until hydrate) — fine, since this is an inventory app behind login with no SEO surface.
 
 ## Stack
 
@@ -89,6 +89,10 @@ Ported so far:
 ### DeviceProvider (from bins/pinia, `src/providers/device-provider.jsx`)
 
 Sets `data-browser`/`data-os`/`data-device`/`data-touch` on `<html>` once (detection in `src/helpers/ua-parser.js`, plain UA-string sniffing — no vendor/bot metadata, unlike bins, since stuffbox has no public content to protect), and `data-page` on every navigation (first path segment via Next's `usePathname()`, defaulting to `'home'` for `/`). All of it is consumed by the matching `@custom-variant` rules in `src/css/variants.css` (`chrome:`, `mobile:`, `ios:`, `touch:`, `page-workspace:`, etc.) — add a `page-*` variant there whenever a new top-level route is added.
+
+### HeadlessGuard (from bins, `src/providers/headless-guard.jsx`)
+
+Vercel's OG-image/link-preview crawler runs a real headless Chrome that executes JS like any visitor — unguarded, it would silently trigger real writes (account provisioning, redirects) on every deploy or share. `HeadlessGuard` sits right before `AuthProvider` in the provider chain (see above) and renders a static `DummyView` (`src/components/system/dummy-view.jsx`, ad hoc stuffbox styling — not a port of bins' `DummyPage`) instead of `children` whenever `navigator.webdriver` or `parseUA(navigator.userAgent).device === 'bot'` (`src/helpers/ua-parser.js`'s existing bot pattern — no vendor attribution needed here, just the boolean). `DummyView` does no queries/auth/writes by construction. Two dev-only routes support it, both under `src/app/(providers)/(dev)/` (a route group, so no URL segment): `/dummy` renders `DummyView` directly, and `/playground` lets you preview it inside a resizable iframe at the exact dimensions Vercel's headless capture uses (screen 800×600, viewport 1280×800) plus a custom size and a `?forceBot=1` toggle — that query param is read by `HeadlessGuard` itself to force the fallback from a normal browser, so local testing never requires an actual headless session.
 
 ### JsonViewer (from pinia, `src/ui/json-viewer.jsx`)
 

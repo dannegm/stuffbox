@@ -9,6 +9,7 @@ import { BusProvider } from './bus-provider';
 import { DeviceProvider } from './device-provider';
 import { DebugProvider } from './debug-provider';
 import { ThemeProvider } from './theme-provider';
+import { HeadlessGuard } from './headless-guard';
 import { AuthProvider } from './auth-provider';
 import { ConfirmProvider } from './confirm-provider';
 import { Toaster } from '@/ui/sonner';
@@ -31,6 +32,7 @@ const AppProviders = createProviders([
     [DeviceProvider],
     [DebugProvider],
     [ThemeProvider],
+    [HeadlessGuard],
     [AuthProvider],
     [TooltipProvider],
     [ConfirmProvider],
