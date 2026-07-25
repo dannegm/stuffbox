@@ -168,7 +168,13 @@ export const LocationPicker = ({
                     </div>
                 </div>
 
-                <ScrollArea className='max-h-64 px-4 sm:px-0'>
+                {/* Mobile (Drawer, flex column): flex-1 + min-h-0 so this is
+                the one child that absorbs/scrolls within whatever space is
+                left after the header/breadcrumb/footer, inside the drawer's
+                own max-h-[80vh] cap (src/ui/drawer.jsx). Desktop (Dialog,
+                grid): flex-1/min-h-0 are no-ops there, so sm:max-h-64 is what
+                actually caps it. */}
+                <ScrollArea className='min-h-0 flex-1 px-4 sm:max-h-64 sm:flex-none sm:px-0'>
                     {isPending ? (
                         <RowsSkeleton />
                     ) : (

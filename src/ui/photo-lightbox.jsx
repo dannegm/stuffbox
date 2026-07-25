@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { Button } from '@/ui/button';
@@ -27,6 +27,18 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
     // Carousel only mounts while open (below), so `opts.startIndex` — read
     // once at embla's init — is always fresh for whichever photo was
     // clicked, without needing to imperatively scrollTo on every open.
+    // Memoized on `open` (not `index`) on purpose: embla-carousel-react
+    // reinitializes the engine whenever the `opts` object reference changes,
+    // and `index` itself updates on every 'select' event (arrow click or
+    // swipe) — an inline `{ startIndex: index, ... }` literal would recreate
+    // `opts` on every navigation, so every animated scroll got reinit'd
+    // (snapped straight to the new startIndex) before it could finish,
+    // which is exactly why the carousel appeared to jump instead of glide.
+    // Depending on `open` instead keeps `opts` referentially stable for the
+    // whole time the lightbox stays open, and only recomputes with a fresh
+    // startIndex the next time it opens.
+    const opts = useMemo(() => ({ startIndex: index, loop: true }), [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
     useEffect(() => {
         if (!api) return;
         const onSelect = () => onIndexChange(api.selectedScrollSnap());
@@ -50,7 +62,7 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                 >
                     {open && (
                         <Carousel
-                            opts={{ startIndex: index, loop: true }}
+                            opts={opts}
                             setApi={setApi}
                             onClick={event => event.stopPropagation()}
                             className='aspect-square w-[min(32rem,calc(100vw-2rem),calc(100dvh-2rem))]'
