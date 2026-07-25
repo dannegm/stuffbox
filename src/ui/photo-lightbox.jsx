@@ -67,7 +67,13 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                             onClick={event => event.stopPropagation()}
                             className='aspect-square w-[min(32rem,calc(100vw-2rem),calc(100dvh-2rem))]'
                         >
-                            <CarouselContent className='ml-0 h-full'>
+                            {/* gap-4 (flex gap), not padding/negative-margin —
+                            each slide is basis-full, so padding-based spacing
+                            would permanently shift the photo off-center at
+                            rest instead of only showing a gap during the
+                            swipe transition. embla v8 already accounts for
+                            flex `gap` in its own slide-distance math. */}
+                            <CarouselContent className='ml-0 h-full gap-4'>
                                 {photos.map((photo, photoIndex) => (
                                     <CarouselItem
                                         key={photoIndex}
