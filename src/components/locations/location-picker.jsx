@@ -96,7 +96,10 @@ export const LocationPicker = ({
 
     return (
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-            <ResponsiveDialogContent data-block='LocationPicker'>
+            <ResponsiveDialogContent
+                data-block='LocationPicker'
+                className='sm:max-h-[85vh] sm:overflow-y-auto'
+            >
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
                     <ResponsiveDialogDescription>{description}</ResponsiveDialogDescription>
@@ -165,7 +168,7 @@ export const LocationPicker = ({
                     </div>
                 </div>
 
-                <ScrollArea className='h-[fit-content(16rem)] px-4 sm:px-0'>
+                <ScrollArea className='max-h-64 px-4 sm:px-0'>
                     {isPending ? (
                         <RowsSkeleton />
                     ) : (
