@@ -17,6 +17,7 @@ import { workspaceSettingQuery, setWorkspaceSettingMutation } from '@/queries/wo
 import { removeWorkspaceMemberMutation } from '@/queries/collaborators';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
+import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
 import { ColorPicker } from '@/ui/color-picker';
 import { Field, FieldGroup, FieldContent, FieldLabel, FieldDescription } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -78,10 +79,18 @@ export default function WorkspaceSettingsPage({ params }) {
     const { data: collaborationSettings, isPending: isCollabPending } = useQuery(
         workspaceSettingQuery(id, 'collaborationSettings', { enabled: !!user }),
     );
+    const { data: deckDefaultLocationId, isPending: isDeckDefaultPending } = useQuery(
+        workspaceSettingQuery(id, 'deckDefaultLocationId', { enabled: !!user }),
+    );
 
     const [name, setName] = useState('');
     const [color, setColor] = useState('#6366f1');
     const [center, setCenter] = useState(null);
+    // The deck (Cards) opens scoped to this by default for everyone — same
+    // key `/deck` reads (workspaceSettingQuery(id, 'deckDefaultLocationId')).
+    // Anyone can still change the filter locally on the deck page itself;
+    // that change is never written back here (see DeckPage's own state).
+    const [deckDefault, setDeckDefault] = useState(null);
     // Both default false — a workspace with no 'collaborationSettings' row
     // yet (the common case, nothing seeds it) resolves to null, same as the
     // RLS helpers' own coalesce(..., false) on the DB side.
@@ -105,6 +114,11 @@ export default function WorkspaceSettingsPage({ params }) {
         setAllowMemberRemove(collaborationSettings?.allowMemberRemove ?? false);
         setAllowMemberEditSettings(collaborationSettings?.allowMemberEditSettings ?? false);
     }, [collaborationSettings]);
+
+    useEffect(() => {
+        if (isDeckDefaultPending) return;
+        setDeckDefault(deckDefaultLocationId ?? null);
+    }, [isDeckDefaultPending, deckDefaultLocationId]);
 
     const { mutate: saveWorkspace, isPending: isSavingWorkspace } = useMutation(
         updateWorkspaceMutation({
@@ -133,6 +147,15 @@ export default function WorkspaceSettingsPage({ params }) {
             onSuccess: () =>
                 queryClient.invalidateQueries({
                     queryKey: ['workspace-setting', id, 'collaborationSettings'],
+                }),
+        }),
+    );
+
+    const { mutate: saveDeckDefault, isPending: isSavingDeckDefault } = useMutation(
+        setWorkspaceSettingMutation({
+            onSuccess: () =>
+                queryClient.invalidateQueries({
+                    queryKey: ['workspace-setting', id, 'deckDefaultLocationId'],
                 }),
         }),
     );
@@ -175,6 +198,10 @@ export default function WorkspaceSettingsPage({ params }) {
                 value: { allowMemberInvites, allowMemberRemove, allowMemberEditSettings },
             });
         }
+        // Unconditional, unlike saveMapDefault above — null is a real,
+        // meaningful value here ("sin ubicación por defecto, todos los
+        // items"), not just "hasn't been touched yet".
+        saveDeckDefault({ workspaceId: id, key: 'deckDefaultLocationId', value: deckDefault });
     };
 
     const handleLeave = async () => {
@@ -213,7 +240,8 @@ export default function WorkspaceSettingsPage({ params }) {
         isWorkspacePending ||
         !workspace ||
         !isMapDefaultReady ||
-        isCollabPending
+        isCollabPending ||
+        isDeckDefaultPending
     ) {
         return <Loading />;
     }
@@ -221,9 +249,9 @@ export default function WorkspaceSettingsPage({ params }) {
     const isOwner = workspace.owner_id === user.id;
     // The owner always can; a regular member only when collaborationSettings.
     // allowMemberEditSettings is on. Collaboración and the danger zone below
-    // stay owner-only regardless — this only ever gates General/Mapa.
+    // stay owner-only regardless — this only ever gates General/Mapa/Baraja.
     const canEditGeneralSettings = isOwner || !!collaborationSettings?.allowMemberEditSettings;
-    const isPending = isSavingWorkspace || isSavingMap || isSavingCollab;
+    const isPending = isSavingWorkspace || isSavingMap || isSavingCollab || isSavingDeckDefault;
 
     return (
         <div
@@ -291,6 +319,31 @@ export default function WorkspaceSettingsPage({ params }) {
                                 })}
                             >
                                 <LocationMapPicker value={center} onChange={setCenter} />
+                            </div>
+                        </Field>
+                    </FieldGroup>
+                </SectionCard>
+
+                <SectionCard label='Cards'>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel>Ubicación por defecto</FieldLabel>
+                            <FieldDescription>
+                                Con qué ubicación se abre la baraja (Cards) para todos. Sin
+                                elegir ninguna, se muestran todos los items. Cualquiera puede
+                                cambiar el filtro ahí mismo, pero solo de forma local — no se
+                                guarda.
+                            </FieldDescription>
+                            <div
+                                className={cn({
+                                    'pointer-events-none opacity-60': !canEditGeneralSettings,
+                                })}
+                            >
+                                <DeckLocationFilter
+                                    workspaceId={id}
+                                    value={deckDefault}
+                                    onChange={setDeckDefault}
+                                />
                             </div>
                         </Field>
                     </FieldGroup>

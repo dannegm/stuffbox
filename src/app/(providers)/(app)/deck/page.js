@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,6 +14,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { workspacesQuery } from '@/queries/workspaces';
 import { deckQueueQuery, entityRatingsQuery, rateEntityMutation } from '@/queries/entity-ratings';
 import { locationDescendantIdsQuery } from '@/queries/locations';
+import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { buildDeckQueue } from '@/helpers/deck';
 import { getItemIcon, getFirstItemPhoto, getItemPhotoUrl } from '@/helpers/item';
@@ -66,8 +67,31 @@ export default function DeckPage() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [indexChangeDirection, setIndexChangeDirection] = useState('left');
     const [ratedDialogOpen, setRatedDialogOpen] = useState(false);
-    // null = "todas las ubicaciones" (no filtering), the default.
+    // null = "todas las ubicaciones" (no filtering) — the fallback if the
+    // workspace has no deckDefaultLocationId set either.
     const [filterLocationId, setFilterLocationId] = useState(null);
+    // Distinct from filterLocationId itself so the queue-build effect below
+    // can wait for the workspace default to actually land before building —
+    // otherwise it can build once against the null starting value in the
+    // same render pass the default arrives in, and never rebuild (setQueue
+    // only fires while queue is still null).
+    const [isDefaultLocationResolved, setIsDefaultLocationResolved] = useState(false);
+    const $hasAppliedDefaultLocation = useRef(false);
+
+    const { data: deckDefaultLocationId, isPending: isDeckDefaultPending } = useQuery(
+        workspaceSettingQuery(workspace?.id, 'deckDefaultLocationId', { enabled: !!workspace?.id }),
+    );
+
+    // Applies the workspace's default exactly once per page load — changing
+    // the filter afterwards (handleFilterChange) is local/session-only by
+    // design and must never get silently overwritten by this effect if the
+    // setting itself refetches in the background.
+    useEffect(() => {
+        if ($hasAppliedDefaultLocation.current || isDeckDefaultPending) return;
+        $hasAppliedDefaultLocation.current = true;
+        setFilterLocationId(deckDefaultLocationId ?? null);
+        setIsDefaultLocationResolved(true);
+    }, [isDeckDefaultPending, deckDefaultLocationId]);
 
     const { data: descendantIds, isPending: isDescendantIdsPending } = useQuery(
         locationDescendantIdsQuery(filterLocationId),
@@ -99,11 +123,13 @@ export default function DeckPage() {
     // Builds the queue exactly once, when data first arrives — recomputing it
     // on every refetch (e.g. after each vote invalidates entity-ratings)
     // would reshuffle the deck out from under the card being looked at.
-    // Also waits out the descendant-ids fetch when a location filter is
-    // active, so the queue isn't built once against a partial (location-only,
-    // no-descendants-yet) allow-list and then never rebuilt.
+    // Also waits out the workspace default (isDefaultLocationResolved) and,
+    // once a filter is active, the descendant-ids fetch — otherwise the
+    // queue can build once against a stale/partial allow-list and never
+    // rebuild (queue only gets set while still null).
     useEffect(() => {
         if (queue || !filteredEntities || !ratings || !user) return;
+        if (!isDefaultLocationResolved) return;
         if (filterLocationId && isDescendantIdsPending) return;
         setQueue(buildDeckQueue(filteredEntities, ratedKeys));
     }, [
@@ -114,6 +140,7 @@ export default function DeckPage() {
         ratedKeys,
         filterLocationId,
         isDescendantIdsPending,
+        isDefaultLocationResolved,
     ]);
 
     const handleFilterChange = nextLocationId => {
@@ -252,7 +279,6 @@ export default function DeckPage() {
                     <Button
                         type='button'
                         variant='outline'
-                        size='sm'
                         onClick={() => setRatedDialogOpen(true)}
                     >
                         <ClockCounterClockwiseIcon data-icon='inline-start' />
