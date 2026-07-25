@@ -13,12 +13,14 @@ import { useAuth } from '@/providers/auth-provider';
 import { useSettings } from '@/hooks/use-settings';
 import { workspacesQuery } from '@/queries/workspaces';
 import { deckQueueQuery, entityRatingsQuery, rateEntityMutation } from '@/queries/entity-ratings';
+import { locationDescendantIdsQuery } from '@/queries/locations';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { buildDeckQueue } from '@/helpers/deck';
 import { getItemIcon, getFirstItemPhoto, getItemPhotoUrl } from '@/helpers/item';
 import { getLocationIcon, getFirstLocationPhoto, getLocationPhotoUrl } from '@/helpers/location';
 import { Deck, DeckCards, DeckEmpty } from '@/ui/deck';
 import { DeckEntityCard } from '@/components/deck/deck-entity-card';
+import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
 import { RatedEntitiesDialog } from '@/components/deck/rated-entities-dialog';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
@@ -64,6 +66,26 @@ export default function DeckPage() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [indexChangeDirection, setIndexChangeDirection] = useState('left');
     const [ratedDialogOpen, setRatedDialogOpen] = useState(false);
+    // null = "todas las ubicaciones" (no filtering), the default.
+    const [filterLocationId, setFilterLocationId] = useState(null);
+
+    const { data: descendantIds, isPending: isDescendantIdsPending } = useQuery(
+        locationDescendantIdsQuery(filterLocationId),
+    );
+    // Includes the selected location itself, not just its descendants — an
+    // item sitting directly in it (not in a nested room/box) should still
+    // match. getLocationDescendantIds only ever returns strict descendants.
+    const allowedLocationIds = filterLocationId
+        ? [filterLocationId, ...(descendantIds ?? [])]
+        : null;
+
+    const filteredEntities = useMemo(
+        () =>
+            allowedLocationIds
+                ? entities?.filter(entity => allowedLocationIds.includes(entity.containerId))
+                : entities,
+        [entities, allowedLocationIds],
+    );
 
     const ratedKeys = useMemo(() => {
         if (!ratings || !user) return new Set();
@@ -77,10 +99,28 @@ export default function DeckPage() {
     // Builds the queue exactly once, when data first arrives — recomputing it
     // on every refetch (e.g. after each vote invalidates entity-ratings)
     // would reshuffle the deck out from under the card being looked at.
+    // Also waits out the descendant-ids fetch when a location filter is
+    // active, so the queue isn't built once against a partial (location-only,
+    // no-descendants-yet) allow-list and then never rebuilt.
     useEffect(() => {
-        if (queue || !entities || !ratings || !user) return;
-        setQueue(buildDeckQueue(entities, ratedKeys));
-    }, [entities, ratings, user, queue, ratedKeys]);
+        if (queue || !filteredEntities || !ratings || !user) return;
+        if (filterLocationId && isDescendantIdsPending) return;
+        setQueue(buildDeckQueue(filteredEntities, ratedKeys));
+    }, [
+        filteredEntities,
+        ratings,
+        user,
+        queue,
+        ratedKeys,
+        filterLocationId,
+        isDescendantIdsPending,
+    ]);
+
+    const handleFilterChange = nextLocationId => {
+        setFilterLocationId(nextLocationId);
+        setQueue(null);
+        setCurrentIndex(0);
+    };
 
     const { mutate: rate } = useMutation(
         rateEntityMutation({
@@ -128,8 +168,8 @@ export default function DeckPage() {
     };
 
     const handleReshuffle = () => {
-        if (!entities) return;
-        setQueue(buildDeckQueue(entities, ratedKeys));
+        if (!filteredEntities) return;
+        setQueue(buildDeckQueue(filteredEntities, ratedKeys));
         setCurrentIndex(0);
     };
 
@@ -200,17 +240,25 @@ export default function DeckPage() {
             className='fixed inset-x-0 top-12 -bottom-6 flex touch-none flex-col gap-4 overflow-hidden overscroll-none bg-hero-mesh p-4 md:static md:h-svh'
             data-block='DeckPage'
         >
-            <div className='flex items-center justify-between'>
+            <div className='flex items-center justify-between gap-2'>
                 <h1 className='font-heading text-lg font-semibold tracking-tight'>Cards</h1>
-                <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    onClick={() => setRatedDialogOpen(true)}
-                >
-                    <ClockCounterClockwiseIcon data-icon='inline-start' />
-                    Ya calificados
-                </Button>
+                <div className='flex min-w-0 flex-wrap items-center justify-end gap-2'>
+                    <DeckLocationFilter
+                        workspaceId={workspace.id}
+                        value={filterLocationId}
+                        onChange={handleFilterChange}
+                        className='w-36 sm:w-48'
+                    />
+                    <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setRatedDialogOpen(true)}
+                    >
+                        <ClockCounterClockwiseIcon data-icon='inline-start' />
+                        Ya calificados
+                    </Button>
+                </div>
             </div>
 
             <div className='flex min-h-0 flex-1 items-center justify-center pb-4'>

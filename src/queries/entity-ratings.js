@@ -40,6 +40,9 @@ export const entityRatingsForEntityQuery = (entityType, entityId, opts = {}) => 
 // exists on items). Fetched together here rather than reusing
 // itemsAtLocationQuery/locationChildrenQuery, which are always scoped to one
 // location — the deck needs every eligible entity across the whole workspace.
+// `containerId` normalizes item.location_id/location.parent_id into one field
+// (the location.js DeckLocationFilter filters against) since the two tables
+// use different column names for "where this entity physically sits".
 export const deckQueueQuery = (workspaceId, opts = {}) => ({
     queryKey: ['deck-queue', workspaceId],
     queryFn: async () => {
@@ -47,13 +50,13 @@ export const deckQueueQuery = (workspaceId, opts = {}) => ({
             supabase()
                 .from('items')
                 .select(
-                    'id, name, icon, sentimental_value, condition, item_photos(r2_key, order, crop_x, crop_y, zoom), item_tags(tags(id, name, icon, color))',
+                    'id, name, icon, sentimental_value, condition, location_id, item_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y), item_tags(tags(id, name, icon, color))',
                 )
                 .eq('workspace_id', workspaceId),
             supabase()
                 .from('locations')
                 .select(
-                    'id, name, icon, sentimental_value, location_photos(r2_key, order, crop_x, crop_y, zoom)',
+                    'id, name, icon, sentimental_value, parent_id, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)',
                 )
                 .eq('workspace_id', workspaceId)
                 .eq('is_item', true),
@@ -65,11 +68,13 @@ export const deckQueueQuery = (workspaceId, opts = {}) => ({
             ...item,
             entityType: 'item',
             entityId: item.id,
+            containerId: item.location_id,
         }));
         const locations = locationsRes.data.map(location => ({
             ...location,
             entityType: 'location',
             entityId: location.id,
+            containerId: location.parent_id,
             condition: null,
         }));
         return [...items, ...locations];

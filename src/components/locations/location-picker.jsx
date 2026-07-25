@@ -51,7 +51,20 @@ const RowsSkeleton = () => (
 // still wherever it was before the move, and un-packing back into that exact
 // spot shouldn't require re-navigating the tree to find it again. Omit the
 // prop entirely for transfer/pack-into-box, where there's no such shortcut.
-export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect, quickDestination }) => {
+//
+// `title`/`description`/`getConfirmLabel` default to the pack/unpack/transfer
+// copy — overridable since the deck's location filter reuses this same tree
+// navigator to pick a scope to filter by, not a destination to move into.
+export const LocationPicker = ({
+    open,
+    onOpenChange,
+    workspaceId,
+    onSelect,
+    quickDestination,
+    title = 'Elegir destino',
+    description = 'Navega por el árbol y elige dónde dejarlo.',
+    getConfirmLabel = current => (current ? `Dejar aquí: ${current.name}` : 'Elegir un destino'),
+}) => {
     const [stack, setStack] = useState([]);
     const current = stack[stack.length - 1] ?? null;
 
@@ -85,10 +98,8 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect, quic
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
             <ResponsiveDialogContent data-block='LocationPicker'>
                 <ResponsiveDialogHeader>
-                    <ResponsiveDialogTitle>Elegir destino</ResponsiveDialogTitle>
-                    <ResponsiveDialogDescription>
-                        Navega por el árbol y elige dónde dejarlo.
-                    </ResponsiveDialogDescription>
+                    <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+                    <ResponsiveDialogDescription>{description}</ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
 
                 {quickDestination && (
@@ -200,7 +211,7 @@ export const LocationPicker = ({ open, onOpenChange, workspaceId, onSelect, quic
                 <ResponsiveDialogFooter>
                     <Button type='button' disabled={!current} onClick={handleConfirm}>
                         <CheckCircleIcon data-icon='inline-start' />
-                        {current ? `Dejar aquí: ${current.name}` : 'Elegir un destino'}
+                        {getConfirmLabel(current)}
                     </Button>
                 </ResponsiveDialogFooter>
             </ResponsiveDialogContent>

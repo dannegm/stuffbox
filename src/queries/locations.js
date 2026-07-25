@@ -23,7 +23,7 @@ export const locationChildrenQuery = ({ workspaceId, parentId = null }, opts = {
     queryFn: async () => {
         let query = supabase()
             .from('locations')
-            .select('*, location_photos(r2_key, order, crop_x, crop_y, zoom)')
+            .select('*, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)')
             .eq('workspace_id', workspaceId)
             .order('name');
         query = parentId ? query.eq('parent_id', parentId) : query.is('parent_id', null);
@@ -75,6 +75,16 @@ export const getLocationDescendantIds = async locationId => {
     }
     return descendants;
 };
+
+// Reactive wrapper around getLocationDescendantIds — the deck's location
+// filter needs this as a query (refetch when the filter changes), unlike the
+// imperative pack/transfer callers of the plain function above.
+export const locationDescendantIdsQuery = (locationId, opts = {}) => ({
+    queryKey: ['location-descendant-ids', locationId],
+    queryFn: () => getLocationDescendantIds(locationId),
+    enabled: !!locationId,
+    ...opts,
+});
 
 // Walks parent_id up to the root, one round-trip per level — trees are
 // shallow in practice (house > room > shelf > box), so this beats adding a

@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { DynamicIcon } from '@/ui/dynamic-icon';
+import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { pickBySeed } from '@/helpers/seed';
 import { cn } from '@/helpers/utils';
 
@@ -24,12 +26,25 @@ const SquareCoverStage = ({ children }) => (
     </div>
 );
 
-const Cell = ({ photo, className }) => (
-    <div className={cn('relative size-full overflow-hidden', className)}>
+const Cell = ({ photo, index, className, onOpen }) => (
+    <button
+        type='button'
+        aria-label='Ver foto'
+        // Same trick as the edit link in DeckEntityCard: the whole card sits
+        // inside DeckCards' drag="x" gesture, so a plain tap here would
+        // otherwise also arm/start that drag instead of producing a clean
+        // click.
+        onPointerDown={event => event.stopPropagation()}
+        onClick={event => {
+            event.stopPropagation();
+            onOpen(index);
+        }}
+        className={cn('relative block size-full overflow-hidden', className)}
+    >
         <SquareCoverStage>
             <CroppedPhoto src={photoUrl(photo)} photo={photo} />
         </SquareCoverStage>
-    </div>
+    </button>
 );
 
 // 0/1/2/3/4+ photos, always rendered into a square parent (aspect-square is
@@ -40,21 +55,9 @@ const Cell = ({ photo, className }) => (
 // position, not identity — a card moving from the back of the stack to the
 // front gets a fresh component instance, which would re-roll a random pick
 // on every reshuffle instead of keeping one layout per entity.
-export const DeckCardPhotos = ({ photos, icon, seed }) => {
-    const sorted = [...(photos ?? [])].sort((a, b) => a.order - b.order);
-    const twoPhotoOrientation = pickBySeed(`${seed}:2`, ['horizontal', 'vertical']);
-    const threePhotoLayout = pickBySeed(`${seed}:3`, ['left', 'right', 'top', 'bottom']);
-
-    if (sorted.length === 0) {
-        return (
-            <div className='flex size-full items-center justify-center bg-muted text-muted-foreground [&_svg]:size-15'>
-                <DynamicIcon icon={icon} />
-            </div>
-        );
-    }
-
+const PhotoGrid = ({ sorted, twoPhotoOrientation, threePhotoLayout, onOpen }) => {
     if (sorted.length === 1) {
-        return <Cell photo={sorted[0]} className='size-full' />;
+        return <Cell photo={sorted[0]} index={0} className='size-full' onOpen={onOpen} />;
     }
 
     if (sorted.length === 2) {
@@ -65,8 +68,8 @@ export const DeckCardPhotos = ({ photos, icon, seed }) => {
                     twoPhotoOrientation === 'horizontal' ? 'grid-cols-2' : 'grid-rows-2',
                 )}
             >
-                {sorted.map(photo => (
-                    <Cell key={photo.r2_key} photo={photo} />
+                {sorted.map((photo, index) => (
+                    <Cell key={photo.r2_key} photo={photo} index={index} onOpen={onOpen} />
                 ))}
             </div>
         );
@@ -78,7 +81,12 @@ export const DeckCardPhotos = ({ photos, icon, seed }) => {
         const bigFirst = threePhotoLayout === 'left' || threePhotoLayout === 'top';
         return (
             <div className={cn('grid size-full gap-1', isSideBySide ? 'grid-cols-2' : 'grid-rows-2')}>
-                <Cell photo={big} className={bigFirst ? 'order-1' : 'order-2'} />
+                <Cell
+                    photo={big}
+                    index={0}
+                    className={bigFirst ? 'order-1' : 'order-2'}
+                    onOpen={onOpen}
+                />
                 <div
                     className={cn(
                         'grid size-full gap-1',
@@ -86,8 +94,8 @@ export const DeckCardPhotos = ({ photos, icon, seed }) => {
                         bigFirst ? 'order-2' : 'order-1',
                     )}
                 >
-                    {rest.map(photo => (
-                        <Cell key={photo.r2_key} photo={photo} />
+                    {rest.map((photo, index) => (
+                        <Cell key={photo.r2_key} photo={photo} index={index + 1} onOpen={onOpen} />
                     ))}
                 </div>
             </div>
@@ -96,9 +104,41 @@ export const DeckCardPhotos = ({ photos, icon, seed }) => {
 
     return (
         <div className='grid size-full grid-cols-2 grid-rows-2 gap-1'>
-            {sorted.slice(0, 4).map(photo => (
-                <Cell key={photo.r2_key} photo={photo} />
+            {sorted.slice(0, 4).map((photo, index) => (
+                <Cell key={photo.r2_key} photo={photo} index={index} onOpen={onOpen} />
             ))}
         </div>
+    );
+};
+
+export const DeckCardPhotos = ({ photos, icon, seed }) => {
+    const sorted = [...(photos ?? [])].sort((a, b) => a.order - b.order);
+    const twoPhotoOrientation = pickBySeed(`${seed}:2`, ['horizontal', 'vertical']);
+    const threePhotoLayout = pickBySeed(`${seed}:3`, ['left', 'right', 'top', 'bottom']);
+    const [openIndex, setOpenIndex] = useState(null);
+
+    if (sorted.length === 0) {
+        return (
+            <div className='flex size-full items-center justify-center bg-muted text-muted-foreground [&_svg]:size-15'>
+                <DynamicIcon icon={icon} />
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <PhotoGrid
+                sorted={sorted}
+                twoPhotoOrientation={twoPhotoOrientation}
+                threePhotoLayout={threePhotoLayout}
+                onOpen={setOpenIndex}
+            />
+            <PhotoLightbox
+                photos={sorted.map(photo => ({ src: photoUrl(photo), photo }))}
+                index={openIndex}
+                onIndexChange={setOpenIndex}
+                onClose={() => setOpenIndex(null)}
+            />
+        </>
     );
 };
