@@ -7,7 +7,6 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
-    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -17,6 +16,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { tagsQuery } from '@/queries/tags';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Standalone from TagPicker (src/components/items/tag-picker.jsx) on purpose —
@@ -32,7 +32,7 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
-    const isMobile = useResponsivePopoverMobile();
+    const isMobile = useIsMobile();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId, { enabled: !!workspaceId }));
 
     const results = useMemo(() => {

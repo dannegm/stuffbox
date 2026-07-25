@@ -6,7 +6,6 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
-    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
@@ -17,6 +16,7 @@ import { PHOSPHOR_ICONS } from '@/constants/phosphor-icons';
 import { HUGE_ICONS } from '@/constants/huge-icons';
 import { LUCIDE_ICONS } from '@/constants/lucide-icons';
 import { LUCIDE_LAB_ICONS } from '@/constants/lucide-lab-icons';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Every library DynamicIcon can resolve, searchable in one place. Ported
@@ -109,7 +109,7 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     const [open, setOpen] = useState(false);
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
-    const isMobile = useResponsivePopoverMobile();
+    const isMobile = useIsMobile();
     // On mobile the suggested-icons row stays put while typing instead of
     // unmounting — it isn't wrapped in a fixed-height box like the grid
     // below it, so hiding it on query would still shrink the drawer.

@@ -6,13 +6,13 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
-    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { Button } from '@/ui/button';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Generic multi-select popover filter — backs the type/casa filters on the
@@ -38,7 +38,7 @@ export const MultiSelectFilter = ({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
-    const isMobile = useResponsivePopoverMobile();
+    const isMobile = useIsMobile();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();

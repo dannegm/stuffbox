@@ -7,7 +7,6 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
-    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -15,6 +14,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { tagsQuery } from '@/queries/tags';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Multi-select over pre-created tags only — tags are managed as their own
@@ -23,7 +23,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
-    const isMobile = useResponsivePopoverMobile();
+    const isMobile = useIsMobile();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId));
 
     const toggle = tagId => {

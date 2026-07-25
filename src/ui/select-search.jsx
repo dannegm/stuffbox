@@ -6,11 +6,11 @@ import {
     ResponsivePopover,
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
-    useResponsivePopoverMobile,
 } from '@/ui/responsive-popover';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Below this many options, scanning by eye beats typing — the search box
@@ -51,7 +51,7 @@ export const SelectSearch = ({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
-    const isMobile = useResponsivePopoverMobile();
+    const isMobile = useIsMobile();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
