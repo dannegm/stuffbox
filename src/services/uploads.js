@@ -29,6 +29,22 @@ export const deleteR2Objects = async r2Keys => {
     });
 };
 
+// Server-side R2→R2 copy (see the presign route's PUT handler) — used by
+// "duplicate item" to give each copied photo its own object. Returns
+// [{ sourceKey, r2Key }], not a same-order array, so callers must match by
+// sourceKey rather than by index.
+export const copyR2Objects = async ({ workspaceId, r2Keys }) => {
+    if (r2Keys.length === 0) return [];
+    const res = await fetch('/api/uploads/presign', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId, r2Keys }),
+    });
+    if (!res.ok) throw new Error('No se pudieron copiar las fotos.');
+    const { copies } = await res.json();
+    return copies;
+};
+
 // Admin-only, one-shot orchestration (/admin/settings' "optimizar
 // almacenamiento" button). Referenced keys are read directly via Supabase —
 // admin RLS grants full access to item_photos/location_photos across every

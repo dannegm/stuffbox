@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { supabase } from '@/services/supabase';
+import { duplicateItem } from '@/services/duplicate-item';
 
 export const itemsAtLocationQuery = (locationId, opts = {}) => ({
     queryKey: ['items', 'by-location', locationId],
@@ -156,6 +157,32 @@ export const deleteItemMutation = (opts = {}) => ({
         const { error } = await supabase().from('items').delete().eq('id', id);
         if (error) throw error;
         return id;
+    },
+    ...opts,
+});
+
+// "Duplicar item" — orchestration (DB inserts + R2 re-uploads for photos)
+// lives in the service (src/services/duplicate-item.js); this is just the
+// query-factory wrapper so callers use it the same way as every other
+// mutation here.
+export const duplicateItemMutation = (opts = {}) => ({
+    mutationFn: duplicateItem,
+    ...opts,
+});
+
+// "Promote an item to a location" — one atomic RPC (see convert_item_to_location
+// in db.sql) rather than three separate client round-trips, so the item is
+// never lost between an insert failing and the delete that would follow it.
+export const convertItemToLocationMutation = (opts = {}) => ({
+    mutationFn: async ({ itemId, locationId, type, isContainer }) => {
+        const { data, error } = await supabase().rpc('convert_item_to_location', {
+            p_item_id: itemId,
+            p_location_id: locationId,
+            p_type: type,
+            p_is_container: isContainer,
+        });
+        if (error) throw error;
+        return data;
     },
     ...opts,
 });

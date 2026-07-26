@@ -11,6 +11,9 @@ import {
     ScanIcon,
     ThumbsUpIcon,
     ThumbsDownIcon,
+    TreeStructureIcon,
+    CopySimpleIcon,
+    DotsThreeVerticalIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -21,6 +24,7 @@ import {
     transferItemMutation,
     packItemMutation,
     unpackItemMutation,
+    duplicateItemMutation,
 } from '@/queries/items';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -35,12 +39,19 @@ import { OptionDropdown } from '@/components/items/option-dropdown';
 import { TagPicker } from '@/components/items/tag-picker';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { SkuBarcodeDisplay } from '@/components/items/sku-barcode-display';
+import { ConvertToLocationDialog } from '@/components/items/convert-to-location-dialog';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { HeartRating } from '@/ui/heart-rating';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { LocationPicker } from '@/components/locations/location-picker';
+import {
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Textarea } from '@/ui/textarea';
@@ -122,6 +133,7 @@ export default function ItemPage({ params }) {
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
     const [isScanOpen, setIsScanOpen] = useState(false);
+    const [convertOpen, setConvertOpen] = useState(false);
 
     useEffect(() => {
         if (!item) return;
@@ -218,9 +230,38 @@ export default function ItemPage({ params }) {
         }),
     );
 
+    const { mutate: duplicate, isPending: isDuplicating } = useMutation(
+        duplicateItemMutation({
+            onSuccess: duplicated => {
+                queryClient.invalidateQueries({
+                    queryKey: ['items', 'by-location', duplicated.location_id],
+                });
+                // Pushed, not replaced — unlike delete/convert (where the
+                // original item stops existing), the source item is still
+                // there, so the back button returning to it is expected.
+                router.push(`/item/${duplicated.id}`);
+                toast.success(`"${duplicated.name}" creado`, {
+                    action: { label: 'Ver original', onClick: () => router.push(`/item/${id}`) },
+                });
+            },
+            onError: err => setError(err.message),
+        }),
+    );
+
     const handleTransfer = newLocationId => transfer({ id, locationId: newLocationId });
     const handlePack = moveId => pack({ id, moveId });
     const handleUnpack = newLocationId => unpack({ id, locationId: newLocationId });
+
+    const handleDuplicate = async () => {
+        const ok = await confirm({
+            title: `¿Duplicar "${item.name}"?`,
+            description:
+                'Se crea una copia completa en el mismo contenedor, con sus propias fotos y los mismos tags.',
+            confirmLabel: 'Duplicar',
+        });
+        if (!ok) return;
+        duplicate({ item, photos: itemPhotos.photos, tagIds });
+    };
 
     const handleSubmit = event => {
         event.preventDefault();
@@ -330,6 +371,31 @@ export default function ItemPage({ params }) {
                             )}
                             Transferir
                         </Button>
+
+                        <div className='flex flex-1' />
+
+                        <ResponsiveDropdownMenu>
+                            <ResponsiveDropdownMenuTrigger
+                                render={<Button size='icon-sm' variant='outline' />}
+                            >
+                                <DotsThreeVerticalIcon />
+                            </ResponsiveDropdownMenuTrigger>
+                            <ResponsiveDropdownMenuContent align='end'>
+                                <ResponsiveDropdownMenuItem
+                                    onClick={() => setConvertOpen(true)}
+                                >
+                                    <TreeStructureIcon />
+                                    Convertir en contenedor
+                                </ResponsiveDropdownMenuItem>
+                                <ResponsiveDropdownMenuItem
+                                    disabled={isDuplicating}
+                                    onClick={handleDuplicate}
+                                >
+                                    {isDuplicating ? <Spinner /> : <CopySimpleIcon />}
+                                    Duplicar
+                                </ResponsiveDropdownMenuItem>
+                            </ResponsiveDropdownMenuContent>
+                        </ResponsiveDropdownMenu>
                     </div>
                 </div>
 
@@ -353,6 +419,14 @@ export default function ItemPage({ params }) {
                     open={packDialogOpen}
                     onOpenChange={setPackDialogOpen}
                     onSelect={handlePack}
+                />
+
+                <ConvertToLocationDialog
+                    item={item}
+                    workspaceId={location.workspace_id}
+                    parentLocationId={location.id}
+                    open={convertOpen}
+                    onOpenChange={setConvertOpen}
                 />
 
                 <form onSubmit={handleSubmit} className='flex flex-col gap-4'>

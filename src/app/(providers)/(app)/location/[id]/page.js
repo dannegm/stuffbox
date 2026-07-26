@@ -786,7 +786,7 @@ export default function LocationPage({ params }) {
                                             placeholder='Filtrar locations…'
                                         />
                                     </InputGroup>
-                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
+                                    <div className='flex min-h-0 flex-1 flex-col gap-2'>
                                         {location.parent_id && (
                                             <MoveOutDropZone parentName={parentName} />
                                         )}
