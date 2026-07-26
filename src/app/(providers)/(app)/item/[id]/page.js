@@ -97,7 +97,19 @@ export default function ItemPage({ params }) {
     }, [isAuthLoading, user, router]);
 
     const { data: item, isPending: isItemPending } = useQuery(itemQuery(id, { enabled: !!user }));
-    const { data: location } = useQuery(locationQuery(item?.location_id, { enabled: !!item }));
+    // Plain variables, not inline `item?.x` — the React Compiler's
+    // auto-memoization synthesizes a dependency check for hook-call
+    // arguments derived from a member expression, and (at least in this
+    // version) does it as a bare `item.location_id` read, dropping the `?.`.
+    // That check runs unconditionally on every render, including the very
+    // first one where `item` is still undefined (query pending) — crashing
+    // before the loading guard below ever gets a chance to return early.
+    // Assigning to a real variable first means the optional chaining is
+    // evaluated by the JS runtime itself, not re-synthesized by the compiler.
+    const itemLocationId = item?.location_id;
+    const itemActiveMoveId = item?.active_move_id;
+    const itemName = item?.name;
+    const { data: location } = useQuery(locationQuery(itemLocationId, { enabled: !!item }));
     const { data: workspace } = useQuery(
         workspaceQuery(location?.workspace_id, { enabled: !!location }),
     );
@@ -111,7 +123,7 @@ export default function ItemPage({ params }) {
     const { data: itemTags } = useQuery(itemTagsQuery(id, { enabled: !!item }));
     const { data: tags } = useQuery(tagsQuery(location?.workspace_id));
     const { data: packedMove } = useQuery(
-        moveQuery(item?.active_move_id, { enabled: !!item?.active_move_id }),
+        moveQuery(itemActiveMoveId, { enabled: !!itemActiveMoveId }),
     );
     const { data: ratings } = useQuery(entityRatingsForEntityQuery('item', id));
     const likes = (ratings ?? []).filter(rating => rating.liked);
@@ -189,9 +201,9 @@ export default function ItemPage({ params }) {
                 // path; the future "optimize storage" button is the net).
                 deleteR2Objects(itemPhotos.photos.map(photo => photo.r2_key));
                 queryClient.invalidateQueries({
-                    queryKey: ['items', 'by-location', item?.location_id],
+                    queryKey: ['items', 'by-location', itemLocationId],
                 });
-                router.replace(`/location/${item?.location_id}`);
+                router.replace(`/location/${itemLocationId}`);
             },
             onError: err => setError(err.message),
         }),
@@ -200,7 +212,7 @@ export default function ItemPage({ params }) {
     const { mutate: transfer, isPending: isTransferring } = useMutation(
         transferItemMutation({
             onSuccess: updated => {
-                const previousLocationId = item?.location_id;
+                const previousLocationId = itemLocationId;
                 queryClient.setQueryData(['item', id], updated);
                 queryClient.invalidateQueries({
                     queryKey: ['items', 'by-location', previousLocationId],
@@ -254,7 +266,7 @@ export default function ItemPage({ params }) {
 
     const handleDuplicate = async () => {
         const ok = await confirm({
-            title: `¿Duplicar "${item.name}"?`,
+            title: `¿Duplicar "${itemName}"?`,
             description:
                 'Se crea una copia completa en el mismo contenedor, con sus propias fotos y los mismos tags.',
             confirmLabel: 'Duplicar',
@@ -284,11 +296,11 @@ export default function ItemPage({ params }) {
 
     const handleDelete = async () => {
         const ok = await confirm({
-            title: `¿Eliminar "${item?.name}"?`,
+            title: `¿Eliminar "${itemName}"?`,
             description: 'Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
-            confirmText: item?.name,
+            confirmText: itemName,
         });
         if (!ok) return;
         destroy(id);
