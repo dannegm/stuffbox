@@ -15,6 +15,7 @@ import {
 import {
     BookmarkSimpleIcon,
     CameraIcon,
+    FolderIcon,
     ImagesIcon,
     PencilSimpleIcon,
     UploadSimpleIcon,
@@ -182,6 +183,7 @@ export const PhotoGallery = ({
     const isMobile = useIsMobile();
     const $cameraInput = useRef(null);
     const $galleryInput = useRef(null);
+    const $filesInput = useRef(null);
     const dragCounter = useRef(0);
     // Same activation constraint as the item/location drag-to-move DnD
     // (location/[id]/page.js) — a small movement threshold before the
@@ -369,6 +371,10 @@ export const PhotoGallery = ({
                             <ImagesIcon />
                             Elegir de la galería
                         </ResponsiveDropdownMenuItem>
+                        <ResponsiveDropdownMenuItem onClick={() => $filesInput.current?.click()}>
+                            <FolderIcon />
+                            Seleccionar archivos
+                        </ResponsiveDropdownMenuItem>
                     </ResponsiveDropdownMenuContent>
                 </ResponsiveDropdownMenu>
             ) : (
@@ -409,6 +415,17 @@ export const PhotoGallery = ({
                         ref={$galleryInput}
                         type='file'
                         accept='image/*'
+                        multiple
+                        className='sr-only'
+                        onChange={handleFiles}
+                    />
+                    {/* Extension list instead of the `image/*` MIME wildcard
+                    on purpose — that's what steers iOS/Android to the plain
+                    Files browser instead of routing to the Photos picker. */}
+                    <input
+                        ref={$filesInput}
+                        type='file'
+                        accept='.jpg,.jpeg,.png,.webp,.heic,.heif,.gif,.bmp,.tiff'
                         multiple
                         className='sr-only'
                         onChange={handleFiles}

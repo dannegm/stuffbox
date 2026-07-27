@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useQueryState, parseAsStringEnum } from 'nuqs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Fuse from 'fuse.js';
 import {
@@ -178,7 +179,10 @@ export default function LocationPage({ params }) {
     const [itemSearch, setItemSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState([]);
     const [tagFilter, setTagFilter] = useState([]);
-    const [mobileView, setMobileView] = useState('locations'); // 'locations' | 'items'
+    const [mobileView, setMobileView] = useQueryState(
+        'view',
+        parseAsStringEnum(['locations', 'items']).withDefault('items'),
+    );
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
