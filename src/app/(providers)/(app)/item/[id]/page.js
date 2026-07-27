@@ -620,7 +620,7 @@ export default function ItemPage({ params }) {
                         <div className='flex flex-col gap-3'>
                             <div className='flex items-center justify-between gap-2'>
                                 <h2 className='text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
-                                    Calificaciones
+                                    Ratings
                                 </h2>
                                 <RatingToggle
                                     workspaceId={location.workspace_id}
