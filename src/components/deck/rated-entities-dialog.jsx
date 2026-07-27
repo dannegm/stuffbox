@@ -64,10 +64,13 @@ export const RatedEntitiesDialog = ({
     );
 
     const handleClearAll = async () => {
-        // Closed *before* confirming, not after — vaul's Drawer and Base UI's
-        // AlertDialog are two independent overlay systems that don't know
-        // about each other; leaving the drawer open underneath the confirm
-        // traps clicks on the confirm dialog until the drawer itself closes.
+        // Closed *before* confirming, not after — leaving the drawer open
+        // underneath the confirm dialog risked trapping clicks on the
+        // confirm dialog until the drawer itself closed. Kept even now that
+        // Drawer is built on the same Base UI Dialog primitive as
+        // AlertDialog (src/ui/drawer.jsx) — untested whether that removes
+        // the need for this ordering, and closing first is harmless either
+        // way.
         onOpenChange(false);
         const ok = await confirm({
             title: '¿Eliminar todas tus calificaciones?',

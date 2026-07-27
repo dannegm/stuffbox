@@ -244,9 +244,9 @@ export const PhotoGallery = ({
     const handleFiles = event => {
         processFiles(event.target.files);
         event.target.value = '';
-        // The mobile "Agregar" trigger lives inside a vaul Drawer
-        // (ResponsiveDropdownMenu), which locks document.body's pointer
-        // events while modal. Opening the native camera/gallery sheet
+        // The mobile "Agregar" trigger lives inside a modal Drawer
+        // (ResponsiveDropdownMenu), which can lock document.body's pointer
+        // events while open. Opening the native camera/gallery sheet
         // backgrounds the page on iOS, which can interrupt that lock's own
         // cleanup — leaving the whole page unclickable ("nothing responds,
         // like something is on top of it") once the native picker returns.

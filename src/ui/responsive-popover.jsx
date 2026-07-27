@@ -1,6 +1,6 @@
 'use client';
 
-import { cloneElement, createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/ui/drawer';
@@ -29,29 +29,17 @@ export const ResponsivePopover = ({ children, ...props }) => {
     );
 };
 
-// Same render-vs-children/asChild normalization as ResponsiveDialogTrigger,
-// plus one more wrinkle: Popover's `render` convention is a bare shell
-// element (e.g. an empty <button/>) with the actual visible content passed
-// as `children` alongside it — Base UI renders that content *inside* the
-// resolved element. vaul's asChild has no such second slot, it only clones
-// `render` verbatim, so `children` has to be spliced into it by hand here —
-// but only when the caller actually used the two-prop shape; some callers
-// (IconPicker, ColorPicker) pass one fully-formed element as `render` with
-// no separate `children` at all, and cloning would wipe out its content.
+// Popover's `render` convention is a bare shell element (e.g. an empty
+// <button/>) with the actual visible content passed as `children` alongside
+// it — DrawerTrigger takes render+children the same way, so no per-device
+// branching needed here.
 export const ResponsivePopoverTrigger = ({ render, children, ...props }) => {
     const isMobile = useResponsivePopoverMobile();
-    if (isMobile) {
-        const triggerElement = children !== undefined ? cloneElement(render, {}, children) : render;
-        return (
-            <DrawerTrigger asChild data-slot='responsive-popover-trigger' {...props}>
-                {triggerElement}
-            </DrawerTrigger>
-        );
-    }
+    const Trigger = isMobile ? DrawerTrigger : PopoverTrigger;
     return (
-        <PopoverTrigger data-slot='responsive-popover-trigger' render={render} {...props}>
+        <Trigger data-slot='responsive-popover-trigger' render={render} {...props}>
             {children}
-        </PopoverTrigger>
+        </Trigger>
     );
 };
 

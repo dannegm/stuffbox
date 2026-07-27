@@ -109,24 +109,21 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
             <ResponsiveDialogContent
                 data-block='PhotoCropDialog'
-                // Overrides the Drawer's shared 80dvh mobile cap
+                // Overrides the Drawer's shared 80vh mobile cap
                 // (src/ui/drawer.jsx) — this dialog has no internal scroll,
                 // so on short phones the default cap was clipping the
                 // footer's Guardar button off-screen instead of just
                 // shrinking it. No scroll area here on purpose (it fought
                 // with the cropper's own pan/zoom touch gestures) — just
                 // give it nearly the full screen instead.
-                className='data-[vaul-drawer-direction=bottom]:max-h-[97dvh]'
+                className='max-h-[97dvh]'
             >
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Ajustar foto</ResponsiveDialogTitle>
                 </ResponsiveDialogHeader>
 
                 <div className='flex flex-col gap-2 px-4 sm:px-0'>
-                    <div
-                        data-vaul-no-drag
-                        className='relative mx-auto mt-4 aspect-square w-full max-w-64 overflow-hidden rounded-2xl bg-muted ring-1 ring-foreground/10'
-                    >
+                    <div className='relative mx-auto mt-4 aspect-square w-full max-w-64 overflow-hidden rounded-2xl bg-muted ring-1 ring-foreground/10'>
                         {/* Flip is applied as its own outer wrap around the
                             whole cropper viewport, not fed into it — react-
                             easy-crop has no native flip. Passing `rotation`
@@ -163,10 +160,7 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
                         </div>
                     </div>
 
-                    <div
-                        className='mx-auto my-4 flex w-full max-w-64 items-center gap-3'
-                        data-vaul-no-drag
-                    >
+                    <div className='mx-auto my-4 flex w-full max-w-64 items-center gap-3'>
                         <MagnifyingGlassPlusIcon className='size-4 shrink-0 text-muted-foreground' />
                         <Slider
                             value={zoom}
@@ -177,10 +171,7 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
                         />
                     </div>
 
-                    <div
-                        className='mx-auto flex w-full max-w-64 items-center justify-center gap-2'
-                        data-vaul-no-drag
-                    >
+                    <div className='mx-auto flex w-full max-w-64 items-center justify-center gap-2'>
                         <Tooltip>
                             <TooltipTrigger
                                 render={

@@ -26,8 +26,9 @@ import {
 // Read once per ResponsiveDialog instance and shared via context — every
 // sub-component below used to call useIsMobile() independently, which could
 // desync across a resize (Root picks Dialog while Content still picks
-// DrawerContent a beat later), crashing since vaul's Drawer needs its own
-// Root context that Base UI's Dialog never provides.
+// DrawerContent a beat later): Drawer and Dialog are still two different
+// component types even though both wrap Base UI's Dialog primitive
+// underneath, so a mismatched pair would still unmount/remount oddly.
 const ResponsiveDialogMobileContext = createContext(false);
 const useResponsiveDialogMobile = () => useContext(ResponsiveDialogMobileContext);
 
@@ -45,20 +46,10 @@ export const ResponsiveDialog = ({ children, ...props }) => {
     );
 };
 
-// vaul's Drawer.Trigger takes its custom element as `children` + `asChild`
-// (Radix-style), while Base UI's Dialog.Trigger takes it as `render` — this
-// normalizes both to the `render` convention used everywhere else in this
-// codebase (Popover, Dialog, Sheet), so callers never branch on device.
 export const ResponsiveDialogTrigger = ({ render, ...props }) => {
     const isMobile = useResponsiveDialogMobile();
-    if (isMobile) {
-        return (
-            <DrawerTrigger asChild data-slot='responsive-dialog-trigger' {...props}>
-                {render}
-            </DrawerTrigger>
-        );
-    }
-    return <DialogTrigger data-slot='responsive-dialog-trigger' render={render} {...props} />;
+    const Trigger = isMobile ? DrawerTrigger : DialogTrigger;
+    return <Trigger data-slot='responsive-dialog-trigger' render={render} {...props} />;
 };
 
 export const ResponsiveDialogContent = ({ ...props }) => {
@@ -91,15 +82,8 @@ export const ResponsiveDialogDescription = ({ ...props }) => {
     return <Description data-slot='responsive-dialog-description' {...props} />;
 };
 
-// Same render-vs-children mismatch as the trigger above.
 export const ResponsiveDialogClose = ({ render, ...props }) => {
     const isMobile = useResponsiveDialogMobile();
-    if (isMobile) {
-        return (
-            <DrawerClose asChild data-slot='responsive-dialog-close' {...props}>
-                {render}
-            </DrawerClose>
-        );
-    }
-    return <DialogClose data-slot='responsive-dialog-close' render={render} {...props} />;
+    const Close = isMobile ? DrawerClose : DialogClose;
+    return <Close data-slot='responsive-dialog-close' render={render} {...props} />;
 };

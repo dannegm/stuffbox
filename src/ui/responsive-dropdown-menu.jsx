@@ -1,6 +1,6 @@
 'use client';
 
-import { cloneElement, createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
     DropdownMenu,
@@ -35,28 +35,17 @@ export const ResponsiveDropdownMenu = ({ children, ...props }) => {
     );
 };
 
-// Same render+children splice as ResponsivePopoverTrigger: callers like the
-// workspace switcher or a row's "…" menu pass `render` as a bare shell
-// (SidebarMenuButton, Button) and the actual visible content as separate
-// `children` — Base UI's Trigger renders that content inside the resolved
-// element, but vaul's asChild only clones `render` verbatim, so `children`
-// has to be spliced in by hand. Skipped when no separate children were
-// passed at all, so a `render` that's already a fully-formed element (with
-// its own content) isn't stripped.
+// Callers like the workspace switcher or a row's "…" menu pass `render` as
+// a bare shell (SidebarMenuButton, Button) and the actual visible content as
+// separate `children` — both DrawerTrigger and DropdownMenuTrigger take
+// `render`+`children` the same way, so no per-device branching needed here.
 export const ResponsiveDropdownMenuTrigger = ({ render, children, ...props }) => {
     const isMobile = useResponsiveDropdownMenuMobile();
-    if (isMobile) {
-        const triggerElement = children !== undefined ? cloneElement(render, {}, children) : render;
-        return (
-            <DrawerTrigger asChild data-slot='responsive-dropdown-menu-trigger' {...props}>
-                {triggerElement}
-            </DrawerTrigger>
-        );
-    }
+    const Trigger = isMobile ? DrawerTrigger : DropdownMenuTrigger;
     return (
-        <DropdownMenuTrigger data-slot='responsive-dropdown-menu-trigger' render={render} {...props}>
+        <Trigger data-slot='responsive-dropdown-menu-trigger' render={render} {...props}>
             {children}
-        </DropdownMenuTrigger>
+        </Trigger>
     );
 };
 
@@ -98,14 +87,10 @@ const ITEM_CLASS =
     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm outline-hidden select-none data-[variant=destructive]:text-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 // Selecting an item should both do its thing (navigate, run the action) AND
-// close the sheet — vaul's DrawerClose (Radix Dialog.Close under the hood)
-// already closes on click and merges onClick with whatever's passed in, so
-// wrapping each row in one gets both for free: asChild when composing a
-// caller-supplied element (e.g. a Link, for navigation items), bare
-// otherwise so Close renders its own default button (for plain onClick
-// actions like "Eliminar"). Same render+children splice as the Trigger above
-// — a `render={<Link/>}` here is typically an empty shell too, with the
-// actual icon+label passed as separate `children`.
+// close the sheet — DrawerClose already closes on click and merges onClick
+// with whatever's passed in, so wrapping each row in one gets both for free.
+// `render` (e.g. a Link, for navigation items) + `children` (icon+label)
+// work the same way here as on the Trigger above.
 export const ResponsiveDropdownMenuItem = ({
     render,
     variant = 'default',
@@ -115,22 +100,14 @@ export const ResponsiveDropdownMenuItem = ({
 }) => {
     const isMobile = useResponsiveDropdownMenuMobile();
     if (isMobile) {
-        const itemProps = {
-            'data-slot': 'responsive-dropdown-menu-item',
-            'data-variant': variant,
-            className: cn(ITEM_CLASS, className),
-            ...props,
-        };
-        if (render) {
-            const itemElement = children !== undefined ? cloneElement(render, {}, children) : render;
-            return (
-                <DrawerClose asChild {...itemProps}>
-                    {itemElement}
-                </DrawerClose>
-            );
-        }
         return (
-            <DrawerClose type='button' {...itemProps}>
+            <DrawerClose
+                data-slot='responsive-dropdown-menu-item'
+                data-variant={variant}
+                className={cn(ITEM_CLASS, className)}
+                render={render}
+                {...props}
+            >
                 {children}
             </DrawerClose>
         );
