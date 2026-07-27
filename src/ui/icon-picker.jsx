@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsivePopover,
@@ -16,6 +16,7 @@ import { PHOSPHOR_ICONS } from '@/constants/phosphor-icons';
 import { HUGE_ICONS } from '@/constants/huge-icons';
 import { LUCIDE_ICONS } from '@/constants/lucide-icons';
 import { LUCIDE_LAB_ICONS } from '@/constants/lucide-lab-icons';
+import { cache } from '@/services/cache';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
@@ -37,9 +38,32 @@ const matchesQuery = (icon, q) =>
 
 const iconKey = icon => `${icon.library}:${icon.name}`;
 
-const SuggestedIcons = ({ icons, onSelect }) => (
+// Frequency map ({ "library:name": count }), local to this device — not
+// meant to sync across tabs (cache.js over settings.js), just a same-tab,
+// best-effort nudge so icons the user actually reaches for keep surfacing.
+const ICON_USAGE_CACHE_KEY = 'iconUsage';
+const MAX_FREQUENT_ICONS = 12;
+
+const recordIconUsage = icon => {
+    const usage = cache.get(ICON_USAGE_CACHE_KEY, {});
+    const key = iconKey(icon);
+    cache.set(ICON_USAGE_CACHE_KEY, { ...usage, [key]: (usage[key] ?? 0) + 1 });
+};
+
+const getFrequentIcons = () => {
+    const usage = cache.get(ICON_USAGE_CACHE_KEY, {});
+    return Object.entries(usage)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, MAX_FREQUENT_ICONS)
+        .map(([key]) => {
+            const [library, ...nameParts] = key.split(':');
+            return { library, name: nameParts.join(':') };
+        });
+};
+
+const SuggestedIcons = ({ icons, label, onSelect }) => (
     <div className='flex flex-col gap-1 border-b pb-2' data-block='SuggestedIcons'>
-        <span className='px-1 text-xs text-muted-foreground'>Sugeridos por tus tags</span>
+        <span className='px-1 text-xs text-muted-foreground'>{label}</span>
         <div className='flex flex-wrap gap-1 px-1'>
             {icons.map(icon => (
                 <Tooltip key={iconKey(icon)}>
@@ -109,26 +133,38 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     const [open, setOpen] = useState(false);
     const [library, setLibrary] = useState(value?.library ?? 'phosphor');
     const [query, setQuery] = useState('');
+    const [frequentIcons, setFrequentIcons] = useState([]);
     const isMobile = useIsMobile();
     // On mobile the suggested-icons row stays put while typing instead of
     // unmounting — it isn't wrapped in a fixed-height box like the grid
     // below it, so hiding it on query would still shrink the drawer.
     const showSuggestions = isMobile || !query.trim();
 
+    // Re-read on every open (not just on mount) since usage recorded by
+    // other IconPicker instances on the same page — or an earlier open of
+    // this same one — should show up without a full remount.
+    useEffect(() => {
+        if (open) setFrequentIcons(getFrequentIcons());
+    }, [open]);
+
     const handleSelect = icon => {
+        recordIconUsage(icon);
         onChange?.(icon);
         setOpen(false);
     };
 
     const uniqueSuggestions = useMemo(() => {
         const seen = new Set();
-        return suggestedIcons.filter(icon => {
+        return [...suggestedIcons, ...frequentIcons].filter(icon => {
             const key = iconKey(icon);
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
         });
-    }, [suggestedIcons]);
+    }, [suggestedIcons, frequentIcons]);
+
+    const suggestionsLabel =
+        suggestedIcons.length > 0 ? 'Sugeridos por tus tags' : 'Usados frecuentemente';
 
     return (
         <ResponsivePopover open={open} onOpenChange={setOpen}>
@@ -139,7 +175,11 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
                 align={align}
             >
                 {uniqueSuggestions.length > 0 && showSuggestions && (
-                    <SuggestedIcons icons={uniqueSuggestions} onSelect={handleSelect} />
+                    <SuggestedIcons
+                        icons={uniqueSuggestions}
+                        label={suggestionsLabel}
+                        onSelect={handleSelect}
+                    />
                 )}
                 <InputGroup>
                     <InputGroupAddon>

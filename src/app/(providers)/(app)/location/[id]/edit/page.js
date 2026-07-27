@@ -373,6 +373,32 @@ export default function LocationEditPage({ params }) {
                         </>
                     )}
 
+                    {/* Repeats LocationIdentityCard's icon+name row, bound to
+                    the same state — on a container location (photos,
+                    classification, extras cards) the original is scrolled
+                    well out of view by the time you reach the buttons below. */}
+                    <div
+                        className='flex items-center gap-2 rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'
+                        data-block='LocationEditBottomIdentity'
+                    >
+                        <IconPicker value={icon} onChange={setIcon}>
+                            <button
+                                type='button'
+                                aria-label='Elegir ícono'
+                                className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-input bg-transparent text-foreground shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted [&_svg]:size-4'
+                            >
+                                <DynamicIcon icon={previewIcon} />
+                            </button>
+                        </IconPicker>
+                        <Input
+                            id='location-name-bottom'
+                            required
+                            value={name}
+                            onChange={event => setName(event.target.value)}
+                            aria-label='Nombre'
+                        />
+                    </div>
+
                     <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
                         {canDeleteLocation && (
                             <Button

@@ -415,6 +415,37 @@ export default function NewItemPage() {
 
                     <FieldError>{error}</FieldError>
 
+                    {/* Repeats ItemIdentityCard's icon+name row, bound to
+                    the same state — details/photos/classification/extras
+                    cards above push the original well out of view by the
+                    time you reach these buttons. */}
+                    <div
+                        className='flex items-center gap-2 rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemNewBottomIdentity'
+                    >
+                        <IconPicker
+                            value={icon}
+                            onChange={setIcon}
+                            suggestedIcons={suggestedIcons}
+                        >
+                            <button
+                                type='button'
+                                aria-label='Elegir ícono'
+                                className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-input bg-transparent text-foreground shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted [&_svg]:size-4'
+                            >
+                                <DynamicIcon icon={previewIcon} />
+                            </button>
+                        </IconPicker>
+                        <Input
+                            id='item-name-bottom'
+                            required
+                            value={name}
+                            onChange={event => setName(event.target.value)}
+                            placeholder='Ej. Taladro'
+                            aria-label='Nombre'
+                        />
+                    </div>
+
                     <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
                         <Button
                             type='button'

@@ -48,16 +48,23 @@ function DrawerContent({ className, children, ...props }) {
             <DrawerPrimitive.Content
                 data-slot='drawer-content'
                 className={cn(
-                    // data-[vaul-drawer-direction=bottom]:max-h-[80vh] mirrors
+                    // data-[vaul-drawer-direction=bottom]:max-h-[80dvh] mirrors
                     // the existing top-direction cap — without it, h-auto
                     // lets a tall sheet (e.g. LocationPicker with a long list)
                     // grow past the top of the viewport with no way to reach
                     // what scrolled off (position:fixed content isn't part of
                     // page flow, so the page can't just be scrolled to reveal
-                    // it). min-h-0 lets a flex-1 child (ScrollArea) actually
-                    // shrink and scroll internally instead of forcing the
-                    // whole sheet to grow to fit it.
-                    'group/drawer-content fixed z-50 flex h-auto min-h-0 flex-col bg-popover text-sm text-popover-foreground data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-xl data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:rounded-r-xl data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:rounded-l-xl data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-xl data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
+                    // it). dvh (not vh) matters here specifically because this
+                    // is a mobile-only surface: vh resolves against the
+                    // largest possible viewport, which on mobile Safari/Chrome
+                    // is taller than what's actually visible once the
+                    // address bar is showing, so a vh-based cap can size the
+                    // sheet past the real bottom of the screen — the exact
+                    // "overflows, scroll breaks" symptom. min-h-0 lets a
+                    // flex-1 child (ScrollArea) actually shrink and scroll
+                    // internally instead of forcing the whole sheet to grow
+                    // to fit it.
+                    'group/drawer-content fixed z-50 flex h-auto min-h-0 flex-col bg-popover text-sm text-popover-foreground data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:max-h-[80dvh] data-[vaul-drawer-direction=bottom]:rounded-t-xl data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:rounded-r-xl data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:rounded-l-xl data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80dvh] data-[vaul-drawer-direction=top]:rounded-b-xl data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
                     className,
                 )}
                 {...props}

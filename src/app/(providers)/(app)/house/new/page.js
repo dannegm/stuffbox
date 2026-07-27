@@ -146,6 +146,35 @@ export default function NewHousePage() {
                     </Field>
                 </FieldGroup>
 
+                {/* Repeats the icon+name row from the top Field above,
+                bound to the same state — a long form (map picker in
+                between) means the original is scrolled out of view by the
+                time you reach the submit button, so this lets a last-second
+                icon/name tweak happen right here instead of scrolling back
+                up. */}
+                <div
+                    className='flex items-center gap-2 rounded-xl border bg-card p-3 shadow-xs ring-1 ring-foreground/5'
+                    data-block='NewHouseBottomIdentity'
+                >
+                    <IconPicker value={icon} onChange={setIcon}>
+                        <button
+                            type='button'
+                            aria-label='Elegir ícono'
+                            className='flex size-9 shrink-0 items-center justify-center rounded-md border border-dashed border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/15 [&_svg]:size-4'
+                        >
+                            <DynamicIcon icon={previewIcon} />
+                        </button>
+                    </IconPicker>
+                    <Input
+                        id='house-name-bottom'
+                        required
+                        value={name}
+                        onChange={event => setName(event.target.value)}
+                        aria-label='Nombre'
+                        placeholder='Ej. Casa principal'
+                    />
+                </div>
+
                 <Button type='submit' disabled={isPending || !name.trim()} className='w-full'>
                     {isPending && <Spinner data-icon='inline-start' />}
                     Crear casa

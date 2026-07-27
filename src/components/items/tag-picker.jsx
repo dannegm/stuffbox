@@ -76,25 +76,30 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
                 >
                     <ScrollArea className='size-full overflow-auto'>
                         <div className='flex flex-col gap-0.5 p-0.5'>
-                            {results.map(tag => (
-                                <button
-                                    key={tag.id}
-                                    type='button'
-                                    onClick={() => toggle(tag.id)}
-                                    className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
-                                >
-                                    <span
-                                        className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'
+                            {results.map(tag => {
+                                const isSelected = value.includes(tag.id);
+                                return (
+                                    <button
+                                        key={tag.id}
+                                        type='button'
+                                        onClick={() => toggle(tag.id)}
+                                        className={cn(
+                                            'flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted',
+                                            isSelected &&
+                                                'bg-(--tag-color)/15 ring-1 ring-(--tag-color)/20 hover:bg-(--tag-color)/20',
+                                        )}
                                         style={{ '--tag-color': tag.color }}
                                     >
-                                        <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
-                                    </span>
-                                    <span className='min-w-0 flex-1 truncate'>{tag.name}</span>
-                                    {value.includes(tag.id) && (
-                                        <CheckIcon className='size-4 shrink-0 text-primary' />
-                                    )}
-                                </button>
-                            ))}
+                                        <span className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'>
+                                            <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
+                                        </span>
+                                        <span className='min-w-0 flex-1 truncate'>{tag.name}</span>
+                                        {isSelected && (
+                                            <CheckIcon className='size-4 shrink-0 text-(--tag-color)' />
+                                        )}
+                                    </button>
+                                );
+                            })}
                             {results.length === 0 && (
                                 <p className='p-4 text-center text-sm text-muted-foreground'>
                                     {tags.length === 0
