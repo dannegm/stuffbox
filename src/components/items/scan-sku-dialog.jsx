@@ -181,7 +181,7 @@ export const ScanSkuDialog = ({ open, onOpenChange, onScan }) => {
                         </div>
                     </div>
                     {devices.length > 1 && (
-                        <div className='px-4 sm:px-0' data-block='ScanSkuCameraSwitcher'>
+                        <div className='relative z-10000 px-4 mb-4 sm:mb-0 sm:px-0' data-block='ScanSkuCameraSwitcher'>
                             <DropdownMenu>
                                 <DropdownMenuTrigger
                                     render={

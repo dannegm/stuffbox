@@ -171,9 +171,16 @@ export const LocationPicker = ({
                 {/* Mobile (Drawer, flex column): flex-1 + min-h-0 so this is
                 the one child that absorbs/scrolls within whatever space is
                 left after the header/breadcrumb/footer, inside the drawer's
-                own max-h-[80vh] cap (src/ui/drawer.jsx). Desktop (Dialog,
-                grid): flex-1/min-h-0 are no-ops there, so sm:max-h-64 is what
-                actually caps it. */}
+                own max-h-[80vh] cap (src/ui/drawer.jsx). This only actually
+                works now that ScrollArea's own Viewport sizes itself via
+                flex-1/min-h-0 too (src/ui/scroll-area.jsx) instead of
+                height:100% — that used a plain CSS percentage, which needs
+                its parent to have a CSS-"specified" height to resolve
+                against, and a fixed Drawer nested in a flex-col with only a
+                max-height clamp didn't reliably count, so the list grew to
+                fit its content and spilled out over the footer below
+                instead of scrolling. Desktop (Dialog, grid): flex-1/min-h-0
+                are no-ops there, so sm:max-h-64 is what actually caps it. */}
                 <ScrollArea className='min-h-0 flex-1 px-4 sm:max-h-64 sm:flex-none sm:px-0'>
                     {isPending ? (
                         <RowsSkeleton />
