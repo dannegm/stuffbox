@@ -107,7 +107,17 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
 
     return (
         <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-            <ResponsiveDialogContent data-block='PhotoCropDialog'>
+            <ResponsiveDialogContent
+                data-block='PhotoCropDialog'
+                // Overrides the Drawer's shared 80dvh mobile cap
+                // (src/ui/drawer.jsx) — this dialog has no internal scroll,
+                // so on short phones the default cap was clipping the
+                // footer's Guardar button off-screen instead of just
+                // shrinking it. No scroll area here on purpose (it fought
+                // with the cropper's own pan/zoom touch gestures) — just
+                // give it nearly the full screen instead.
+                className='data-[vaul-drawer-direction=bottom]:max-h-[97dvh]'
+            >
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Ajustar foto</ResponsiveDialogTitle>
                 </ResponsiveDialogHeader>
