@@ -27,6 +27,7 @@ import {
     ArrowUpIcon,
     CurrencyDollarIcon,
     MagnifyingGlassIcon,
+    FunnelIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -62,9 +63,16 @@ import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { ItemListRow } from '@/components/items/item-list-row';
+import { MultiSelectFilter } from '@/components/search/multi-select-filter';
+import { SearchTagFilter } from '@/components/search/search-tag-filter';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
-import { FALLBACK_LOCATION_ICON, FALLBACK_ITEM_ICON } from '@/constants/location-icons';
+import {
+    DEFAULT_LOCATION_ICONS,
+    FALLBACK_LOCATION_ICON,
+    FALLBACK_ITEM_ICON,
+    LOCATION_TYPE_PRESETS,
+} from '@/constants/location-icons';
 import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -87,6 +95,14 @@ import {
     ResponsiveDropdownMenuItem,
     ResponsiveDropdownMenuTrigger,
 } from '@/ui/responsive-dropdown-menu';
+
+// Same shortlist as SearchFilters (src/components/search/search-filters.jsx) —
+// locations.type is free text, this is a curated shortlist, not an enum.
+const TYPE_OPTIONS = LOCATION_TYPE_PRESETS.map(type => ({
+    value: type,
+    label: type.charAt(0).toUpperCase() + type.slice(1),
+    icon: DEFAULT_LOCATION_ICONS[type] ?? FALLBACK_LOCATION_ICON,
+}));
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationLoading'>
@@ -158,8 +174,11 @@ export default function LocationPage({ params }) {
     const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
     const [bulkPackOpen, setBulkPackOpen] = useState(false);
     const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
-    const [locationSearch, setLocationSearch] = useState(''); // desktop split view only
-    const [itemSearch, setItemSearch] = useState(''); // desktop split view only
+    const [locationSearch, setLocationSearch] = useState('');
+    const [itemSearch, setItemSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState([]);
+    const [tagFilter, setTagFilter] = useState([]);
+    const [mobileView, setMobileView] = useState('locations'); // 'locations' | 'items'
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -450,12 +469,16 @@ export default function LocationPage({ params }) {
         if (packFilter === 'unpacked') return !entity.active_move_id;
         return true;
     };
-    const filteredChildren = children.filter(matchesPackFilter);
-    const filteredItems = items.filter(matchesPackFilter);
-    const hasFilteredResults = filteredChildren.length > 0 || filteredItems.length > 0;
+    const matchesTypeFilter = child =>
+        typeFilter.length === 0 || typeFilter.includes(child.type);
+    const matchesTagFilter = item =>
+        tagFilter.length === 0 ||
+        item.item_tags.some(itemTag => tagFilter.includes(itemTag.tags.id));
+    const filteredChildren = children.filter(matchesPackFilter).filter(matchesTypeFilter);
+    const filteredItems = items.filter(matchesPackFilter).filter(matchesTagFilter);
 
-    // Desktop split view only: filters what's already loaded via Fuse, no
-    // refetch. Locations search by name/type, items by name/tag name.
+    // Filters what's already loaded via Fuse, no refetch. Locations search by
+    // name/type, items by name/tag name.
     const locationFuse = new Fuse(filteredChildren, { keys: ['name', 'type'], threshold: 0.3 });
     const itemFuse = new Fuse(filteredItems, {
         keys: ['name', 'item_tags.tags.name'],
@@ -472,8 +495,8 @@ export default function LocationPage({ params }) {
     return (
         <div
             className={cn(
-                'relative flex flex-1 flex-col gap-4 p-4',
-                isDesktop && 'h-dvh overflow-hidden',
+                'flex flex-col gap-4 p-4',
+                isDesktop ? 'absolute inset-0 overflow-hidden' : 'relative flex-1',
             )}
             data-block='LocationPage'
         >
@@ -776,17 +799,39 @@ export default function LocationPage({ params }) {
                         >
                             <div className='flex min-h-0 flex-1 gap-4'>
                                 <div className='flex min-h-0 min-w-0 flex-2 flex-col gap-2'>
-                                    <InputGroup>
-                                        <InputGroupAddon>
-                                            <MagnifyingGlassIcon />
-                                        </InputGroupAddon>
-                                        <InputGroupInput
-                                            value={locationSearch}
-                                            onChange={event => setLocationSearch(event.target.value)}
-                                            placeholder='Filtrar locations…'
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={locationSearch}
+                                                onChange={event =>
+                                                    setLocationSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar locations…'
+                                            />
+                                        </InputGroup>
+                                        <MultiSelectFilter
+                                            className='w-36 shrink-0'
+                                            icon={FunnelIcon}
+                                            options={TYPE_OPTIONS}
+                                            value={typeFilter}
+                                            onChange={setTypeFilter}
+                                            placeholder='Todos los tipos'
+                                            searchPlaceholder='Buscar tipo'
+                                            countLabel={count => `${count} tipos`}
+                                            renderOption={option => (
+                                                <>
+                                                    <DynamicIcon icon={option.icon} />
+                                                    <span className='truncate'>
+                                                        {option.label}
+                                                    </span>
+                                                </>
+                                            )}
                                         />
-                                    </InputGroup>
-                                    <div className='flex min-h-0 flex-1 flex-col gap-2'>
+                                    </div>
+                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
                                         {location.parent_id && (
                                             <MoveOutDropZone parentName={parentName} />
                                         )}
@@ -845,16 +890,26 @@ export default function LocationPage({ params }) {
                                 </div>
                                 <Separator orientation='vertical' />
                                 <div className='flex min-h-0 min-w-0 flex-3 flex-col gap-2'>
-                                    <InputGroup>
-                                        <InputGroupAddon>
-                                            <MagnifyingGlassIcon />
-                                        </InputGroupAddon>
-                                        <InputGroupInput
-                                            value={itemSearch}
-                                            onChange={event => setItemSearch(event.target.value)}
-                                            placeholder='Filtrar items…'
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={itemSearch}
+                                                onChange={event =>
+                                                    setItemSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar items…'
+                                            />
+                                        </InputGroup>
+                                        <SearchTagFilter
+                                            className='w-36 shrink-0'
+                                            workspaceId={location.workspace_id}
+                                            value={tagFilter}
+                                            onChange={setTagFilter}
                                         />
-                                    </InputGroup>
+                                    </div>
                                     <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
                                         {searchedItems.length > 0 ? (
                                             searchedItems.map(item => (
@@ -913,46 +968,163 @@ export default function LocationPage({ params }) {
                         </DndContext>
                     ) : (
                         <>
-                            {!hasFilteredResults && (
-                                <p className='py-6 text-center text-sm text-muted-foreground'>
-                                    Nada que coincida con este filtro.
-                                </p>
-                            )}
+                            <Tabs value={mobileView} onValueChange={setMobileView}>
+                                <TabsList className='w-full'>
+                                    <TabsTrigger value='locations'>Locations</TabsTrigger>
+                                    <TabsTrigger value='items'>Items</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
 
-                            {filteredChildren.length > 0 && (
-                                <div className='flex flex-col gap-2'>
-                                    <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
-                                        Locations
-                                    </h2>
-                                    {filteredChildren.map(child => (
-                                        <LocationListItem
-                                            key={child.id}
-                                            location={child}
-                                            counts={childCounts?.[child.id]}
-                                            selectable={selectionMode}
-                                            selected={selectedLocationIds.has(child.id)}
-                                            onToggle={toggleLocationSelection}
+                            {mobileView === 'locations' ? (
+                                <>
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={locationSearch}
+                                                onChange={event =>
+                                                    setLocationSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar locations…'
+                                            />
+                                        </InputGroup>
+                                        <MultiSelectFilter
+                                            className='w-36 shrink-0'
+                                            icon={FunnelIcon}
+                                            options={TYPE_OPTIONS}
+                                            value={typeFilter}
+                                            onChange={setTypeFilter}
+                                            placeholder='Todos los tipos'
+                                            searchPlaceholder='Buscar tipo'
+                                            countLabel={count => `${count} tipos`}
+                                            renderOption={option => (
+                                                <>
+                                                    <DynamicIcon icon={option.icon} />
+                                                    <span className='truncate'>
+                                                        {option.label}
+                                                    </span>
+                                                </>
+                                            )}
                                         />
-                                    ))}
-                                </div>
-                            )}
+                                    </div>
 
-                            {filteredItems.length > 0 && (
-                                <div className='flex flex-col gap-2'>
-                                    <h2 className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
-                                        Items
-                                    </h2>
-                                    {filteredItems.map(item => (
-                                        <ItemListRow
-                                            key={item.id}
-                                            item={item}
-                                            selectable={selectionMode}
-                                            selected={selectedItemIds.has(item.id)}
-                                            onToggle={toggleItemSelection}
-                                            {...getItemRatingCounts(item.id)}
+                                    {searchedChildren.length > 0 ? (
+                                        <div className='flex flex-col gap-2'>
+                                            {searchedChildren.map(child => (
+                                                <LocationListItem
+                                                    key={child.id}
+                                                    location={child}
+                                                    counts={childCounts?.[child.id]}
+                                                    selectable={selectionMode}
+                                                    selected={selectedLocationIds.has(child.id)}
+                                                    onToggle={toggleLocationSelection}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <Empty data-block='MobileLocationsEmpty'>
+                                            <EmptyHeader>
+                                                <EmptyMedia variant='icon'>
+                                                    <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                                                </EmptyMedia>
+                                                <EmptyTitle>
+                                                    {locationSearch.trim()
+                                                        ? 'Sin resultados'
+                                                        : 'Sin locations'}
+                                                </EmptyTitle>
+                                                <EmptyDescription>
+                                                    {locationSearch.trim()
+                                                        ? 'Nada coincide con tu búsqueda.'
+                                                        : 'Agrega una location para organizar lo que guardes aquí.'}
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                            {!locationSearch.trim() && (
+                                                <EmptyContent>
+                                                    <CreateLocationDialog
+                                                        workspaceId={location.workspace_id}
+                                                        parentId={id}
+                                                        title='Agregar dentro'
+                                                    >
+                                                        <Button size='sm' variant='outline'>
+                                                            <PlusIcon />
+                                                            <PackageIcon />
+                                                            Location
+                                                        </Button>
+                                                    </CreateLocationDialog>
+                                                </EmptyContent>
+                                            )}
+                                        </Empty>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={itemSearch}
+                                                onChange={event =>
+                                                    setItemSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar items…'
+                                            />
+                                        </InputGroup>
+                                        <SearchTagFilter
+                                            className='w-36 shrink-0'
+                                            workspaceId={location.workspace_id}
+                                            value={tagFilter}
+                                            onChange={setTagFilter}
                                         />
-                                    ))}
-                                </div>
+                                    </div>
+
+                                    {searchedItems.length > 0 ? (
+                                        <div className='flex flex-col gap-2'>
+                                            {searchedItems.map(item => (
+                                                <ItemListRow
+                                                    key={item.id}
+                                                    item={item}
+                                                    selectable={selectionMode}
+                                                    selected={selectedItemIds.has(item.id)}
+                                                    onToggle={toggleItemSelection}
+                                                    {...getItemRatingCounts(item.id)}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <Empty data-block='MobileItemsEmpty'>
+                                            <EmptyHeader>
+                                                <EmptyMedia variant='icon'>
+                                                    <DynamicIcon icon={FALLBACK_ITEM_ICON} />
+                                                </EmptyMedia>
+                                                <EmptyTitle>
+                                                    {itemSearch.trim() ? 'Sin resultados' : 'Sin items'}
+                                                </EmptyTitle>
+                                                <EmptyDescription>
+                                                    {itemSearch.trim()
+                                                        ? 'Nada coincide con tu búsqueda.'
+                                                        : 'Agrega un item para empezar a guardar cosas aquí.'}
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                            {!itemSearch.trim() && (
+                                                <EmptyContent>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='outline'
+                                                        render={<Link href={`/item/new?location=${id}`} />}
+                                                    >
+                                                        <PlusIcon />
+                                                        <LeafIcon />
+                                                        Item
+                                                    </Button>
+                                                </EmptyContent>
+                                            )}
+                                        </Empty>
+                                    )}
+                                </>
                             )}
                         </>
                     )}

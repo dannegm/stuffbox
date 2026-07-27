@@ -35,7 +35,7 @@ export const ItemListRow = ({
     const dragProps = draggable ? { ...attributes, ...listeners } : {};
 
     const className = cn(
-        'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
+        'relative flex w-full shrink-0 overflow-hidden items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
         draggable && 'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-40',

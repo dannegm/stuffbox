@@ -50,7 +50,7 @@ export const LocationListItem = ({
     const dragProps = draggable ? { ...attributes, ...listeners } : {};
 
     const className = cn(
-        'relative flex w-full overflow-hidden items-center gap-3 rounded-lg border bg-card p-3 text-left text-sm shadow-xs ring-1 ring-foreground/5 transition-colors hover:bg-muted',
+        'relative flex w-full shrink-0 overflow-hidden items-center gap-3 rounded-lg border bg-card p-3 text-left text-sm shadow-xs ring-1 ring-foreground/5 transition-colors hover:bg-muted',
         selected && 'border-primary bg-primary/5',
         draggable && 'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-40',
