@@ -117,6 +117,11 @@ export const PhotoCropDialog = ({ src, photo, open, onOpenChange, onSave }) => {
                 // with the cropper's own pan/zoom touch gestures) — just
                 // give it nearly the full screen instead.
                 className='max-h-[97dvh]'
+                // Drawer's content-level drag-to-dismiss (on by default,
+                // see src/ui/drawer.jsx) would otherwise hijack any pan/zoom
+                // drag on the cropper or the zoom slider that has a
+                // downward component — the handle still dismisses.
+                disableContentDrag
             >
                 <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Ajustar foto</ResponsiveDialogTitle>

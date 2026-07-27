@@ -58,6 +58,7 @@ export const ResponsiveDropdownMenuContent = ({
     alignOffset,
     side,
     sideOffset,
+    disableContentDrag,
     ...props
 }) => {
     const isMobile = useResponsiveDropdownMenuMobile();
@@ -66,6 +67,7 @@ export const ResponsiveDropdownMenuContent = ({
             <DrawerContent
                 data-slot='responsive-dropdown-menu-content'
                 className={cn(className, 'w-full gap-1 p-2')}
+                disableContentDrag={disableContentDrag}
                 {...props}
             />
         );

@@ -57,6 +57,7 @@ export const ResponsivePopoverContent = ({
     alignOffset,
     side,
     sideOffset,
+    disableContentDrag,
     ...props
 }) => {
     const isMobile = useResponsivePopoverMobile();
@@ -65,6 +66,7 @@ export const ResponsivePopoverContent = ({
             <DrawerContent
                 data-slot='responsive-popover-content'
                 className={cn('p-4', className, 'w-full')}
+                disableContentDrag={disableContentDrag}
                 {...props}
             />
         );

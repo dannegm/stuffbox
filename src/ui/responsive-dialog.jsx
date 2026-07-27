@@ -52,10 +52,18 @@ export const ResponsiveDialogTrigger = ({ render, ...props }) => {
     return <Trigger data-slot='responsive-dialog-trigger' render={render} {...props} />;
 };
 
-export const ResponsiveDialogContent = ({ ...props }) => {
+export const ResponsiveDialogContent = ({ disableContentDrag, ...props }) => {
     const isMobile = useResponsiveDialogMobile();
-    const Content = isMobile ? DrawerContent : DialogContent;
-    return <Content data-slot='responsive-dialog-content' {...props} />;
+    if (isMobile) {
+        return (
+            <DrawerContent
+                data-slot='responsive-dialog-content'
+                disableContentDrag={disableContentDrag}
+                {...props}
+            />
+        );
+    }
+    return <DialogContent data-slot='responsive-dialog-content' {...props} />;
 };
 
 export const ResponsiveDialogHeader = ({ ...props }) => {
