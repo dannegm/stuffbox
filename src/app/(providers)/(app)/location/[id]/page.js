@@ -55,6 +55,7 @@ import { itemsAtLocationQuery } from '@/queries/items';
 import { bulkTransferMutation, bulkPackMutation, bulkUnpackMutation } from '@/queries/bulk';
 import { moveQuery } from '@/queries/moves';
 import { entityRatingsQuery } from '@/queries/entity-ratings';
+import { RatingToggle } from '@/components/deck/rating-toggle';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LocationListItem } from '@/components/locations/location-list-item';
@@ -227,6 +228,12 @@ export default function LocationPage({ params }) {
             dislikeCount: ratingsByEntity[key]?.dislikes.length ?? 0,
         };
     };
+    // entityRatingsQuery already loads every rating in the workspace
+    // (locations included) — no need for a second entityRatingsForEntityQuery
+    // just for this location's own row.
+    const locationRatings = (ratings ?? []).filter(
+        rating => rating.entity_type === 'location' && rating.entity_id === id,
+    );
 
     const { mutate: transfer, isPending: isTransferring } = useMutation(
         transferLocationMutation({
@@ -673,6 +680,15 @@ export default function LocationPage({ params }) {
                                     <span className='hidden sm:inline'>Location</span>
                                 </Button>
                             </CreateLocationDialog>
+
+                            {location.is_item && (
+                                <RatingToggle
+                                    workspaceId={location.workspace_id}
+                                    entityType='location'
+                                    entityId={id}
+                                    ratings={locationRatings}
+                                />
+                            )}
 
                             <ResponsiveDropdownMenu>
                                 <ResponsiveDropdownMenuTrigger

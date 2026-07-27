@@ -33,6 +33,7 @@ import { itemTagsQuery, syncItemTagsMutation, tagsQuery } from '@/queries/tags';
 import { moveQuery } from '@/queries/moves';
 import { entityRatingsForEntityQuery } from '@/queries/entity-ratings';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
+import { RatingToggle } from '@/components/deck/rating-toggle';
 import { useItemPhotos } from '@/hooks/use-item-photos';
 import { deleteR2Objects } from '@/services/uploads';
 import { OptionDropdown } from '@/components/items/option-dropdown';
@@ -612,36 +613,46 @@ export default function ItemPage({ params }) {
                         </FieldGroup>
                     </div>
 
-                    {(likes.length > 0 || dislikes.length > 0) && (
-                        <div
-                            className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
-                            data-block='ItemRatingsCard'
-                        >
-                            <h2 className='mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
-                                Calificaciones
-                            </h2>
-                            <div className='flex flex-wrap gap-6'>
-                                {likes.length > 0 && (
-                                    <div className='flex flex-col gap-1.5'>
-                                        <span className='flex items-center gap-1 text-xs text-emerald-600 [&_svg]:size-3.5'>
-                                            <ThumbsUpIcon weight='fill' />
-                                            {likes.length}
-                                        </span>
-                                        <RatingAvatarStack ratings={likes} tone='like' />
-                                    </div>
-                                )}
-                                {dislikes.length > 0 && (
-                                    <div className='flex flex-col gap-1.5'>
-                                        <span className='flex items-center gap-1 text-xs text-rose-600 [&_svg]:size-3.5'>
-                                            <ThumbsDownIcon weight='fill' />
-                                            {dislikes.length}
-                                        </span>
-                                        <RatingAvatarStack ratings={dislikes} tone='dislike' />
-                                    </div>
-                                )}
+                    <div
+                        className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                        data-block='ItemRatingsCard'
+                    >
+                        <div className='flex flex-col gap-3'>
+                            <div className='flex items-center justify-between gap-2'>
+                                <h2 className='text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                                    Calificaciones
+                                </h2>
+                                <RatingToggle
+                                    workspaceId={location.workspace_id}
+                                    entityType='item'
+                                    entityId={id}
+                                    ratings={ratings ?? []}
+                                />
                             </div>
+                            {(likes.length > 0 || dislikes.length > 0) && (
+                                <div className='flex flex-wrap gap-6'>
+                                    {likes.length > 0 && (
+                                        <div className='flex flex-col gap-1.5'>
+                                            <span className='flex items-center gap-1 text-xs text-emerald-600 [&_svg]:size-3.5'>
+                                                <ThumbsUpIcon weight='fill' />
+                                                {likes.length}
+                                            </span>
+                                            <RatingAvatarStack ratings={likes} tone='like' />
+                                        </div>
+                                    )}
+                                    {dislikes.length > 0 && (
+                                        <div className='flex flex-col gap-1.5'>
+                                            <span className='flex items-center gap-1 text-xs text-rose-600 [&_svg]:size-3.5'>
+                                                <ThumbsDownIcon weight='fill' />
+                                                {dislikes.length}
+                                            </span>
+                                            <RatingAvatarStack ratings={dislikes} tone='dislike' />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
 
                     <div
                         className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
