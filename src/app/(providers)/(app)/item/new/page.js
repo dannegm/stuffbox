@@ -91,6 +91,7 @@ export default function NewItemPage() {
         setPurchasePrice('');
         setSentimentalValue(null);
         setTagIds([]);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const { mutate: syncTags } = useMutation(syncItemTagsMutation());
