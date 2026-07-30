@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useRef, useState } from 'react';
+import { useCopyToClipboard } from '@uidotdev/usehooks';
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react/ssr';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -32,6 +34,8 @@ export const ConfirmContext = createContext(null);
 export const ConfirmProvider = ({ children }) => {
     const [state, setState] = useState(null);
     const [typedValue, setTypedValue] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [, copyToClipboard] = useCopyToClipboard();
     const $resolve = useRef(null);
 
     const confirm = useCallback(
@@ -46,6 +50,7 @@ export const ConfirmProvider = ({ children }) => {
             new Promise(resolve => {
                 $resolve.current = resolve;
                 setTypedValue('');
+                setCopied(false);
                 setState({ title, description, confirmLabel, cancelLabel, variant, confirmText });
             }),
         [],
@@ -54,8 +59,15 @@ export const ConfirmProvider = ({ children }) => {
     const settle = result => {
         setState(null);
         setTypedValue('');
+        setCopied(false);
         $resolve.current?.(result);
         $resolve.current = null;
+    };
+
+    const handleCopyConfirmText = () => {
+        copyToClipboard(state.confirmText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const requiresTyping = !!state?.confirmText;
@@ -75,8 +87,36 @@ export const ConfirmProvider = ({ children }) => {
                     </AlertDialogHeader>
                     {requiresTyping && (
                         <Field>
-                            <FieldLabel htmlFor='confirm-type-to-confirm'>
-                                Escribe <strong>{state.confirmText}</strong> para confirmar
+                            {/* `block` overrides FieldLabel's own `flex w-fit`, which
+                                otherwise splits this sentence into separate flex
+                                items (with gaps between them) instead of letting it
+                                wrap as normal inline text when the name is long. */}
+                            <FieldLabel htmlFor='confirm-type-to-confirm' className='block w-full'>
+                                Escribe{' '}
+                                {/* A `span`, not a `button` — a button is an atomic
+                                    inline-block box that can't break internally, so
+                                    a long name would overflow instead of wrapping
+                                    like the rest of this sentence does. */}
+                                <span
+                                    role='button'
+                                    tabIndex={0}
+                                    onClick={handleCopyConfirmText}
+                                    onKeyDown={event => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            handleCopyConfirmText();
+                                        }
+                                    }}
+                                    className='cursor-pointer font-semibold underline decoration-dotted underline-offset-2 hover:text-primary'
+                                >
+                                    {state.confirmText}
+                                    {copied ? (
+                                        <CheckIcon className='ml-1 inline size-3.5 align-middle text-primary' />
+                                    ) : (
+                                        <CopyIcon className='ml-1 inline size-3.5 align-middle' />
+                                    )}
+                                </span>{' '}
+                                para confirmar
                             </FieldLabel>
                             <Input
                                 id='confirm-type-to-confirm'

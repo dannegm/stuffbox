@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useCopyToClipboard } from '@uidotdev/usehooks';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -144,13 +145,14 @@ const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
 // next to the link text.
 const InviteRow = ({ invite, onDelete, canDelete }) => {
     const [copied, setCopied] = useState(false);
+    const [, copyToClipboard] = useCopyToClipboard();
     const link = `${APP_URL}/invite/${invite.token}`;
     const isExpired = new Date(invite.expires_at) < new Date();
     const isExhausted = invite.uses_count >= invite.max_uses;
     const isActive = !isExpired && !isExhausted;
 
-    const handleCopy = async () => {
-        await navigator.clipboard.writeText(link);
+    const handleCopy = () => {
+        copyToClipboard(link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
