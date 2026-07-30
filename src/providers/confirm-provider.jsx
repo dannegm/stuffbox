@@ -65,6 +65,7 @@ export const ConfirmProvider = ({ children }) => {
     };
 
     const handleCopyConfirmText = () => {
+        if (!state?.confirmText) return;
         copyToClipboard(state.confirmText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -72,7 +73,7 @@ export const ConfirmProvider = ({ children }) => {
 
     const requiresTyping = !!state?.confirmText;
     const isConfirmDisabled =
-        requiresTyping && typedValue.trim().toLowerCase() !== state.confirmText.trim().toLowerCase();
+        requiresTyping && typedValue.trim().toLowerCase() !== state?.confirmText.trim().toLowerCase();
 
     return (
         <ConfirmContext.Provider value={confirm}>
