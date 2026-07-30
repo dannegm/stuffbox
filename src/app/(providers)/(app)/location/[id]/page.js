@@ -180,9 +180,9 @@ export default function LocationPage({ params }) {
     const [itemSearch, setItemSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState([]);
     const [tagFilter, setTagFilter] = useState([]);
-    const [mobileView, setMobileView] = useQueryState(
+    const [mobileViewParam, setMobileView] = useQueryState(
         'view',
-        parseAsStringEnum(['locations', 'items']).withDefault('items'),
+        parseAsStringEnum(['locations', 'items']),
     );
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
@@ -470,6 +470,9 @@ export default function LocationPage({ params }) {
     }
 
     const isEmpty = children.length === 0 && items.length === 0;
+    // Default to the locations tab, unless there are none — then default to
+    // items. An explicit tap on either tab (mobileViewParam set) always wins.
+    const mobileView = mobileViewParam ?? (children.length > 0 ? 'locations' : 'items');
     // Only the workspace owner can delete a house (a root location, no
     // parent) — collaborators can still delete anything nested inside one.
     const isOwner = workspace.owner_id === user.id;
@@ -990,8 +993,8 @@ export default function LocationPage({ params }) {
                         <>
                             <Tabs value={mobileView} onValueChange={setMobileView}>
                                 <TabsList className='w-full'>
-                                    <TabsTrigger value='locations'>Locations</TabsTrigger>
-                                    <TabsTrigger value='items'>Items</TabsTrigger>
+                                    <TabsTrigger value='locations'>Ubicaciones</TabsTrigger>
+                                    <TabsTrigger value='items'>Artículos</TabsTrigger>
                                 </TabsList>
                             </Tabs>
 
