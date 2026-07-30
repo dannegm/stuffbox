@@ -16,10 +16,26 @@ export const tagsQuery = (workspaceId, opts = {}) => ({
 });
 
 export const createTagMutation = (opts = {}) => ({
-    mutationFn: async ({ workspaceId, name, color, icon = null, sku = null }) => {
+    mutationFn: async ({
+        workspaceId,
+        name,
+        color,
+        icon = null,
+        sku = null,
+        searchTerms = [],
+        relatedIcons = [],
+    }) => {
         const { data, error } = await supabase()
             .from('tags')
-            .insert({ workspace_id: workspaceId, name, color, icon, sku })
+            .insert({
+                workspace_id: workspaceId,
+                name,
+                color,
+                icon,
+                sku,
+                search_terms: searchTerms,
+                related_icons: relatedIcons,
+            })
             .select()
             .single();
         if (error) throw error;
@@ -29,10 +45,25 @@ export const createTagMutation = (opts = {}) => ({
 });
 
 export const updateTagMutation = (opts = {}) => ({
-    mutationFn: async ({ id, name, color, icon = null, sku = null }) => {
+    mutationFn: async ({
+        id,
+        name,
+        color,
+        icon = null,
+        sku = null,
+        searchTerms = [],
+        relatedIcons = [],
+    }) => {
         const { data, error } = await supabase()
             .from('tags')
-            .update({ name, color, icon, sku })
+            .update({
+                name,
+                color,
+                icon,
+                sku,
+                search_terms: searchTerms,
+                related_icons: relatedIcons,
+            })
             .eq('id', id)
             .select()
             .single();

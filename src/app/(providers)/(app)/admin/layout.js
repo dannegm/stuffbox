@@ -10,6 +10,7 @@ import {
     UsersIcon,
     GearIcon,
     TagIcon,
+    SparkleIcon,
     ArrowLeftIcon,
 } from '@phosphor-icons/react/ssr';
 import { useIsAdmin } from '@/hooks/use-admin';
@@ -136,6 +137,12 @@ export default function AdminLayout({ children }) {
                     icon={TagIcon}
                     label='Etiquetas'
                     active={pathname.startsWith('/admin/labels-preview')}
+                />
+                <NavTab
+                    href='/admin/suggested-icons'
+                    icon={SparkleIcon}
+                    label='Íconos sugeridos'
+                    active={pathname.startsWith('/admin/suggested-icons')}
                 />
             </div>
 

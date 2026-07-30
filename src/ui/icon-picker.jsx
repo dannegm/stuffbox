@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsivePopover,
@@ -17,14 +18,17 @@ import { HUGE_ICONS } from '@/constants/huge-icons';
 import { LUCIDE_ICONS } from '@/constants/lucide-icons';
 import { LUCIDE_LAB_ICONS } from '@/constants/lucide-lab-icons';
 import { cache } from '@/services/cache';
+import { appSettingQuery, SUGGESTED_ICONS_KEY } from '@/queries/app-settings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Every library DynamicIcon can resolve, searchable in one place. Ported
 // from pinia's lucide-only icon-picker.jsx — huge/phosphor have no upstream
 // tag metadata (unlike lucide-static's tags.json), so search on those two
-// falls back to matching just the icon name.
-const LIBRARIES = [
+// falls back to matching just the icon name. Exported so the admin
+// suggested-icons multi-select (src/components/admin/icon-multi-select.jsx)
+// can reuse the exact same library list and match logic.
+export const LIBRARIES = [
     { value: 'phosphor', label: 'Phosphor', icons: PHOSPHOR_ICONS },
     { value: 'huge', label: 'Hugeicons', icons: HUGE_ICONS },
     { value: 'lucide', label: 'Lucide', icons: LUCIDE_ICONS },
@@ -33,7 +37,7 @@ const LIBRARIES = [
 
 const MAX_RESULTS = 120;
 
-const matchesQuery = (icon, q) =>
+export const matchesQuery = (icon, q) =>
     icon.name.toLowerCase().includes(q) || icon.tags.some(tag => tag.includes(q));
 
 const iconKey = icon => `${icon.library}:${icon.name}`;
@@ -140,6 +144,12 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
     // below it, so hiding it on query would still shrink the drawer.
     const showSuggestions = isMobile || !query.trim();
 
+    // Admin-curated list (managed from /admin/suggested-icons), shared across
+    // every IconPicker instance regardless of context.
+    const { data: curatedIcons = [] } = useQuery(
+        appSettingQuery(SUGGESTED_ICONS_KEY, { enabled: open }),
+    );
+
     // Re-read on every open (not just on mount) since usage recorded by
     // other IconPicker instances on the same page — or an earlier open of
     // this same one — should show up without a full remount.
@@ -155,16 +165,20 @@ export const IconPicker = ({ value, onChange, children, suggestedIcons = [], ali
 
     const uniqueSuggestions = useMemo(() => {
         const seen = new Set();
-        return [...suggestedIcons, ...frequentIcons].filter(icon => {
+        return [...suggestedIcons, ...(curatedIcons ?? []), ...frequentIcons].filter(icon => {
             const key = iconKey(icon);
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
         });
-    }, [suggestedIcons, frequentIcons]);
+    }, [suggestedIcons, curatedIcons, frequentIcons]);
 
     const suggestionsLabel =
-        suggestedIcons.length > 0 ? 'Sugeridos por tus tags' : 'Usados frecuentemente';
+        suggestedIcons.length > 0
+            ? 'Sugeridos por tus tags'
+            : curatedIcons?.length > 0
+              ? 'Sugeridos'
+              : 'Usados frecuentemente';
 
     return (
         <ResponsivePopover open={open} onOpenChange={setOpen}>

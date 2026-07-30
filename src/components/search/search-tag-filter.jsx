@@ -18,6 +18,7 @@ import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
+import { fuzzySearch } from '@/helpers/fuzzy-search';
 
 // Standalone from TagPicker (src/components/items/tag-picker.jsx) on purpose —
 // that one is the item-tag *editor* (always wraps every selected tag as a
@@ -35,10 +36,10 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
     const isMobile = useIsMobile();
     const { data: tags = [] } = useQuery(tagsQuery(workspaceId, { enabled: !!workspaceId }));
 
-    const results = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        return q ? tags.filter(tag => tag.name.toLowerCase().includes(q)) : tags;
-    }, [tags, query]);
+    const results = useMemo(
+        () => fuzzySearch(tags, query, ['name', 'search_terms']),
+        [tags, query],
+    );
 
     const selectedTags = tags.filter(tag => value.includes(tag.id));
     const hasSelection = value.length > 0;

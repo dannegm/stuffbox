@@ -314,7 +314,7 @@ export default function ItemPage({ params }) {
     const previewIcon = icon ?? FALLBACK_ITEM_ICON;
     const suggestedIcons = (tags ?? [])
         .filter(tag => tagIds.includes(tag.id))
-        .map(tag => tag.icon ?? FALLBACK_TAG_ICON);
+        .flatMap(tag => [tag.icon ?? FALLBACK_TAG_ICON, ...(tag.related_icons ?? [])]);
 
     return (
         <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>

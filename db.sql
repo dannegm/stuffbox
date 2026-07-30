@@ -202,6 +202,8 @@ create table stuffbox.tags (
   color       text not null,
   icon        jsonb,
   sku         text,
+  search_terms text[] not null default '{}',  -- fuzzy-search synonyms, e.g. "instrumentos" -> ["musica"]
+  related_icons jsonb not null default '[]'::jsonb,  -- curated [{library,name}] suggested alongside this tag's own icon
   created_at  timestamptz not null default now()
 );
 

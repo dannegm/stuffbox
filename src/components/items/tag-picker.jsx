@@ -16,6 +16,7 @@ import { tagsQuery } from '@/queries/tags';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
+import { fuzzySearch } from '@/helpers/fuzzy-search';
 
 // Multi-select over pre-created tags only — tags are managed as their own
 // entity from /tags (name/color/icon, full CRUD), not created ad hoc here.
@@ -30,8 +31,7 @@ export const TagPicker = ({ workspaceId, value = [], onChange }) => {
         onChange(value.includes(tagId) ? value.filter(id => id !== tagId) : [...value, tagId]);
     };
 
-    const q = query.trim().toLowerCase();
-    const results = q ? tags.filter(tag => tag.name.toLowerCase().includes(q)) : tags;
+    const results = fuzzySearch(tags, query, ['name', 'search_terms']);
     const selectedTags = tags.filter(tag => value.includes(tag.id));
 
     return (

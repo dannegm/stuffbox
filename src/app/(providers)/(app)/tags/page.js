@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Fuse from 'fuse.js';
 import {
     PlusIcon,
     PencilSimpleIcon,
@@ -16,6 +15,7 @@ import { useConfirm } from '@/hooks/use-confirm';
 import { workspacesQuery } from '@/queries/workspaces';
 import { tagsQuery, deleteTagMutation } from '@/queries/tags';
 import { TagDialog } from '@/components/tags/tag-dialog';
+import { fuzzySearch } from '@/helpers/fuzzy-search';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
@@ -92,8 +92,7 @@ export default function TagsPage() {
         return <Loading />;
     }
 
-    const fuse = new Fuse(tags, { keys: ['name'], threshold: 0.3 });
-    const filteredTags = search.trim() ? fuse.search(search.trim()).map(result => result.item) : tags;
+    const filteredTags = fuzzySearch(tags, search, ['name', 'search_terms']);
 
     return (
         <div

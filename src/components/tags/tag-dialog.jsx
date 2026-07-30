@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { XIcon, CaretDownIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -9,12 +10,18 @@ import {
     ResponsiveDialogHeader,
     ResponsiveDialogTitle,
 } from '@/ui/responsive-dialog';
-import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from '@/ui/responsive-popover';
+import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { ColorPicker } from '@/ui/color-picker';
 import { IconPicker } from '@/ui/icon-picker';
+import { IconMultiSelect } from '@/ui/icon-multi-select';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { createTagMutation, updateTagMutation } from '@/queries/tags';
@@ -31,6 +38,9 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
     const [color, setColor] = useState(DEFAULT_COLOR);
     const [icon, setIcon] = useState(null);
     const [sku, setSku] = useState('');
+    const [searchTerms, setSearchTerms] = useState([]);
+    const [termInput, setTermInput] = useState('');
+    const [relatedIcons, setRelatedIcons] = useState([]);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -39,6 +49,9 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
         setColor(tag?.color ?? DEFAULT_COLOR);
         setIcon(tag?.icon ?? null);
         setSku(tag?.sku ?? '');
+        setSearchTerms(tag?.search_terms ?? []);
+        setTermInput('');
+        setRelatedIcons(tag?.related_icons ?? []);
         setError(null);
     }, [open, tag]);
 
@@ -66,14 +79,49 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
 
     const isPending = isCreating || isUpdating;
 
+    const handleAddTerm = () => {
+        const value = termInput.trim();
+        if (!value) return;
+        if (!searchTerms.some(term => term.toLowerCase() === value.toLowerCase())) {
+            setSearchTerms([...searchTerms, value]);
+        }
+        setTermInput('');
+    };
+
+    const handleTermInputKeyDown = event => {
+        if (event.key !== 'Enter' && event.key !== ',') return;
+        event.preventDefault();
+        handleAddTerm();
+    };
+
+    const handleRemoveTerm = term => {
+        setSearchTerms(searchTerms.filter(existing => existing !== term));
+    };
+
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
         const sanitizedSku = sku.trim() || null;
         if (tag) {
-            update({ id: tag.id, name: name.trim(), color, icon, sku: sanitizedSku });
+            update({
+                id: tag.id,
+                name: name.trim(),
+                color,
+                icon,
+                sku: sanitizedSku,
+                searchTerms,
+                relatedIcons,
+            });
         } else {
-            create({ workspaceId, name: name.trim(), color, icon, sku: sanitizedSku });
+            create({
+                workspaceId,
+                name: name.trim(),
+                color,
+                icon,
+                sku: sanitizedSku,
+                searchTerms,
+                relatedIcons,
+            });
         }
     };
 
@@ -130,6 +178,81 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                 onChange={event => setSku(event.target.value)}
                                 placeholder='Opcional'
                             />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor='tag-search-term'>Términos de búsqueda</FieldLabel>
+                            <FieldDescription>
+                                Este tag también aparecerá si buscas por estos términos — ej. el
+                                tag "Instrumentos" con el término "música".
+                            </FieldDescription>
+                            <Input
+                                id='tag-search-term'
+                                value={termInput}
+                                onChange={event => setTermInput(event.target.value)}
+                                onKeyDown={handleTermInputKeyDown}
+                                onBlur={handleAddTerm}
+                                placeholder='Escribe y presiona Enter'
+                            />
+                            {searchTerms.length > 0 && (
+                                <div className='flex flex-wrap gap-1.5 pt-1'>
+                                    {searchTerms.map(term => (
+                                        <span
+                                            key={term}
+                                            className='flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground'
+                                        >
+                                            {term}
+                                            <button
+                                                type='button'
+                                                aria-label={`Quitar "${term}"`}
+                                                onClick={() => handleRemoveTerm(term)}
+                                                className='rounded-full hover:text-foreground [&_svg]:size-3'
+                                            >
+                                                <XIcon />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Íconos relacionados</FieldLabel>
+                            <FieldDescription>
+                                Se sugieren junto con el ícono del tag cuando eliges el ícono de un
+                                item que tenga este tag.
+                            </FieldDescription>
+                            <ResponsivePopover>
+                                <ResponsivePopoverTrigger
+                                    render={
+                                        <button
+                                            type='button'
+                                            className='flex min-h-9 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-left text-sm shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted'
+                                        />
+                                    }
+                                >
+                                    {relatedIcons.length === 0 ? (
+                                        <span className='text-muted-foreground'>
+                                            Elegir íconos relacionados
+                                        </span>
+                                    ) : (
+                                        <span className='flex flex-1 flex-wrap items-center gap-1'>
+                                            {relatedIcons.map(relatedIcon => (
+                                                <span
+                                                    key={`${relatedIcon.library}:${relatedIcon.name}`}
+                                                    className='flex size-6 items-center justify-center rounded-md bg-muted [&_svg]:size-3.5'
+                                                >
+                                                    <DynamicIcon icon={relatedIcon} />
+                                                </span>
+                                            ))}
+                                        </span>
+                                    )}
+                                    <CaretDownIcon className='ml-auto size-3.5 shrink-0 text-muted-foreground' />
+                                </ResponsivePopoverTrigger>
+                                <ResponsivePopoverContent className='w-96 gap-2 p-2' align='start'>
+                                    <IconMultiSelect value={relatedIcons} onChange={setRelatedIcons} />
+                                </ResponsivePopoverContent>
+                            </ResponsivePopover>
                         </Field>
 
                         <div className='flex items-center gap-2 rounded-lg border border-dashed bg-muted/30 p-3'>
