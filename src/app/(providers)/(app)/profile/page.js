@@ -11,6 +11,7 @@ import { profileQuery, updateProfileMutation } from '@/queries/profiles';
 import { generateName } from '@/helpers/identity';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { IdentityTag } from '@/components/auth/identity-tag';
+import { AiIntegrationSection } from '@/components/auth/ai-integration-section';
 import { Field, FieldGroup, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
@@ -129,6 +130,10 @@ export default function ProfilePage() {
 
             <SectionCard label='Preferencias'>
                 <ThemeToggle />
+            </SectionCard>
+
+            <SectionCard label='Inteligencia artificial'>
+                <AiIntegrationSection />
             </SectionCard>
 
             <SectionCard
