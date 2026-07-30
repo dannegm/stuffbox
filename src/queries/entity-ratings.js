@@ -70,12 +70,20 @@ export const deckQueueQuery = (workspaceId, opts = {}) => ({
             entityId: item.id,
             containerId: item.location_id,
         }));
+        // Direct item counts per location, tallied from itemsRes (already
+        // fetched for the deck's own item entities) instead of a separate
+        // count query — mirrors locationCountsQuery's "tally in JS" approach.
+        const itemCounts = {};
+        for (const item of itemsRes.data) {
+            itemCounts[item.location_id] = (itemCounts[item.location_id] ?? 0) + 1;
+        }
         const locations = locationsRes.data.map(location => ({
             ...location,
             entityType: 'location',
             entityId: location.id,
             containerId: location.parent_id,
             condition: null,
+            itemsCount: itemCounts[location.id] ?? 0,
         }));
         return [...items, ...locations];
     },

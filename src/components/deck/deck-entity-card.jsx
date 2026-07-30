@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { HeartIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
+import { HeartIcon, LeafIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { DeckItem } from '@/ui/deck';
 import { DeckCardPhotos } from '@/components/deck/deck-card-photos';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
@@ -66,9 +66,17 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
                 </div>
             </div>
             <div className='flex flex-1 flex-col gap-2 px-4 pt-1 pb-4'>
-                <h2 className='truncate font-heading text-lg font-semibold tracking-tight'>
-                    {entity.name}
-                </h2>
+                <div className='flex items-center gap-2'>
+                    <h2 className='truncate font-heading text-lg font-semibold tracking-tight'>
+                        {entity.name}
+                    </h2>
+                    {entity.itemsCount > 1 && (
+                        <span className='flex shrink-0 items-center gap-1 text-xs text-muted-foreground'>
+                            <LeafIcon className='size-3.5' />
+                            {entity.itemsCount}
+                        </span>
+                    )}
+                </div>
                 <div className='flex flex-wrap items-center gap-2'>
                     {entity.sentimental_value > 0 && (
                         <span className='inline-flex items-center gap-1 text-sm text-destructive'>
