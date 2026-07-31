@@ -58,19 +58,50 @@ export const createMoveMutation = (opts = {}) => ({
 });
 
 export const updateMoveMutation = (opts = {}) => ({
-    mutationFn: async ({ id, name, status, routeType }) => {
+    mutationFn: async ({
+        id,
+        name,
+        status,
+        routeType,
+        cost,
+        startedAt,
+        estimatedCompletionAt,
+        completedAt,
+    }) => {
+        // Only provided keys are written — lets cost-only/dates-only edits
+        // share this mutation without clobbering the other move fields.
+        const payload = {};
+        if (name !== undefined) payload.name = name;
+        if (status !== undefined) payload.status = status;
+        if (routeType !== undefined) payload.route_type = routeType;
+        if (cost !== undefined) payload.cost = cost;
+        if (startedAt !== undefined) payload.started_at = startedAt;
+        if (estimatedCompletionAt !== undefined) payload.estimated_completion_at = estimatedCompletionAt;
+        if (completedAt !== undefined) payload.completed_at = completedAt;
+
         // Same shape as moveQuery (origin/destination embedded, not just their
         // ids) — the caller replaces the cached move with this result, and a
         // narrower select would wipe out origin/destination, breaking hasRoute.
         const { data, error } = await supabase()
             .from('moves')
-            .update({ name, status, route_type: routeType })
+            .update(payload)
             .eq('id', id)
             .select('*, origin:origin_location_id(*), destination:destination_location_id(*)')
             .single();
         if (error) throw error;
         return data;
     },
+    ...opts,
+});
+
+export const moveTotalValueQuery = (moveId, opts = {}) => ({
+    queryKey: ['move-total-value', moveId],
+    queryFn: async () => {
+        const { data, error } = await supabase().rpc('move_total_value', { p_move_id: moveId });
+        if (error) throw error;
+        return data;
+    },
+    enabled: !!moveId,
     ...opts,
 });
 
@@ -93,7 +124,9 @@ export const packedInMoveQuery = (moveId, opts = {}) => ({
         const [itemsRes, locationsRes] = await Promise.all([
             supabase()
                 .from('items')
-                .select('id, name, quantity, icon, is_fragile, storage_orientation')
+                .select(
+                    'id, name, quantity, icon, is_fragile, storage_orientation, item_tags(tags(id, icon, name))',
+                )
                 .eq('active_move_id', moveId)
                 .order('name'),
             supabase()

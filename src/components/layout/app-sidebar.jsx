@@ -26,23 +26,24 @@ import {
 import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher';
 import { SidebarSearch } from '@/components/layout/sidebar-search';
 import { HousesNav } from '@/components/layout/houses-nav';
+import { MovesNavItem } from '@/components/layout/moves-nav-item';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
 import { workspacesQuery } from '@/queries/workspaces';
 import { useIsAdmin } from '@/hooks/use-admin';
 import { cn } from '@/helpers/utils';
 
-// `accent: 'flourish'` is reserved for Mudanzas — the one nav item where the
-// warm brand accent earns its keep standing apart from the rest, which stay
-// on the neutral violet (--sidebar-primary) active tint.
+// Rendered separately from NAV_ITEMS via MovesNavItem — it's the one row
+// that expands in place into the workspace's individual moves, so it needs
+// the active workspace passed in, unlike the rest of these plain links.
+const MOVES_ITEM = {
+    href: '/moves',
+    label: 'Mudanzas',
+    icon: TruckIcon,
+    match: /^\/(moves|move)(\/|$)/,
+};
+
 const NAV_ITEMS = [
-    {
-        href: '/moves',
-        label: 'Mudanzas',
-        icon: TruckIcon,
-        match: /^\/moves(\/|$)/,
-        accent: 'flourish',
-    },
     { href: '/tags', label: 'Tags', icon: TagIcon, match: /^\/tags(\/|$)/ },
     { href: '/deck', label: 'Cards', icon: CardsThreeIcon, match: /^\/deck(\/|$)/ },
     {
@@ -57,15 +58,12 @@ const NAV_ITEMS = [
 // cleanly in collapsed (`collapsible="icon"`) mode, where the button itself
 // shrinks to a bare size-8 square and a bigger fixed-size wrapper would
 // overflow it.
-const NavIcon = ({ icon: Icon, active, accent }) => (
+const NavIcon = ({ icon: Icon, active }) => (
     <span
         className={cn(
             'flex size-6 shrink-0 items-center justify-center rounded-md transition-colors',
             'group-data-[collapsible=icon]:size-4 group-data-[collapsible=icon]:rounded-none group-data-[collapsible=icon]:bg-transparent',
-            {
-                'bg-flourish/15 text-flourish': active && accent === 'flourish',
-                'bg-sidebar-primary/12 text-sidebar-primary': active && accent !== 'flourish',
-            },
+            { 'bg-sidebar-primary/12 text-sidebar-primary': active },
         )}
     >
         <Icon />
@@ -114,6 +112,11 @@ export const AppSidebar = () => {
                         <SidebarSeparator />
                         <SidebarGroup>
                             <SidebarMenu>
+                                <MovesNavItem
+                                    {...MOVES_ITEM}
+                                    isActive={MOVES_ITEM.match.test(pathname)}
+                                    workspace={activeWorkspace}
+                                />
                                 {[...NAV_ITEMS, settingsItem, adminItem].filter(Boolean).map(item => {
                                     const active = item.match.test(pathname);
                                     return (
@@ -123,11 +126,7 @@ export const AppSidebar = () => {
                                                 isActive={active}
                                                 render={<Link href={item.href} />}
                                             >
-                                                <NavIcon
-                                                    icon={item.icon}
-                                                    active={active}
-                                                    accent={item.accent}
-                                                />
+                                                <NavIcon icon={item.icon} active={active} />
                                                 <span>{item.label}</span>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>

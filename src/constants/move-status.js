@@ -8,3 +8,11 @@ export const MOVE_STATUSES = [
 
 export const getMoveStatusLabel = status =>
     MOVE_STATUSES.find(option => option.value === status)?.label ?? status;
+
+// Shared with the moves list page and the sidebar's MovesNavItem — one
+// status color language everywhere a move shows up as a compact row.
+export const MOVE_STATUS_DOT = {
+    planning: 'bg-muted-foreground',
+    in_transit: 'bg-flourish',
+    done: 'bg-emerald-500',
+};

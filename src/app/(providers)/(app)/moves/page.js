@@ -9,18 +9,12 @@ import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { movesQuery } from '@/queries/moves';
 import { MoveDialog } from '@/components/moves/move-dialog';
-import { getMoveStatusLabel } from '@/constants/move-status';
+import { getMoveStatusLabel, MOVE_STATUS_DOT } from '@/constants/move-status';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { cn } from '@/helpers/utils';
-
-const STATUS_DOT = {
-    planning: 'bg-muted-foreground',
-    in_transit: 'bg-flourish',
-    done: 'bg-emerald-500',
-};
 
 const Loading = () => (
     <div
@@ -112,7 +106,7 @@ export default function MovesPage() {
                                         aria-hidden
                                         className={cn(
                                             'size-1.5 shrink-0 rounded-full',
-                                            STATUS_DOT[move.status],
+                                            MOVE_STATUS_DOT[move.status],
                                         )}
                                     />
                                     {move.origin?.name} → {move.destination?.name} ·{' '}

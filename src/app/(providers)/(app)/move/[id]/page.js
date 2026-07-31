@@ -4,6 +4,7 @@ import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Fuse from 'fuse.js';
 import {
     TrashIcon,
     ArrowsLeftRightIcon,
@@ -12,10 +13,14 @@ import {
     ArrowRightIcon,
     TruckIcon,
     AirplaneIcon,
+    DotsThreeVerticalIcon,
+    PencilSimpleIcon,
+    MagnifyingGlassIcon,
+    FunnelIcon,
 } from '@phosphor-icons/react/ssr';
-import { BoxesIcon } from 'lucide-react';
 import {
     moveQuery,
+    moveTotalValueQuery,
     updateMoveMutation,
     deleteMoveMutation,
     packedInMoveQuery,
@@ -23,18 +28,41 @@ import {
 import { unpackItemMutation } from '@/queries/items';
 import { unpackLocationMutation } from '@/queries/locations';
 import { MoveRouteMap } from '@/components/moves/move-route-map';
+import { MoveSummary } from '@/components/moves/move-summary';
+import { MoveEditDialog } from '@/components/moves/move-edit-dialog';
+import { MoveDatesDialog } from '@/components/moves/move-dates-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
+import { MultiSelectFilter } from '@/components/search/multi-select-filter';
+import { SearchTagFilter } from '@/components/search/search-tag-filter';
 import { SelectSearch } from '@/ui/select-search';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { getItemIcon } from '@/helpers/item';
 import { useConfirm } from '@/hooks/use-confirm';
 import { Button } from '@/ui/button';
-import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
-import { Stat } from '@/ui/stat';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+import {
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuTrigger,
+} from '@/ui/responsive-dropdown-menu';
+import {
+    DEFAULT_LOCATION_ICONS,
+    FALLBACK_LOCATION_ICON,
+    LOCATION_TYPE_PRESETS,
+} from '@/constants/location-icons';
 import { MOVE_STATUSES } from '@/constants/move-status';
+
+// Same shortlist as LocationPage/SearchFilters — locations.type is free
+// text, this is a curated shortlist, not an enum.
+const TYPE_OPTIONS = LOCATION_TYPE_PRESETS.map(type => ({
+    value: type,
+    label: type.charAt(0).toUpperCase() + type.slice(1),
+    icon: DEFAULT_LOCATION_ICONS[type] ?? FALLBACK_LOCATION_ICON,
+}));
 
 const Loading = () => (
     <div
@@ -56,9 +84,18 @@ export default function MovePage({ params }) {
     const queryClient = useQueryClient();
     const confirm = useConfirm();
     const [unpackTarget, setUnpackTarget] = useState(null);
+    const [editOpen, setEditOpen] = useState(false);
+    const [datesOpen, setDatesOpen] = useState(false);
+    const [locationSearch, setLocationSearch] = useState('');
+    const [itemSearch, setItemSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState([]);
+    const [tagFilter, setTagFilter] = useState([]);
 
     const { data: move, isPending: isMovePending } = useQuery(moveQuery(id));
     const { data: packed, isPending: isPackedPending } = useQuery(packedInMoveQuery(id));
+    const { data: totalValue, isPending: isTotalValuePending } = useQuery(
+        moveTotalValueQuery(id, { enabled: !!move }),
+    );
 
     const invalidatePacked = () => queryClient.invalidateQueries({ queryKey: ['move-packed', id] });
 
@@ -82,8 +119,21 @@ export default function MovePage({ params }) {
         unpackLocationMutation({ onSuccess: invalidatePacked }),
     );
 
-    const handleStatusChange = status =>
-        updateMove({ id, name: move?.name, status, routeType: move?.route_type });
+    // Entering in_transit for the first time asks for the start/deadline
+    // dates via MoveDatesDialog (which sets status itself on submit) — once
+    // started_at exists, later re-entries skip the prompt and keep the
+    // original dates. Completing a move auto-stamps completed_at with today.
+    const handleStatusChange = status => {
+        if (status === 'in_transit' && !move?.started_at) {
+            setDatesOpen(true);
+            return;
+        }
+        if (status === 'done') {
+            updateMove({ id, status, completedAt: new Date().toISOString().slice(0, 10) });
+            return;
+        }
+        updateMove({ id, status });
+    };
 
     const handleDelete = async () => {
         const ok = await confirm({
@@ -113,6 +163,29 @@ export default function MovePage({ params }) {
     const hasRoute = move.origin?.lat != null && move.destination?.lat != null;
     const isEmpty = packed.items.length === 0 && packed.locations.length === 0;
 
+    // Filters what's already loaded via Fuse, no refetch — same shape as
+    // LocationPage's search/type/tag filters (types apply to locations only,
+    // tags apply to items only).
+    const filteredLocations = packed.locations.filter(
+        location => typeFilter.length === 0 || typeFilter.includes(location.type),
+    );
+    const filteredItems = packed.items.filter(
+        item =>
+            tagFilter.length === 0 ||
+            item.item_tags.some(itemTag => tagFilter.includes(itemTag.tags.id)),
+    );
+    const locationFuse = new Fuse(filteredLocations, { keys: ['name', 'type'], threshold: 0.3 });
+    const itemFuse = new Fuse(filteredItems, {
+        keys: ['name', 'item_tags.tags.name'],
+        threshold: 0.3,
+    });
+    const searchedLocations = locationSearch.trim()
+        ? locationFuse.search(locationSearch.trim()).map(result => result.item)
+        : filteredLocations;
+    const searchedItems = itemSearch.trim()
+        ? itemFuse.search(itemSearch.trim()).map(result => result.item)
+        : filteredItems;
+
     return (
         <div
             className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
@@ -138,16 +211,6 @@ export default function MovePage({ params }) {
                             </p>
                         </div>
                     </div>
-
-                    {!isEmpty && (
-                        <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2'>
-                            <Stat
-                                icon={BoxesIcon}
-                                value={packed.locations.length + packed.items.length}
-                                label='empacado'
-                            />
-                        </div>
-                    )}
                 </div>
 
                 <div className='h-1 bg-muted/50' />
@@ -174,16 +237,39 @@ export default function MovePage({ params }) {
 
                     <div className='flex flex-1' />
 
-                    <Button
-                        size='icon-sm'
-                        variant='outline'
-                        disabled={isDeleting}
-                        onClick={handleDelete}
-                    >
-                        {isDeleting ? <Spinner /> : <TrashIcon />}
-                    </Button>
+                    <ResponsiveDropdownMenu>
+                        <ResponsiveDropdownMenuTrigger
+                            render={<Button size='icon-sm' variant='outline' />}
+                        >
+                            <DotsThreeVerticalIcon />
+                        </ResponsiveDropdownMenuTrigger>
+                        <ResponsiveDropdownMenuContent align='end'>
+                            <ResponsiveDropdownMenuItem onClick={() => setEditOpen(true)}>
+                                <PencilSimpleIcon />
+                                Editar
+                            </ResponsiveDropdownMenuItem>
+                            <ResponsiveDropdownMenuItem
+                                variant='destructive'
+                                disabled={isDeleting}
+                                onClick={handleDelete}
+                            >
+                                <TrashIcon />
+                                Eliminar
+                            </ResponsiveDropdownMenuItem>
+                        </ResponsiveDropdownMenuContent>
+                    </ResponsiveDropdownMenu>
                 </div>
             </div>
+
+            <MoveSummary
+                move={move}
+                packed={packed}
+                totalValue={totalValue}
+                isTotalValuePending={isTotalValuePending}
+            />
+
+            <MoveEditDialog move={move} open={editOpen} onOpenChange={setEditOpen} />
+            <MoveDatesDialog move={move} open={datesOpen} onOpenChange={setDatesOpen} />
 
             {hasRoute ? (
                 <MoveRouteMap
@@ -220,61 +306,133 @@ export default function MovePage({ params }) {
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <div className='flex flex-col gap-2'>
-                    {packed.locations.map(location => (
-                        <div
-                            key={location.id}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                        >
-                            <Link
-                                href={`/location/${location.id}`}
-                                className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                            >
-                                <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                    <DynamicIcon icon={getLocationIcon(location)} />
-                                </span>
-                                <span className='min-w-0 flex-1 truncate font-medium'>
-                                    {location.name}
-                                </span>
-                            </Link>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                onClick={() =>
-                                    setUnpackTarget({ type: 'location', id: location.id })
-                                }
-                            >
-                                <ArrowsLeftRightIcon data-icon='inline-start' />
-                                Desempacar
-                            </Button>
+                <div className='flex flex-col gap-4'>
+                    {packed.locations.length > 0 && (
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center gap-2'>
+                                <InputGroup className='flex-1'>
+                                    <InputGroupAddon>
+                                        <MagnifyingGlassIcon />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        value={locationSearch}
+                                        onChange={event => setLocationSearch(event.target.value)}
+                                        placeholder='Filtrar cajas…'
+                                    />
+                                </InputGroup>
+                                <MultiSelectFilter
+                                    className='w-36 shrink-0'
+                                    icon={FunnelIcon}
+                                    options={TYPE_OPTIONS}
+                                    value={typeFilter}
+                                    onChange={setTypeFilter}
+                                    placeholder='Todos los tipos'
+                                    searchPlaceholder='Buscar tipo'
+                                    countLabel={count => `${count} tipos`}
+                                    renderOption={option => (
+                                        <>
+                                            <DynamicIcon icon={option.icon} />
+                                            <span className='truncate'>{option.label}</span>
+                                        </>
+                                    )}
+                                />
+                            </div>
+                            {searchedLocations.length > 0 ? (
+                                searchedLocations.map(location => (
+                                    <div
+                                        key={location.id}
+                                        className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                    >
+                                        <Link
+                                            href={`/location/${location.id}`}
+                                            className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                        >
+                                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                <DynamicIcon icon={getLocationIcon(location)} />
+                                            </span>
+                                            <span className='min-w-0 flex-1 truncate font-medium'>
+                                                {location.name}
+                                            </span>
+                                        </Link>
+                                        <Button
+                                            size='sm'
+                                            variant='outline'
+                                            onClick={() =>
+                                                setUnpackTarget({
+                                                    type: 'location',
+                                                    id: location.id,
+                                                })
+                                            }
+                                        >
+                                            <ArrowsLeftRightIcon data-icon='inline-start' />
+                                            Desempacar
+                                        </Button>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                    Sin resultados.
+                                </p>
+                            )}
                         </div>
-                    ))}
-                    {packed.items.map(item => (
-                        <div
-                            key={item.id}
-                            className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                        >
-                            <Link
-                                href={`/item/${item.id}`}
-                                className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                            >
-                                <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                    <DynamicIcon icon={getItemIcon(item)} />
-                                </span>
-                                <span className='min-w-0 flex-1 truncate font-medium'>
-                                    {item.name}
-                                </span>
-                            </Link>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                onClick={() => setUnpackTarget({ type: 'item', id: item.id })}
-                            >
-                                <ArrowsLeftRightIcon data-icon='inline-start' />
-                                Desempacar
-                            </Button>
+                    )}
+
+                    {packed.items.length > 0 && (
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center gap-2'>
+                                <InputGroup className='flex-1'>
+                                    <InputGroupAddon>
+                                        <MagnifyingGlassIcon />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        value={itemSearch}
+                                        onChange={event => setItemSearch(event.target.value)}
+                                        placeholder='Filtrar muebles…'
+                                    />
+                                </InputGroup>
+                                <SearchTagFilter
+                                    className='w-36 shrink-0'
+                                    workspaceId={move.workspace_id}
+                                    value={tagFilter}
+                                    onChange={setTagFilter}
+                                />
+                            </div>
+                            {searchedItems.length > 0 ? (
+                                searchedItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                    >
+                                        <Link
+                                            href={`/item/${item.id}`}
+                                            className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                        >
+                                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                <DynamicIcon icon={getItemIcon(item)} />
+                                            </span>
+                                            <span className='min-w-0 flex-1 truncate font-medium'>
+                                                {item.name}
+                                            </span>
+                                        </Link>
+                                        <Button
+                                            size='sm'
+                                            variant='outline'
+                                            onClick={() =>
+                                                setUnpackTarget({ type: 'item', id: item.id })
+                                            }
+                                        >
+                                            <ArrowsLeftRightIcon data-icon='inline-start' />
+                                            Desempacar
+                                        </Button>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                    Sin resultados.
+                                </p>
+                            )}
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
         </div>

@@ -130,6 +130,10 @@ create table stuffbox.moves (
   destination_location_id text not null references stuffbox.locations(id),
   route_type              text not null default 'land',   -- 'land' | 'air'
   status                  text not null default 'planning', -- app-defined, not DB-constrained
+  cost                    numeric,                        -- null = N/A until set via the summary box's edit button
+  started_at              date,                            -- set alongside estimated_completion_at when status -> in_transit
+  estimated_completion_at date,                            -- the deadline asked for in the same dialog as started_at
+  completed_at            date,                            -- auto-set to today when status -> done
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now()
 );
@@ -849,6 +853,29 @@ as $$
 $$;
 
 grant execute on function stuffbox.location_total_price(text) to authenticated;
+
+-- Same pattern as location_total_price above (recursive subtree), but seeded
+-- from every location flagged into this move (not a single location id),
+-- plus loose items packed directly into the move — boxed items inherit
+-- their box's move state so they never carry active_move_id themselves (see
+-- packedInMoveQuery, src/queries/moves.js).
+create or replace function stuffbox.move_total_value(p_move_id text)
+returns numeric
+language sql
+stable
+as $$
+  with recursive subtree as (
+    select id from stuffbox.locations where active_move_id = p_move_id
+    union all
+    select l.id from stuffbox.locations l
+    join subtree s on l.parent_id = s.id
+  )
+  select
+    coalesce((select sum(i.purchase_price) from stuffbox.items i where i.active_move_id = p_move_id), 0)
+    + coalesce((select sum(i.purchase_price) from stuffbox.items i where i.location_id in (select id from subtree)), 0);
+$$;
+
+grant execute on function stuffbox.move_total_value(text) to authenticated;
 
 
 -- -----------------------------------------------------------------------------
