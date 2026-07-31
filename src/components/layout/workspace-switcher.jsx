@@ -96,7 +96,6 @@ const CreateWorkspaceDialog = ({ open, onOpenChange }) => {
                             <FieldLabel htmlFor='workspace-name'>Nombre</FieldLabel>
                             <Input
                                 id='workspace-name'
-                                autoFocus
                                 value={name}
                                 onChange={event => setName(event.target.value)}
                                 placeholder='Ej. Casa de mis papás'
