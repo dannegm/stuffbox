@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { XIcon, CaretDownIcon } from '@phosphor-icons/react/ssr';
+import { toast } from 'sonner';
+import { XIcon, CaretDownIcon, SparkleIcon } from '@phosphor-icons/react/ssr';
 import {
     ResponsiveDialog,
     ResponsiveDialogContent,
@@ -19,15 +20,20 @@ import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from '@/u
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { ColorPicker } from '@/ui/color-picker';
 import { IconPicker } from '@/ui/icon-picker';
 import { IconMultiSelect } from '@/ui/icon-multi-select';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { createTagMutation, updateTagMutation } from '@/queries/tags';
+import { generateTagSuggestions } from '@/services/tag-suggestions';
+import { useSettings } from '@/hooks/use-settings';
+import { defaultSettings } from '@/constants/default-settings';
 
 const DEFAULT_COLOR = '#6366f1';
 const FORM_ID = 'tag-form';
+const iconKey = icon => `${icon.library}:${icon.name}`;
 
 // Shared create/edit form — `tag` present means edit, absent means create.
 // Controlled from the outside (no trigger of its own) — opened from a plain
@@ -42,6 +48,9 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
     const [termInput, setTermInput] = useState('');
     const [relatedIcons, setRelatedIcons] = useState([]);
     const [error, setError] = useState(null);
+    const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+    const [ai] = useSettings('ai', defaultSettings.ai);
+    const isAiConfigured = Boolean(ai.keys?.[ai.provider]);
 
     useEffect(() => {
         if (!open) return;
@@ -96,6 +105,37 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
 
     const handleRemoveTerm = term => {
         setSearchTerms(searchTerms.filter(existing => existing !== term));
+    };
+
+    // Adds to whatever's already there instead of replacing it — the button
+    // is meant to help fill in the form, not discard terms/icons the user
+    // already entered by hand.
+    const handleGenerateSuggestions = async () => {
+        if (!name.trim() || isGeneratingSuggestions) return;
+        setIsGeneratingSuggestions(true);
+        try {
+            const result = await generateTagSuggestions({ name: name.trim(), icon });
+
+            setSearchTerms(prev => {
+                const existing = new Set(prev.map(term => term.toLowerCase()));
+                const additions = result.searchTerms.filter(
+                    term => !existing.has(term.toLowerCase()),
+                );
+                return [...prev, ...additions];
+            });
+
+            setRelatedIcons(prev => {
+                const existing = new Set(prev.map(iconKey));
+                const additions = result.relatedIcons.filter(
+                    candidate => !existing.has(iconKey(candidate)),
+                );
+                return [...prev, ...additions];
+            });
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setIsGeneratingSuggestions(false);
+        }
     };
 
     const handleSubmit = event => {
@@ -169,6 +209,35 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                             </div>
                             <FieldError>{error}</FieldError>
                         </Field>
+
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <Button
+                                        type='button'
+                                        variant='outline'
+                                        size='sm'
+                                        className='self-start'
+                                        disabled={
+                                            !name.trim() || !isAiConfigured || isGeneratingSuggestions
+                                        }
+                                        onClick={handleGenerateSuggestions}
+                                    />
+                                }
+                            >
+                                {isGeneratingSuggestions ? (
+                                    <Spinner data-icon='inline-start' />
+                                ) : (
+                                    <SparkleIcon data-icon='inline-start' />
+                                )}
+                                Generar sugerencias con IA
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {isAiConfigured
+                                    ? 'Sugiere términos de búsqueda e íconos relacionados a partir del nombre y el ícono del tag.'
+                                    : 'Configura tu proveedor de IA en tu perfil primero.'}
+                            </TooltipContent>
+                        </Tooltip>
 
                         <Field>
                             <FieldLabel htmlFor='tag-sku'>SKU</FieldLabel>

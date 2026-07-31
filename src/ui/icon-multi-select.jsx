@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { MagnifyingGlassIcon, XIcon, CheckIcon } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlassIcon, CheckIcon } from '@phosphor-icons/react/ssr';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs';
 import { ScrollArea } from '@/ui/scroll-area';
@@ -95,21 +95,21 @@ export const IconMultiSelect = ({ value = [], onChange }) => {
                 {value.length > 0 && (
                     <div className='flex flex-wrap gap-1.5'>
                         {value.map(icon => (
-                            <span
-                                key={iconKey(icon)}
-                                className='flex items-center gap-1 rounded-full bg-primary/10 py-0.5 pr-1 pl-2 text-xs font-medium text-primary'
-                            >
-                                <DynamicIcon icon={icon} className='size-3.5' />
-                                {icon.name}
-                                <button
-                                    type='button'
-                                    aria-label={`Quitar ${icon.name}`}
-                                    onClick={() => toggle(icon)}
-                                    className='rounded-full hover:text-primary/70 [&_svg]:size-3'
+                            <Tooltip key={iconKey(icon)}>
+                                <TooltipTrigger
+                                    render={
+                                        <button
+                                            type='button'
+                                            aria-label={`Quitar ${icon.name}`}
+                                            onClick={() => toggle(icon)}
+                                            className='flex size-8 items-center justify-center rounded-md bg-primary/15 text-primary hover:bg-primary/25 [&_svg]:size-4'
+                                        />
+                                    }
                                 >
-                                    <XIcon />
-                                </button>
-                            </span>
+                                    <DynamicIcon icon={icon} />
+                                </TooltipTrigger>
+                                <TooltipContent>{icon.name}</TooltipContent>
+                            </Tooltip>
                         ))}
                     </div>
                 )}
@@ -137,7 +137,7 @@ export const IconMultiSelect = ({ value = [], onChange }) => {
 
                 {LIBRARIES.map(lib => (
                     <TabsContent key={lib.value} value={lib.value}>
-                        <div className='h-[fit-content(20rem)] max-h-[28rem]'>
+                        <div className='h-[fit-content(14rem)] max-h-78'>
                             <ScrollArea className='size-full overflow-auto'>
                                 <IconMultiGrid
                                     library={lib}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Color from 'color';
 import { Slider } from '@base-ui/react/slider';
-import { EyedropperIcon } from '@phosphor-icons/react/ssr';
+import { EyedropperIcon, DiceFiveIcon } from '@phosphor-icons/react/ssr';
 import { Button } from '@/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
 import { cn } from '@/helpers/utils';
@@ -152,6 +152,19 @@ export const ColorSelector = ({ value = '#6366f1', onChange, className }) => {
         [onChange],
     );
 
+    // Randomizes hue fully but keeps saturation/lightness in a band that
+    // stays legible as a tag/workspace color chip (avoids near-black,
+    // near-white, and washed-out greys landing as "random").
+    const handleRandomColor = useCallback(() => {
+        const newH = Math.random() * 360;
+        const newS = 55 + Math.random() * 30;
+        const newL = 45 + Math.random() * 15;
+        setH(newH);
+        setS(newS);
+        setL(newL);
+        emit(newH, newS, newL);
+    }, [emit]);
+
     const handleEyeDropper = useCallback(async () => {
         try {
             const ed = new EyeDropper();
@@ -208,6 +221,16 @@ export const ColorSelector = ({ value = '#6366f1', onChange, className }) => {
             </Slider.Root>
 
             <div className='flex items-center gap-2'>
+                <Button
+                    type='button'
+                    variant='outline'
+                    size='icon'
+                    className='size-8 shrink-0'
+                    aria-label='Color aleatorio'
+                    onClick={handleRandomColor}
+                >
+                    <DiceFiveIcon className='size-3.5' />
+                </Button>
                 {supportsEyeDropper && (
                     <Button
                         type='button'
