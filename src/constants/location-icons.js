@@ -53,8 +53,13 @@ export const LOCATION_TYPE_PRESETS = Object.keys(DEFAULT_LOCATION_ICONS).filter(
 // tree root, so they're excluded from the house-creation type picker.
 export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse'];
 
-// Types that default locations.is_container to true (item-like fields —
-// description, fragile, orientation, sentimental value, photos — only show
-// for containers). A room/house can still be flagged manually later; there's
-// just no UI for that yet since it wasn't asked for.
+// `is_item` is the single flag the app reads for "this location behaves like
+// an item" — descriptive fields (location/[id]/edit/page.js), pack/unpack
+// eligibility, the total-price rollup, and the rate-deck toggle
+// (location/[id]/page.js) all key off it now. These types only feed
+// CreateLocationDialog's smart default (box/shelf/toolbox/baggage start with
+// is_item on, until the user manually flips the switch) — they no longer
+// gate anything directly. `locations.is_container` still exists and is still
+// written on create/update (also computed from this list), but nothing reads
+// it anymore.
 export const CONTAINER_TYPES = ['box', 'shelf', 'toolbox', 'baggage'];

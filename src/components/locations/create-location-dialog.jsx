@@ -22,6 +22,7 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
+import { isContainerType } from '@/helpers/location';
 import { createLocationMutation } from '@/queries/locations';
 
 const FORM_ID = 'create-location-form';
@@ -34,8 +35,23 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
     const [type, setType] = useState(LOCATION_TYPE_PRESETS[0]);
-    const [isItem, setIsItem] = useState(false);
+    const [isItem, setIsItem] = useState(isContainerType(LOCATION_TYPE_PRESETS[0]));
+    const [isItemTouched, setIsItemTouched] = useState(false);
     const [error, setError] = useState(null);
+
+    // Mirrors the old is_container-by-type default (box/shelf/toolbox/baggage
+    // start as items automatically) without a dedicated UI for it — but once
+    // the user manually flips the switch, their choice wins over further type
+    // changes.
+    const handleTypeChange = newType => {
+        setType(newType);
+        if (!isItemTouched) setIsItem(isContainerType(newType));
+    };
+
+    const handleIsItemChange = value => {
+        setIsItem(value);
+        setIsItemTouched(true);
+    };
 
     const { mutate, isPending } = useMutation(
         createLocationMutation({
@@ -43,7 +59,8 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                 queryClient.invalidateQueries({ queryKey: ['locations', workspaceId, parentId] });
                 setName('');
                 setType(LOCATION_TYPE_PRESETS[0]);
-                setIsItem(false);
+                setIsItem(isContainerType(LOCATION_TYPE_PRESETS[0]));
+                setIsItemTouched(false);
                 setError(null);
                 setOpen(false);
                 // Stays put (this dialog is opened from wherever it already
@@ -99,7 +116,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                             <SelectSearch
                                 options={LOCATION_TYPE_PRESETS}
                                 value={type}
-                                onChange={setType}
+                                onChange={handleTypeChange}
                                 getKey={preset => preset}
                                 getLabel={preset => preset}
                                 searchPlaceholder='Buscar tipo'
@@ -124,7 +141,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                             <Switch
                                 id='location-is-item'
                                 checked={isItem}
-                                onCheckedChange={setIsItem}
+                                onCheckedChange={handleIsItemChange}
                             />
                         </Field>
                     </FieldGroup>

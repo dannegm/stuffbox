@@ -31,7 +31,7 @@ import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
-import { isContainerType, getLocationIcon } from '@/helpers/location';
+import { getLocationIcon } from '@/helpers/location';
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='LocationEditLoading'>
@@ -129,7 +129,6 @@ export default function LocationEditPage({ params }) {
     );
 
     const isRoot = location?.parent_id == null;
-    const isContainer = isContainerType(type);
 
     const handleSubmit = event => {
         event.preventDefault();
@@ -283,7 +282,7 @@ export default function LocationEditPage({ params }) {
                         </FieldGroup>
                     </div>
 
-                    {isContainer && (
+                    {isItem && (
                         <>
                             <div
                                 className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'

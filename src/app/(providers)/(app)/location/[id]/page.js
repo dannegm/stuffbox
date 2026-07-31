@@ -212,7 +212,7 @@ export default function LocationPage({ params }) {
         moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
     );
     const { data: totalPrice } = useQuery(
-        locationTotalPriceQuery(id, { enabled: !!location?.is_container }),
+        locationTotalPriceQuery(id, { enabled: !!location?.is_item }),
     );
     const { data: childCounts } = useQuery(
         locationCountsQuery(children?.map(child => child.id) ?? [], {
@@ -552,7 +552,7 @@ export default function LocationPage({ params }) {
                             {items.length > 0 && (
                                 <Stat icon={LeafIcon} value={items.length} label='items' />
                             )}
-                            {location.is_container && totalPrice > 0 && (
+                            {location.is_item && totalPrice > 0 && (
                                 <Stat
                                     className='hidden sm:flex'
                                     icon={CurrencyDollarIcon}
@@ -632,7 +632,7 @@ export default function LocationPage({ params }) {
                                 </Button>
                             )}
 
-                            {location.is_container &&
+                            {location.is_item &&
                                 (location.active_move_id ? (
                                     <Button
                                         size='sm'
