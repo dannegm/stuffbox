@@ -118,7 +118,7 @@ export const HousesNav = () => {
 
     return (
         <SidebarGroup data-block='HousesNav'>
-            <SidebarGroupLabel render={<Link href='/' />}>Casas</SidebarGroupLabel>
+            <SidebarGroupLabel render={<Link href='/' />}>Ubicaciones</SidebarGroupLabel>
             <SidebarGroupAction
                 title='Crear casa'
                 render={<Link href={`/house/new?workspace=${workspace.id}`} />}

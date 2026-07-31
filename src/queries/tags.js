@@ -1,5 +1,15 @@
 import { supabase } from '@/services/supabase';
 
+export const tagQuery = (id, opts = {}) => ({
+    queryKey: ['tag', id],
+    queryFn: async () => {
+        const { data, error } = await supabase().from('tags').select('*').eq('id', id).single();
+        if (error) throw error;
+        return data;
+    },
+    ...opts,
+});
+
 export const tagsQuery = (workspaceId, opts = {}) => ({
     queryKey: ['tags', workspaceId],
     queryFn: async () => {

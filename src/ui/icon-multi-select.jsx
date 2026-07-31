@@ -15,9 +15,9 @@ const MAX_RESULTS = 120;
 const iconKey = icon => `${icon.library}:${icon.name}`;
 
 // Not a popover trigger like IconPicker itself — this is the content that
-// goes *inside* one (TagDialog's related-icons field) or renders as a full
-// page section (admin/suggested-icons/page.js). Selecting an icon toggles it
-// in/out of `value` instead of closing anything.
+// goes *inside* one (the related-icons field on /tag/new and /tag/[id]) or
+// renders as a full page section (admin/suggested-icons/page.js). Selecting
+// an icon toggles it in/out of `value` instead of closing anything.
 const IconMultiGrid = ({ library, query, value, onToggle }) => {
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();

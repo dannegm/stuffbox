@@ -46,8 +46,8 @@ const findIconsForQuery = (query, exclude) => {
 
 // Generates sub-tag search terms + related icons for a tag from its name
 // and (optionally) its currently-chosen icon — used by the "Generar
-// sugerencias" button in TagDialog. Never writes anything itself; the
-// caller decides how to merge the result into form state.
+// sugerencias" button on /tag/new and /tag/[id]. Never writes anything
+// itself; the caller decides how to merge the result into form state.
 export const generateTagSuggestions = async ({ name, icon }) => {
     const currentIconContext = icon
         ? `El ícono actual del tag es "${icon.name}" de la librería ${icon.library}.`

@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { use, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { XIcon, CaretDownIcon, SparkleIcon } from '@phosphor-icons/react/ssr';
-import {
-    ResponsiveDialog,
-    ResponsiveDialogContent,
-    ResponsiveDialogFooter,
-    ResponsiveDialogHeader,
-    ResponsiveDialogTitle,
-} from '@/ui/responsive-dialog';
+import { useAuth } from '@/providers/auth-provider';
+import { useConfirm } from '@/hooks/use-confirm';
+import { tagQuery, updateTagMutation, deleteTagMutation } from '@/queries/tags';
+import { generateTagSuggestions } from '@/services/tag-suggestions';
+import { useSettings } from '@/hooks/use-settings';
+import { defaultSettings } from '@/constants/default-settings';
 import {
     ResponsivePopover,
     ResponsivePopoverContent,
@@ -20,26 +21,37 @@ import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from '@/u
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
+import { Skeleton } from '@/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { ColorPicker } from '@/ui/color-picker';
 import { IconPicker } from '@/ui/icon-picker';
 import { IconMultiSelect } from '@/ui/icon-multi-select';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
-import { createTagMutation, updateTagMutation } from '@/queries/tags';
-import { generateTagSuggestions } from '@/services/tag-suggestions';
-import { useSettings } from '@/hooks/use-settings';
-import { defaultSettings } from '@/constants/default-settings';
 
 const DEFAULT_COLOR = '#6366f1';
-const FORM_ID = 'tag-form';
 const iconKey = icon => `${icon.library}:${icon.name}`;
 
-// Shared create/edit form — `tag` present means edit, absent means create.
-// Controlled from the outside (no trigger of its own) — opened from a plain
-// button/row action, not a menu item.
-export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
+const Loading = () => (
+    <div
+        className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+        data-block='TagFormLoading'
+    >
+        <Skeleton className='h-24 w-full rounded-2xl' />
+        <Skeleton className='h-40 w-full rounded-xl' />
+        <Skeleton className='h-56 w-full rounded-xl' />
+    </div>
+);
+
+export default function EditTagPage({ params }) {
+    const { id } = use(params);
+    const router = useRouter();
     const queryClient = useQueryClient();
+    const { user, isLoading: isAuthLoading } = useAuth();
+    const confirm = useConfirm();
+
+    const { data: tag, isPending: isTagPending } = useQuery(tagQuery(id, { enabled: !!user }));
+
     const [name, setName] = useState('');
     const [color, setColor] = useState(DEFAULT_COLOR);
     const [icon, setIcon] = useState(null);
@@ -53,40 +65,38 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
     const isAiConfigured = Boolean(ai.keys?.[ai.provider]);
 
     useEffect(() => {
-        if (!open) return;
-        setName(tag?.name ?? '');
-        setColor(tag?.color ?? DEFAULT_COLOR);
-        setIcon(tag?.icon ?? null);
-        setSku(tag?.sku ?? '');
-        setSearchTerms(tag?.search_terms ?? []);
-        setTermInput('');
-        setRelatedIcons(tag?.related_icons ?? []);
-        setError(null);
-    }, [open, tag]);
+        if (!tag) return;
+        setName(tag.name);
+        setColor(tag.color);
+        setIcon(tag.icon ?? null);
+        setSku(tag.sku ?? '');
+        setSearchTerms(tag.search_terms ?? []);
+        setRelatedIcons(tag.related_icons ?? []);
+    }, [tag]);
 
-    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tags', workspaceId] });
+    const invalidate = () => {
+        queryClient.invalidateQueries({ queryKey: ['tags', tag?.workspace_id] });
+        queryClient.invalidateQueries({ queryKey: ['tag', id] });
+    };
 
-    const { mutate: create, isPending: isCreating } = useMutation(
-        createTagMutation({
-            onSuccess: () => {
-                invalidate();
-                onOpenChange(false);
-            },
-            onError: err => setError(err.message),
-        }),
-    );
-
-    const { mutate: update, isPending: isUpdating } = useMutation(
+    const { mutate: save, isPending: isSaving } = useMutation(
         updateTagMutation({
             onSuccess: () => {
                 invalidate();
-                onOpenChange(false);
+                router.push('/tags');
             },
             onError: err => setError(err.message),
         }),
     );
 
-    const isPending = isCreating || isUpdating;
+    const { mutate: destroy, isPending: isDeleting } = useMutation(
+        deleteTagMutation({
+            onSuccess: () => {
+                invalidate();
+                router.replace('/tags');
+            },
+        }),
+    );
 
     const handleAddTerm = () => {
         const value = termInput.trim();
@@ -141,41 +151,62 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
-        const sanitizedSku = sku.trim() || null;
-        if (tag) {
-            update({
-                id: tag.id,
-                name: name.trim(),
-                color,
-                icon,
-                sku: sanitizedSku,
-                searchTerms,
-                relatedIcons,
-            });
-        } else {
-            create({
-                workspaceId,
-                name: name.trim(),
-                color,
-                icon,
-                sku: sanitizedSku,
-                searchTerms,
-                relatedIcons,
-            });
-        }
+        save({
+            id,
+            name: name.trim(),
+            color,
+            icon,
+            sku: sku.trim() || null,
+            searchTerms,
+            relatedIcons,
+        });
     };
+
+    const handleDelete = async () => {
+        const ok = await confirm({
+            title: `¿Eliminar el tag "${tag.name}"?`,
+            description: 'Se quita de todos los items que lo tengan.',
+            confirmLabel: 'Eliminar',
+            variant: 'destructive',
+            confirmText: tag.name || 'eliminar',
+        });
+        if (!ok) return;
+        destroy(id);
+    };
+
+    if (isAuthLoading || !user || isTagPending || !tag) {
+        return <Loading />;
+    }
 
     const previewIcon = icon ?? FALLBACK_TAG_ICON;
 
     return (
-        <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-            <ResponsiveDialogContent data-block='TagDialog'>
-                <ResponsiveDialogHeader>
-                    <ResponsiveDialogTitle>
-                        {tag ? 'Editar tag' : 'Nuevo tag'}
-                    </ResponsiveDialogTitle>
-                </ResponsiveDialogHeader>
-                <form id={FORM_ID} onSubmit={handleSubmit} className='px-4 sm:px-0'>
+        <div
+            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4 pb-12'
+            data-block='EditTagPage'
+        >
+            <div
+                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                data-block='TagFormHero'
+            >
+                <div className='flex items-center gap-3'>
+                    <span
+                        className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-(--tag-color) shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'
+                        style={{ '--tag-color': color }}
+                    >
+                        <DynamicIcon icon={previewIcon} />
+                    </span>
+                    <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                        {tag.name}
+                    </h1>
+                </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
+                <div
+                    className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                    data-block='TagIdentityCard'
+                >
                     <FieldGroup>
                         <Field data-invalid={!!error}>
                             <FieldLabel htmlFor='tag-name'>Nombre</FieldLabel>
@@ -210,6 +241,37 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                             <FieldError>{error}</FieldError>
                         </Field>
 
+                        <Field>
+                            <FieldLabel htmlFor='tag-sku'>SKU</FieldLabel>
+                            <Input
+                                id='tag-sku'
+                                value={sku}
+                                onChange={event => setSku(event.target.value)}
+                                placeholder='Opcional'
+                            />
+                        </Field>
+
+                        <div className='flex items-center gap-2 rounded-lg border border-dashed bg-muted/30 p-3'>
+                            <span className='text-xs text-muted-foreground'>Vista previa</span>
+                            <span
+                                className='flex items-center gap-1.5 rounded-full bg-(--tag-color)/15 px-2.5 py-1 text-xs font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20'
+                                style={{ '--tag-color': color }}
+                            >
+                                <DynamicIcon icon={previewIcon} className='size-3.5' />
+                                {name.trim() || 'Nombre del tag'}
+                            </span>
+                        </div>
+                    </FieldGroup>
+                </div>
+
+                <div
+                    className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'
+                    data-block='TagSmartSearchCard'
+                >
+                    <div className='mb-3 flex items-center justify-between gap-2'>
+                        <h2 className='text-xs font-semibold tracking-wide text-muted-foreground uppercase'>
+                            Búsqueda inteligente
+                        </h2>
                         <Tooltip>
                             <TooltipTrigger
                                 render={
@@ -217,7 +279,6 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                         type='button'
                                         variant='outline'
                                         size='sm'
-                                        className='self-start'
                                         disabled={
                                             !name.trim() || !isAiConfigured || isGeneratingSuggestions
                                         }
@@ -238,17 +299,9 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                     : 'Configura tu proveedor de IA en tu perfil primero.'}
                             </TooltipContent>
                         </Tooltip>
+                    </div>
 
-                        <Field>
-                            <FieldLabel htmlFor='tag-sku'>SKU</FieldLabel>
-                            <Input
-                                id='tag-sku'
-                                value={sku}
-                                onChange={event => setSku(event.target.value)}
-                                placeholder='Opcional'
-                            />
-                        </Field>
-
+                    <FieldGroup>
                         <Field>
                             <FieldLabel htmlFor='tag-search-term'>Términos de búsqueda</FieldLabel>
                             <FieldDescription>
@@ -308,7 +361,7 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                         <span className='flex flex-1 flex-wrap items-center gap-1'>
                                             {relatedIcons.map(relatedIcon => (
                                                 <span
-                                                    key={`${relatedIcon.library}:${relatedIcon.name}`}
+                                                    key={iconKey(relatedIcon)}
                                                     className='flex size-6 items-center justify-center rounded-md bg-muted [&_svg]:size-3.5'
                                                 >
                                                     <DynamicIcon icon={relatedIcon} />
@@ -319,30 +372,36 @@ export const TagDialog = ({ workspaceId, tag, open, onOpenChange }) => {
                                     <CaretDownIcon className='ml-auto size-3.5 shrink-0 text-muted-foreground' />
                                 </ResponsivePopoverTrigger>
                                 <ResponsivePopoverContent className='w-96 gap-2 p-2' align='start'>
-                                    <IconMultiSelect value={relatedIcons} onChange={setRelatedIcons} />
+                                    <IconMultiSelect
+                                        value={relatedIcons}
+                                        onChange={setRelatedIcons}
+                                    />
                                 </ResponsivePopoverContent>
                             </ResponsivePopover>
                         </Field>
-
-                        <div className='flex items-center gap-2 rounded-lg border border-dashed bg-muted/30 p-3'>
-                            <span className='text-xs text-muted-foreground'>Vista previa</span>
-                            <span
-                                className='flex items-center gap-1.5 rounded-full bg-(--tag-color)/15 px-2.5 py-1 text-xs font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20'
-                                style={{ '--tag-color': color }}
-                            >
-                                <DynamicIcon icon={previewIcon} className='size-3.5' />
-                                {name.trim() || 'Nombre del tag'}
-                            </span>
-                        </div>
                     </FieldGroup>
-                </form>
-                <ResponsiveDialogFooter>
-                    <Button type='submit' form={FORM_ID} disabled={isPending || !name.trim()}>
-                        {isPending && <Spinner data-icon='inline-start' />}
-                        Guardar
+                </div>
+
+                <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
+                    <Button
+                        type='button'
+                        variant='destructive'
+                        disabled={isSaving || isDeleting}
+                        onClick={handleDelete}
+                        className='sm:mr-auto'
+                    >
+                        {isDeleting && <Spinner data-icon='inline-start' />}
+                        Eliminar
                     </Button>
-                </ResponsiveDialogFooter>
-            </ResponsiveDialogContent>
-        </ResponsiveDialog>
+                    <Button type='button' variant='outline' render={<Link href='/tags' />}>
+                        Cancelar
+                    </Button>
+                    <Button type='submit' disabled={isSaving || isDeleting || !name.trim()}>
+                        {isSaving && <Spinner data-icon='inline-start' />}
+                        Guardar cambios
+                    </Button>
+                </div>
+            </form>
+        </div>
     );
-};
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,7 +15,6 @@ import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import { workspacesQuery } from '@/queries/workspaces';
 import { tagsQuery, deleteTagMutation } from '@/queries/tags';
-import { TagDialog } from '@/components/tags/tag-dialog';
 import { fuzzySearch } from '@/helpers/fuzzy-search';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Button } from '@/ui/button';
@@ -46,8 +46,6 @@ export default function TagsPage() {
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
     const confirm = useConfirm();
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingTag, setEditingTag] = useState(null);
     const [search, setSearch] = useState('');
 
     const { data: workspaces, isPending: isWorkspacesPending } = useQuery(
@@ -65,16 +63,6 @@ export default function TagsPage() {
             onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tags', workspace?.id] }),
         }),
     );
-
-    const handleCreate = () => {
-        setEditingTag(null);
-        setDialogOpen(true);
-    };
-
-    const handleEdit = tag => {
-        setEditingTag(tag);
-        setDialogOpen(true);
-    };
 
     const handleDelete = async tag => {
         const ok = await confirm({
@@ -125,7 +113,11 @@ export default function TagsPage() {
                 <div className='h-1 bg-muted/50' />
 
                 <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
-                    <Button variant='outline' size='sm' onClick={handleCreate}>
+                    <Button
+                        variant='outline'
+                        size='sm'
+                        render={<Link href='/tag/new' />}
+                    >
                         <PlusIcon data-icon='inline-start' />
                         Nuevo tag
                     </Button>
@@ -186,7 +178,11 @@ export default function TagsPage() {
                                     </span>
                                 )}
                             </span>
-                            <Button size='icon-sm' variant='ghost' onClick={() => handleEdit(tag)}>
+                            <Button
+                                size='icon-sm'
+                                variant='ghost'
+                                render={<Link href={`/tag/${tag.id}`} />}
+                            >
                                 <PencilSimpleIcon />
                             </Button>
                             <Button
@@ -200,13 +196,6 @@ export default function TagsPage() {
                     ))}
                 </div>
             )}
-
-            <TagDialog
-                workspaceId={workspace.id}
-                tag={editingTag}
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-            />
         </div>
     );
 }
