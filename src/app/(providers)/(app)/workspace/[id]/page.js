@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +16,8 @@ import {
     CaretRightIcon,
     PackageIcon,
     LeafIcon,
+    MagnifyingGlassIcon,
+    ScanIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspaceQuery } from '@/queries/workspaces';
@@ -24,7 +26,9 @@ import { locationChildrenQuery, locationCountsQuery } from '@/queries/locations'
 import { movesQuery } from '@/queries/moves';
 import { tagsQuery } from '@/queries/tags';
 import { PackedTape } from '@/components/moves/packed-tape';
+import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { Button } from '@/ui/button';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { Stat } from '@/ui/stat';
@@ -33,6 +37,8 @@ import { UserAvatar } from '@/ui/user-avatar';
 import { DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
+import { parseSku } from '@/helpers/barcode';
+import { matchDeepLink } from '@/helpers/deep-link';
 import { cn } from '@/helpers/utils';
 
 const Loading = () => (
@@ -133,10 +139,32 @@ export default function WorkspacePage({ params }) {
     const { id } = use(params);
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useAuth();
+    const [search, setSearch] = useState('');
+    const [isScanOpen, setIsScanOpen] = useState(false);
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
     }, [isAuthLoading, user, router]);
+
+    const handleSearchSubmit = event => {
+        event.preventDefault();
+        const q = search.trim();
+        router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+    };
+
+    // Same handling as SidebarSearch: a scanned QR might be one of our own
+    // printed-label deep links, in which case skip search entirely and go
+    // straight to that item/location.
+    const handleScan = scanned => {
+        const deepLink = matchDeepLink(scanned);
+        if (deepLink) {
+            router.push(`/${deepLink.kind}/${deepLink.id}`);
+            return;
+        }
+
+        const { code } = parseSku(scanned);
+        router.push(`/search?q=${encodeURIComponent(code)}`);
+    };
 
     const { data: workspace, isPending: isWorkspacePending } = useQuery(
         workspaceQuery(id, { enabled: !!user }),
@@ -213,6 +241,30 @@ export default function WorkspacePage({ params }) {
                     )}
                 </div>
             </div>
+
+            <form onSubmit={handleSearchSubmit}>
+                <InputGroup>
+                    <InputGroupAddon>
+                        <MagnifyingGlassIcon />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        value={search}
+                        onChange={event => setSearch(event.target.value)}
+                        placeholder='Buscar en este espacio'
+                    />
+                    <InputGroupAddon align='inline-end'>
+                        <InputGroupButton
+                            size='icon-xs'
+                            type='button'
+                            aria-label='Escanear código'
+                            onClick={() => setIsScanOpen(true)}
+                        >
+                            <ScanIcon />
+                        </InputGroupButton>
+                    </InputGroupAddon>
+                </InputGroup>
+            </form>
+            <ScanSkuDialog open={isScanOpen} onOpenChange={setIsScanOpen} onScan={handleScan} />
 
             <Link
                 href='/deck'
