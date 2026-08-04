@@ -105,17 +105,19 @@ export const SearchTagFilter = ({ workspaceId, value = [], onChange, className }
                                     key={tag.id}
                                     type='button'
                                     onClick={() => toggle(tag.id)}
-                                    className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
+                                    className={cn(
+                                        'flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted',
+                                        active &&
+                                            'bg-(--tag-color)/15 ring-1 ring-(--tag-color)/20 hover:bg-(--tag-color)/20',
+                                    )}
+                                    style={{ '--tag-color': tag.color }}
                                 >
-                                    <span
-                                        className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'
-                                        style={{ '--tag-color': tag.color }}
-                                    >
+                                    <span className='flex size-6 shrink-0 items-center justify-center rounded-md bg-(--tag-color)/15 text-(--tag-color) ring-1 ring-(--tag-color)/15 [&_svg]:size-3.5'>
                                         <DynamicIcon icon={tag.icon ?? FALLBACK_TAG_ICON} />
                                     </span>
                                     <span className='min-w-0 flex-1 truncate'>{tag.name}</span>
                                     {active && (
-                                        <CheckIcon className='size-4 shrink-0 text-primary' />
+                                        <CheckIcon className='size-4 shrink-0 text-(--tag-color)' />
                                     )}
                                 </button>
                             );
