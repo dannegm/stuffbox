@@ -268,7 +268,12 @@ export default function MovePage({ params }) {
                 isTotalValuePending={isTotalValuePending}
             />
 
-            <MoveEditDialog move={move} open={editOpen} onOpenChange={setEditOpen} />
+            <MoveEditDialog
+                move={move}
+                workspaceId={move.workspace_id}
+                open={editOpen}
+                onOpenChange={setEditOpen}
+            />
             <MoveDatesDialog move={move} open={datesOpen} onOpenChange={setDatesOpen} />
 
             {hasRoute ? (

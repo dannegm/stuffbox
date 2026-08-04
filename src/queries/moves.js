@@ -67,6 +67,8 @@ export const updateMoveMutation = (opts = {}) => ({
         startedAt,
         estimatedCompletionAt,
         completedAt,
+        originLocationId,
+        destinationLocationId,
     }) => {
         // Only provided keys are written — lets cost-only/dates-only edits
         // share this mutation without clobbering the other move fields.
@@ -78,6 +80,8 @@ export const updateMoveMutation = (opts = {}) => ({
         if (startedAt !== undefined) payload.started_at = startedAt;
         if (estimatedCompletionAt !== undefined) payload.estimated_completion_at = estimatedCompletionAt;
         if (completedAt !== undefined) payload.completed_at = completedAt;
+        if (originLocationId !== undefined) payload.origin_location_id = originLocationId;
+        if (destinationLocationId !== undefined) payload.destination_location_id = destinationLocationId;
 
         // Same shape as moveQuery (origin/destination embedded, not just their
         // ids) — the caller replaces the cached move with this result, and a

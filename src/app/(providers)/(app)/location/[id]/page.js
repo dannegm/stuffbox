@@ -211,9 +211,11 @@ export default function LocationPage({ params }) {
     const { data: packedMove } = useQuery(
         moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
     );
-    const { data: totalPrice } = useQuery(
-        locationTotalPriceQuery(id, { enabled: !!location?.is_item }),
-    );
+    // Recursive rollup of everything under this location, regardless of
+    // is_item — that flag only gates pack/unpack eligibility and the rate
+    // deck, not the value stat (a house/room's total is just as meaningful
+    // as a box's).
+    const { data: totalPrice } = useQuery(locationTotalPriceQuery(id, { enabled: !!location }));
     const { data: childCounts } = useQuery(
         locationCountsQuery(children?.map(child => child.id) ?? [], {
             enabled: !!children?.length,
@@ -487,7 +489,7 @@ export default function LocationPage({ params }) {
         typeFilter.length === 0 || typeFilter.includes(child.type);
     const matchesTagFilter = item =>
         tagFilter.length === 0 ||
-        item.item_tags.some(itemTag => tagFilter.includes(itemTag.tags.id));
+        item.item_tags.some(itemTag => tagFilter.includes(itemTag.tags?.id));
     const filteredChildren = children.filter(matchesPackFilter).filter(matchesTypeFilter);
     const filteredItems = items.filter(matchesPackFilter).filter(matchesTagFilter);
 
@@ -552,7 +554,7 @@ export default function LocationPage({ params }) {
                             {items.length > 0 && (
                                 <Stat icon={LeafIcon} value={items.length} label='items' />
                             )}
-                            {location.is_item && totalPrice > 0 && (
+                            {totalPrice > 0 && (
                                 <Stat
                                     className='hidden sm:flex'
                                     icon={CurrencyDollarIcon}

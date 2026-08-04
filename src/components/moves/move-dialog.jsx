@@ -20,9 +20,6 @@ import { createMoveMutation } from '@/queries/moves';
 
 const FORM_ID = 'move-form';
 
-// Create-only — a move's origin/destination are fixed once packing starts
-// against them, so there's no edit path for those two fields (name/status
-// are editable in place from the move detail page instead).
 export const MoveDialog = ({ workspaceId, open, onOpenChange }) => {
     const queryClient = useQueryClient();
     const [name, setName] = useState('');

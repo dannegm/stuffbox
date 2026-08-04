@@ -15,23 +15,25 @@ import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
+import { RootLocationSelect } from '@/components/moves/root-location-select';
 import { updateMoveMutation } from '@/queries/moves';
 
 const FORM_ID = 'move-edit-form';
 
-// Editing here is deliberately name + route type only — origin/destination
-// stay fixed once a move exists (see move-dialog.jsx's comment), and status
-// has its own SelectSearch on the move detail page.
-export const MoveEditDialog = ({ move, open, onOpenChange }) => {
+export const MoveEditDialog = ({ move, workspaceId, open, onOpenChange }) => {
     const queryClient = useQueryClient();
     const [name, setName] = useState('');
     const [routeType, setRouteType] = useState('land');
+    const [originId, setOriginId] = useState('');
+    const [destinationId, setDestinationId] = useState('');
     const [error, setError] = useState(null);
 
     useEffect(() => {
         if (!open) return;
         setName(move?.name ?? '');
         setRouteType(move?.route_type ?? 'land');
+        setOriginId(move?.origin_location_id ?? '');
+        setDestinationId(move?.destination_location_id ?? '');
         setError(null);
     }, [open, move]);
 
@@ -45,12 +47,18 @@ export const MoveEditDialog = ({ move, open, onOpenChange }) => {
         }),
     );
 
-    const isValid = name.trim();
+    const isValid = name.trim() && originId && destinationId && originId !== destinationId;
 
     const handleSubmit = event => {
         event.preventDefault();
         if (!isValid) return;
-        update({ id: move.id, name: name.trim(), routeType });
+        update({
+            id: move.id,
+            name: name.trim(),
+            routeType,
+            originLocationId: originId,
+            destinationLocationId: destinationId,
+        });
     };
 
     return (
@@ -69,6 +77,28 @@ export const MoveEditDialog = ({ move, open, onOpenChange }) => {
                                 required
                                 value={name}
                                 onChange={event => setName(event.target.value)}
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Origen</FieldLabel>
+                            <RootLocationSelect
+                                workspaceId={workspaceId}
+                                value={originId}
+                                onChange={setOriginId}
+                                placeholder='Elegir casa de origen'
+                                exclude={destinationId}
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel>Destino</FieldLabel>
+                            <RootLocationSelect
+                                workspaceId={workspaceId}
+                                value={destinationId}
+                                onChange={setDestinationId}
+                                placeholder='Elegir casa de destino'
+                                exclude={originId}
                             />
                         </Field>
 
