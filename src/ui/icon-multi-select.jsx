@@ -137,16 +137,14 @@ export const IconMultiSelect = ({ value = [], onChange }) => {
 
                 {LIBRARIES.map(lib => (
                     <TabsContent key={lib.value} value={lib.value}>
-                        <div className='h-[fit-content(14rem)] max-h-78'>
-                            <ScrollArea className='size-full overflow-auto'>
-                                <IconMultiGrid
-                                    library={lib}
-                                    query={query}
-                                    value={value}
-                                    onToggle={toggle}
-                                />
-                            </ScrollArea>
-                        </div>
+                        <ScrollArea className='h-72'>
+                            <IconMultiGrid
+                                library={lib}
+                                query={query}
+                                value={value}
+                                onToggle={toggle}
+                            />
+                        </ScrollArea>
                     </TabsContent>
                 ))}
             </Tabs>

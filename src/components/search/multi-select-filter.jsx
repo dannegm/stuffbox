@@ -12,7 +12,6 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { Button } from '@/ui/button';
 import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
 // Generic multi-select popover filter — backs the type/ubicación filters on the
@@ -38,7 +37,6 @@ export const MultiSelectFilter = ({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const focusRef = useFocusWithoutScroll();
-    const isMobile = useIsMobile();
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -104,47 +102,38 @@ export const MultiSelectFilter = ({
                         placeholder={searchPlaceholder}
                     />
                 </InputGroup>
-                <div
-                    className={cn({
-                        'h-48': isMobile,
-                        'h-[fit-content(12rem)] max-h-48': !isMobile,
-                    })}
-                >
-                    <ScrollArea className='size-full overflow-auto'>
-                        <div className='flex flex-col gap-0.5 p-0.5'>
-                            {results.map(option => {
-                                const key = getKey(option);
-                                const active = value.includes(key);
-                                return (
-                                    <button
-                                        key={key}
-                                        type='button'
-                                        onClick={() => toggle(key)}
-                                        className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
-                                    >
-                                        <span className='flex min-w-0 flex-1 items-center gap-2'>
-                                            {renderOption ? (
-                                                renderOption(option)
-                                            ) : (
-                                                <span className='truncate'>
-                                                    {getLabel(option)}
-                                                </span>
-                                            )}
-                                        </span>
-                                        {active && (
-                                            <CheckIcon className='size-4 shrink-0 text-primary' />
+                <ScrollArea className='max-h-48'>
+                    <div className='flex flex-col gap-0.5 p-0.5'>
+                        {results.map(option => {
+                            const key = getKey(option);
+                            const active = value.includes(key);
+                            return (
+                                <button
+                                    key={key}
+                                    type='button'
+                                    onClick={() => toggle(key)}
+                                    className='flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
+                                >
+                                    <span className='flex min-w-0 flex-1 items-center gap-2'>
+                                        {renderOption ? (
+                                            renderOption(option)
+                                        ) : (
+                                            <span className='truncate'>{getLabel(option)}</span>
                                         )}
-                                    </button>
-                                );
-                            })}
-                            {results.length === 0 && (
-                                <p className='p-4 text-center text-sm text-muted-foreground'>
-                                    {emptyLabel}
-                                </p>
-                            )}
-                        </div>
-                    </ScrollArea>
-                </div>
+                                    </span>
+                                    {active && (
+                                        <CheckIcon className='size-4 shrink-0 text-primary' />
+                                    )}
+                                </button>
+                            );
+                        })}
+                        {results.length === 0 && (
+                            <p className='p-4 text-center text-sm text-muted-foreground'>
+                                {emptyLabel}
+                            </p>
+                        )}
+                    </div>
+                </ScrollArea>
                 {hasSelection && (
                     <>
                         <Separator />
