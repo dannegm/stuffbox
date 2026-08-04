@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { HeartIcon, LeafIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
+import { useQuery } from '@tanstack/react-query';
+import { CaretRightIcon, HeartIcon, LeafIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { DeckItem } from '@/ui/deck';
 import { DeckCardPhotos } from '@/components/deck/deck-card-photos';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
@@ -9,6 +10,7 @@ import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getEntityRatingKey } from '@/helpers/entity-ratings';
 import { getItemIcon } from '@/helpers/item';
 import { getLocationIcon } from '@/helpers/location';
+import { locationAncestorsQuery } from '@/queries/locations';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { getSentimentalValueLabel } from '@/constants/sentimental-value';
 import { cn } from '@/helpers/utils';
@@ -16,7 +18,7 @@ import { cn } from '@/helpers/utils';
 // DeckCards clones its top (draggable) child to inject a className — this
 // must accept and forward it to the actual DeckItem underneath, or the
 // drag-driven sizing/cursor classes it adds get silently dropped.
-export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
+export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLocation }) => {
     const photos = entity.entityType === 'item' ? entity.item_photos : entity.location_photos;
     const icon = entity.entityType === 'item' ? getItemIcon(entity) : getLocationIcon(entity);
     const seed = getEntityRatingKey(entity.entityType, entity.entityId);
@@ -24,6 +26,15 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
     const tags = (entity.item_tags ?? []).map(itemTag => itemTag.tags).slice(0, 3);
     const editHref =
         entity.entityType === 'item' ? `/item/${entity.entityId}` : `/location/${entity.entityId}/edit`;
+    // Ancestors are root-first and inclusive of containerId itself, so [0] is
+    // the root and [1] is one level below it. The root is only worth showing
+    // when the deck isn't already scoped to one location via showRootLocation
+    // — with a location filter active, every card sits under the same root,
+    // so it'd just be noise repeated on every card.
+    const { data: locationAncestors = [] } = useQuery(locationAncestorsQuery(entity.containerId));
+    const [rootLocation, childLocation] = locationAncestors;
+    const showRoot = showRootLocation && !!rootLocation;
+    const showChild = !!childLocation;
 
     return (
         <DeckItem
@@ -103,6 +114,31 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className }) => {
                                 {tag.name}
                             </span>
                         ))}
+                    </div>
+                )}
+                {(showRoot || showChild) && (
+                    <div className='mt-auto flex items-center pt-1'>
+                        <span className='inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-foreground/10'>
+                            {showRoot && (
+                                <>
+                                    <DynamicIcon
+                                        icon={getLocationIcon(rootLocation)}
+                                        className='size-3 shrink-0'
+                                    />
+                                    <span className='truncate'>{rootLocation.name}</span>
+                                </>
+                            )}
+                            {showRoot && showChild && <CaretRightIcon className='size-3 shrink-0' />}
+                            {showChild && (
+                                <>
+                                    <DynamicIcon
+                                        icon={getLocationIcon(childLocation)}
+                                        className='size-3 shrink-0'
+                                    />
+                                    <span className='truncate'>{childLocation.name}</span>
+                                </>
+                            )}
+                        </span>
                     </div>
                 )}
             </div>

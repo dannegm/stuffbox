@@ -307,6 +307,7 @@ export default function DeckPage() {
                                         entity={entity}
                                         likes={ratingsByEntity[key]?.likes ?? []}
                                         dislikes={ratingsByEntity[key]?.dislikes ?? []}
+                                        showRootLocation={!filterLocationId}
                                     />
                                 );
                             })}
