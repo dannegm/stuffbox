@@ -282,7 +282,7 @@ export default function DeckPage() {
                         onClick={() => setRatedDialogOpen(true)}
                     >
                         <ClockCounterClockwiseIcon data-icon='inline-start' />
-                        Ya calificados
+                        Historial
                     </Button>
                 </div>
             </div>
@@ -332,7 +332,7 @@ export default function DeckPage() {
                 </div>
             </div>
 
-            <div className='sticky bottom-0 -mx-4 -mb-4 border-t bg-background/80 px-4 py-3 backdrop-blur'>
+            <div className='sticky bottom-0 -mx-4 mb-2 border-t bg-background/80 px-4 py-3 backdrop-blur ios:mobile:-mb-4'>
                 <div className='mx-auto flex w-full max-w-sm items-center gap-3'>
                     <Button
                         type='button'
