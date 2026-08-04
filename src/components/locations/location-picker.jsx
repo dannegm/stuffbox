@@ -139,7 +139,7 @@ export const LocationPicker = ({
                             )}
                         >
                             <HouseIcon className='size-3.5 shrink-0' />
-                            Casas
+                            Ubicaciones
                         </button>
                         {stack.map((level, index) => (
                             <span key={level.id} className='flex min-w-0 items-center gap-1'>

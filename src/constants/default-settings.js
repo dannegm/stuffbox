@@ -4,6 +4,13 @@
 export const defaultSettings = {
     theme: 'system', // 'system' | 'light' | 'dark'
     debug: false,
+    // location/[id] children+items display mode — sticks across the whole app
+    // until the user flips it again, not per-location.
+    locationViewType: 'list', // 'list' | 'cards'
+    // location/[id] mobile Ubicaciones/Artículos tab — null lets the page keep
+    // defaulting to whichever has content until the user taps a tab, at which
+    // point that choice sticks everywhere.
+    locationMobileTab: null, // 'locations' | 'items' | null
     // Where LocationMapPicker (src/components/locations/location-map-picker.jsx)
     // centers on first open, before the user clicks/drags/locates — CDMX.
     mapDefaultViewport: { center: [-99.1332, 19.4326], zoom: 14 },

@@ -22,3 +22,12 @@ export const getItemPhotoUrl = item => {
     const photo = getFirstItemPhoto(item);
     return photo ? `${R2_PUBLIC_URL}/${photo.r2_key}` : null;
 };
+
+// All photos sorted by order, pre-resolved to `{ src, photo }` — feeds
+// PhotoLightbox when it needs every photo, not just the cover.
+export const getItemPhotos = item => {
+    const photos = item?.item_photos ?? [];
+    return [...photos]
+        .sort((a, b) => a.order - b.order)
+        .map(photo => ({ src: `${R2_PUBLIC_URL}/${photo.r2_key}`, photo }));
+};

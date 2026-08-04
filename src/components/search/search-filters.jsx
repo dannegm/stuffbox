@@ -16,8 +16,8 @@ import {
 
 // Multi-select like tags — no "sin filtro" is a real option, it's just the
 // empty-selection state, so the placeholder text itself ("Todos los tipos"/
-// "Todas las casas") is what reads as the default rather than a selectable
-// item in the list.
+// "Todas las ubicaciones") is what reads as the default rather than a
+// selectable item in the list.
 const TYPE_OPTIONS = LOCATION_TYPE_PRESETS.map(type => ({
     value: type,
     label: type.charAt(0).toUpperCase() + type.slice(1),
@@ -36,7 +36,7 @@ const packedToTab = packed => (packed === true ? 'packed' : packed === false ? '
 // 2 columns on mobile (symmetric 2x2), 3 on larger screens (the 4th filter
 // wraps to its own row) — a plain grid instead of ad-hoc per-filter widths,
 // so wrapping is handled by the layout rather than tuned by hand per filter.
-// Type/casa are multi-select (checkbox popovers), same as tags — they only
+// Type/ubicación are multi-select (checkbox popovers), same as tags — they only
 // narrow locations (search_workspace excludes items entirely when a type or
 // tag filter is active, since items have no type and locations have no
 // tags — see the RPC).
@@ -91,9 +91,9 @@ export const SearchFilters = ({
                     options={houseOptions}
                     value={houseIds}
                     onChange={onHouseIdsChange}
-                    placeholder='Todas las casas'
-                    searchPlaceholder='Buscar casa'
-                    countLabel={count => `${count} casas`}
+                    placeholder='Todas las ubicaciones'
+                    searchPlaceholder='Buscar ubicación'
+                    countLabel={count => `${count} ubicaciones`}
                     renderOption={option => (
                         <>
                             <DynamicIcon icon={getLocationIcon(option.location)} />

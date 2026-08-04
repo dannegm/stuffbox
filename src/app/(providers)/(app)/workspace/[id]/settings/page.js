@@ -218,7 +218,7 @@ export default function WorkspaceSettingsPage({ params }) {
     const handleDeleteWorkspace = async () => {
         const ok = await confirm({
             title: `¿Eliminar "${workspace?.name}"?`,
-            description: 'Se borra todo lo que contiene — casas, locations, items, tags, todo. Esto no se puede deshacer.',
+            description: 'Se borra todo lo que contiene — ubicaciones, items, tags, todo. Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
             confirmText: workspace?.name,
@@ -458,7 +458,7 @@ export default function WorkspaceSettingsPage({ params }) {
                             Zona de riesgo
                         </h2>
                         <p className='mt-1 text-sm text-muted-foreground'>
-                            Se borra todo lo que contiene — casas, locations, items, tags, todo.
+                            Se borra todo lo que contiene — ubicaciones, items, tags, todo.
                             Esto no se puede deshacer. Como dueño, no puedes salir de este espacio;
                             solo eliminarlo.
                         </p>

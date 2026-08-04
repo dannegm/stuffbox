@@ -60,7 +60,7 @@ export default function NewWorkspacePage() {
                             Crear espacio
                         </h1>
                         <p className='text-sm text-muted-foreground'>
-                            Un espacio agrupa tus casas y todo lo que guardas en ellas.
+                            Un espacio agrupa tus ubicaciones y todo lo que guardas en ellas.
                         </p>
                     </div>
                 </div>

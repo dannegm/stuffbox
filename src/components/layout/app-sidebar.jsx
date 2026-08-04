@@ -11,6 +11,7 @@ import {
     ShieldCheckIcon,
     PlusIcon,
     CardsThreeIcon,
+    HouseIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     Sidebar,
@@ -43,9 +44,13 @@ const MOVES_ITEM = {
     match: /^\/(moves|move)(\/|$)/,
 };
 
+// Rendered before MovesNavItem, same reason it's split out of NAV_ITEMS below —
+// the sidebar order is Cards, Mudanzas, Tags, Colaboradores, Ajustes, and
+// MovesNavItem has to land between Cards and Tags.
+const CARDS_ITEM = { href: '/deck', label: 'Cards', icon: CardsThreeIcon, match: /^\/deck(\/|$)/ };
+
 const NAV_ITEMS = [
     { href: '/tags', label: 'Tags', icon: TagIcon, match: /^\/tags(\/|$)/ },
-    { href: '/deck', label: 'Cards', icon: CardsThreeIcon, match: /^\/deck(\/|$)/ },
     {
         href: '/collaborators',
         label: 'Colaboradores',
@@ -70,6 +75,36 @@ const NavIcon = ({ icon: Icon, active }) => (
     </span>
 );
 
+const NavItem = ({ item, active }) => (
+    <SidebarMenuItem>
+        <SidebarMenuButton tooltip={item.label} isActive={active} render={<Link href={item.href} />}>
+            <NavIcon icon={item.icon} active={active} />
+            <span>{item.label}</span>
+        </SidebarMenuButton>
+    </SidebarMenuItem>
+);
+
+// Admin gets a standout treatment (gradient wash across the two brand tokens)
+// since it's the one nav row that isn't workspace-scoped and sits apart from
+// the rest, pinned to the bottom of the content area right above the footer.
+const AdminNavItem = ({ item, active }) => (
+    <SidebarMenuItem>
+        <SidebarMenuButton
+            tooltip={item.label}
+            isActive={active}
+            render={<Link href={item.href} />}
+            className={cn(
+                'bg-gradient-to-r from-primary/15 via-primary/10 to-flourish/15 ring-1 ring-primary/15',
+                'hover:from-primary/20 hover:via-primary/15 hover:to-flourish/20',
+                { 'from-primary/25 via-primary/20 to-flourish/25 ring-primary/25': active },
+            )}
+        >
+            <NavIcon icon={item.icon} active={active} />
+            <span>{item.label}</span>
+        </SidebarMenuButton>
+    </SidebarMenuItem>
+);
+
 export const AppSidebar = () => {
     const pathname = usePathname();
     const { data: workspaces } = useQuery(workspacesQuery());
@@ -86,6 +121,12 @@ export const AppSidebar = () => {
     // the sidebar collapses down to just the switcher, an "Añadir espacio"
     // shortcut, and whatever's workspace-independent (Admin, theme, profile).
     const hasWorkspace = !!activeWorkspace;
+    const inicioItem = activeWorkspace && {
+        href: `/workspace/${activeWorkspace.id}`,
+        label: 'Inicio',
+        icon: HouseIcon,
+        match: /^\/workspace\/[^/]+\/?$/,
+    };
     const settingsItem = activeWorkspace && {
         href: `/workspace/${activeWorkspace.id}/settings`,
         label: 'Ajustes',
@@ -108,63 +149,58 @@ export const AppSidebar = () => {
                 {hasWorkspace ? (
                     <>
                         <SidebarSearch />
+                        <SidebarGroup>
+                            <SidebarMenu>
+                                <NavItem item={inicioItem} active={inicioItem.match.test(pathname)} />
+                            </SidebarMenu>
+                        </SidebarGroup>
                         <HousesNav />
                         <SidebarSeparator />
                         <SidebarGroup>
                             <SidebarMenu>
+                                <NavItem item={CARDS_ITEM} active={CARDS_ITEM.match.test(pathname)} />
                                 <MovesNavItem
                                     {...MOVES_ITEM}
                                     isActive={MOVES_ITEM.match.test(pathname)}
                                     workspace={activeWorkspace}
                                 />
-                                {[...NAV_ITEMS, settingsItem, adminItem].filter(Boolean).map(item => {
-                                    const active = item.match.test(pathname);
-                                    return (
-                                        <SidebarMenuItem key={item.href}>
-                                            <SidebarMenuButton
-                                                tooltip={item.label}
-                                                isActive={active}
-                                                render={<Link href={item.href} />}
-                                            >
-                                                <NavIcon icon={item.icon} active={active} />
-                                                <span>{item.label}</span>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    );
-                                })}
+                                {[...NAV_ITEMS, settingsItem].filter(Boolean).map(item => (
+                                    <NavItem key={item.href} item={item} active={item.match.test(pathname)} />
+                                ))}
                             </SidebarMenu>
                         </SidebarGroup>
+                        {adminItem && (
+                            <SidebarGroup className='mt-auto'>
+                                <SidebarMenu>
+                                    <AdminNavItem item={adminItem} active={adminItem.match.test(pathname)} />
+                                </SidebarMenu>
+                            </SidebarGroup>
+                        )}
                     </>
                 ) : (
-                    <SidebarGroup>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    tooltip='Añadir espacio'
-                                    render={<Link href='/workspace/new' />}
-                                    className='border border-dashed border-sidebar-primary/40 text-sidebar-primary hover:bg-sidebar-primary/10'
-                                >
-                                    <NavIcon icon={PlusIcon} />
-                                    <span>Añadir espacio</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            {adminItem && (
+                    <>
+                        <SidebarGroup>
+                            <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
-                                        tooltip={adminItem.label}
-                                        isActive={adminItem.match.test(pathname)}
-                                        render={<Link href={adminItem.href} />}
+                                        tooltip='Añadir espacio'
+                                        render={<Link href='/workspace/new' />}
+                                        className='border border-dashed border-sidebar-primary/40 text-sidebar-primary hover:bg-sidebar-primary/10'
                                     >
-                                        <NavIcon
-                                            icon={adminItem.icon}
-                                            active={adminItem.match.test(pathname)}
-                                        />
-                                        <span>{adminItem.label}</span>
+                                        <NavIcon icon={PlusIcon} />
+                                        <span>Añadir espacio</span>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            )}
-                        </SidebarMenu>
-                    </SidebarGroup>
+                            </SidebarMenu>
+                        </SidebarGroup>
+                        {adminItem && (
+                            <SidebarGroup className='mt-auto'>
+                                <SidebarMenu>
+                                    <AdminNavItem item={adminItem} active={adminItem.match.test(pathname)} />
+                                </SidebarMenu>
+                            </SidebarGroup>
+                        )}
+                    </>
                 )}
             </SidebarContent>
             <SidebarSeparator />

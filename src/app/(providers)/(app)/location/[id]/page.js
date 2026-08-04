@@ -3,7 +3,6 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQueryState, parseAsStringEnum } from 'nuqs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Fuse from 'fuse.js';
 import {
@@ -29,6 +28,8 @@ import {
     CurrencyDollarIcon,
     MagnifyingGlassIcon,
     FunnelIcon,
+    ListIcon,
+    SquaresFourIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -58,13 +59,17 @@ import { entityRatingsQuery } from '@/queries/entity-ratings';
 import { RatingToggle } from '@/components/deck/rating-toggle';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSettings } from '@/hooks/use-settings';
+import { useMultiSelectKeyHeld } from '@/hooks/use-multi-select-key-held';
 import { LocationListItem } from '@/components/locations/location-list-item';
+import { LocationCardItem } from '@/components/locations/location-card-item';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { ItemListRow } from '@/components/items/item-list-row';
+import { ItemCardItem } from '@/components/items/item-card-item';
 import { MultiSelectFilter } from '@/components/search/multi-select-filter';
 import { SearchTagFilter } from '@/components/search/search-tag-filter';
 import { DynamicIcon } from '@/ui/dynamic-icon';
@@ -91,6 +96,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import {
     ResponsiveDropdownMenu,
     ResponsiveDropdownMenuContent,
@@ -171,19 +177,24 @@ export default function LocationPage({ params }) {
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
     const [selectionMode, setSelectionMode] = useState(false);
+    // Holding Alt/Option acts as a momentary selection mode (not Cmd/Ctrl —
+    // that's the browser's own open-in-new-tab click gesture) — released
+    // items stay selected (via the `selected` prop on each row/card, applied
+    // independently of `isSelecting` below) but can't be toggled again until
+    // Alt (or the manual selection-mode button) is engaged again.
+    const multiSelectKeyHeld = useMultiSelectKeyHeld();
+    const isSelecting = selectionMode || multiSelectKeyHeld;
     const [selectedItemIds, setSelectedItemIds] = useState(new Set());
     const [selectedLocationIds, setSelectedLocationIds] = useState(new Set());
     const [bulkPickerMode, setBulkPickerMode] = useState(null); // null | 'transfer' | 'unpack'
     const [bulkPackOpen, setBulkPackOpen] = useState(false);
     const [packFilter, setPackFilter] = useState('all'); // 'all' | 'packed' | 'unpacked'
+    const [viewType, setViewType] = useSettings('locationViewType', 'list'); // 'list' | 'cards'
     const [locationSearch, setLocationSearch] = useState('');
     const [itemSearch, setItemSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState([]);
     const [tagFilter, setTagFilter] = useState([]);
-    const [mobileViewParam, setMobileView] = useQueryState(
-        'view',
-        parseAsStringEnum(['locations', 'items']),
-    );
+    const [mobileViewSetting, setMobileView] = useSettings('locationMobileTab', null);
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
     const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -387,7 +398,7 @@ export default function LocationPage({ params }) {
     // the per-row payload and reacts to the final drop.
     const getItemDragData = draggedItem => {
         const ids =
-            selectionMode && selectedItemIds.has(draggedItem.id)
+            isSelecting && selectedItemIds.has(draggedItem.id)
                 ? [...selectedItemIds]
                 : [draggedItem.id];
         return { type: 'items', ids, label: ids.length === 1 ? draggedItem.name : null };
@@ -395,7 +406,7 @@ export default function LocationPage({ params }) {
 
     const getLocationDragData = draggedLocation => {
         const ids =
-            selectionMode && selectedLocationIds.has(draggedLocation.id)
+            isSelecting && selectedLocationIds.has(draggedLocation.id)
                 ? [...selectedLocationIds]
                 : [draggedLocation.id];
         return { type: 'locations', ids, label: ids.length === 1 ? draggedLocation.name : null };
@@ -473,8 +484,10 @@ export default function LocationPage({ params }) {
 
     const isEmpty = children.length === 0 && items.length === 0;
     // Default to the locations tab, unless there are none — then default to
-    // items. An explicit tap on either tab (mobileViewParam set) always wins.
-    const mobileView = mobileViewParam ?? (children.length > 0 ? 'locations' : 'items');
+    // items. Once the user taps a tab, that choice is saved to settings and
+    // wins everywhere from then on (see locationMobileTab in
+    // default-settings.js).
+    const mobileView = mobileViewSetting ?? (children.length > 0 ? 'locations' : 'items');
     // Only the workspace owner can delete a house (a root location, no
     // parent) — collaborators can still delete anything nested inside one.
     const isOwner = workspace.owner_id === user.id;
@@ -569,7 +582,7 @@ export default function LocationPage({ params }) {
                 <div className='h-1 bg-muted/50' />
 
                 <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
-                    {selectionMode ? (
+                    {isSelecting ? (
                         <>
                             <span className='text-sm text-muted-foreground'>
                                 {selectedCount} sel.
@@ -801,13 +814,34 @@ export default function LocationPage({ params }) {
                 </Empty>
             ) : (
                 <div className={cn('flex flex-col gap-4', isDesktop && 'min-h-0 flex-1')}>
-                    <Tabs value={packFilter} onValueChange={setPackFilter}>
-                        <TabsList>
-                            <TabsTrigger value='all'>Todos</TabsTrigger>
-                            <TabsTrigger value='packed'>Empacado</TabsTrigger>
-                            <TabsTrigger value='unpacked'>Sin empacar</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    <div className='flex items-center justify-between gap-2'>
+                        <Tabs value={packFilter} onValueChange={setPackFilter}>
+                            <TabsList>
+                                <TabsTrigger value='all'>Todos</TabsTrigger>
+                                <TabsTrigger value='packed'>Empacado</TabsTrigger>
+                                <TabsTrigger value='unpacked'>Sin empacar</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
+                        <Tabs value={viewType} onValueChange={setViewType}>
+                            <TabsList>
+                                <Tooltip>
+                                    <TooltipTrigger render={<TabsTrigger value='list' />}>
+                                        <ListIcon />
+                                        <span className='sr-only'>Vista de lista</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Lista</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger render={<TabsTrigger value='cards' />}>
+                                        <SquaresFourIcon />
+                                        <span className='sr-only'>Vista de tarjetas</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Tarjetas</TooltipContent>
+                                </Tooltip>
+                            </TabsList>
+                        </Tabs>
+                    </div>
 
                     {isDesktop ? (
                         // Desktop-only: 2/5 locations | 3/5 items, drag items onto a
@@ -861,19 +895,39 @@ export default function LocationPage({ params }) {
                                             <MoveOutDropZone parentName={parentName} />
                                         )}
                                         {searchedChildren.length > 0 ? (
-                                            searchedChildren.map(child => (
-                                                <LocationListItem
-                                                    key={child.id}
-                                                    location={child}
-                                                    counts={childCounts?.[child.id]}
-                                                    selectable={selectionMode}
-                                                    selected={selectedLocationIds.has(child.id)}
-                                                    onToggle={toggleLocationSelection}
-                                                    draggable
-                                                    dragData={getLocationDragData(child)}
-                                                    droppable
-                                                />
-                                            ))
+                                            viewType === 'cards' ? (
+                                                <div className='grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2'>
+                                                    {searchedChildren.map(child => (
+                                                        <LocationCardItem
+                                                            key={child.id}
+                                                            location={child}
+                                                            counts={childCounts?.[child.id]}
+                                                            selectable={isSelecting}
+                                                            selected={selectedLocationIds.has(
+                                                                child.id,
+                                                            )}
+                                                            onToggle={toggleLocationSelection}
+                                                            draggable
+                                                            dragData={getLocationDragData(child)}
+                                                            droppable
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                searchedChildren.map(child => (
+                                                    <LocationListItem
+                                                        key={child.id}
+                                                        location={child}
+                                                        counts={childCounts?.[child.id]}
+                                                        selectable={isSelecting}
+                                                        selected={selectedLocationIds.has(child.id)}
+                                                        onToggle={toggleLocationSelection}
+                                                        draggable
+                                                        dragData={getLocationDragData(child)}
+                                                        droppable
+                                                    />
+                                                ))
+                                            )
                                         ) : (
                                             <Empty
                                                 className='flex-1 -mt-16'
@@ -937,18 +991,35 @@ export default function LocationPage({ params }) {
                                     </div>
                                     <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
                                         {searchedItems.length > 0 ? (
-                                            searchedItems.map(item => (
-                                                <ItemListRow
-                                                    key={item.id}
-                                                    item={item}
-                                                    selectable={selectionMode}
-                                                    selected={selectedItemIds.has(item.id)}
-                                                    onToggle={toggleItemSelection}
-                                                    draggable
-                                                    dragData={getItemDragData(item)}
-                                                    {...getItemRatingCounts(item.id)}
-                                                />
-                                            ))
+                                            viewType === 'cards' ? (
+                                                <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
+                                                    {searchedItems.map(item => (
+                                                        <ItemCardItem
+                                                            key={item.id}
+                                                            item={item}
+                                                            selectable={isSelecting}
+                                                            selected={selectedItemIds.has(item.id)}
+                                                            onToggle={toggleItemSelection}
+                                                            draggable
+                                                            dragData={getItemDragData(item)}
+                                                            {...getItemRatingCounts(item.id)}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                searchedItems.map(item => (
+                                                    <ItemListRow
+                                                        key={item.id}
+                                                        item={item}
+                                                        selectable={isSelecting}
+                                                        selected={selectedItemIds.has(item.id)}
+                                                        onToggle={toggleItemSelection}
+                                                        draggable
+                                                        dragData={getItemDragData(item)}
+                                                        {...getItemRatingCounts(item.id)}
+                                                    />
+                                                ))
+                                            )
                                         ) : (
                                             <Empty
                                                 className='flex-1 -mt-16'
@@ -1036,17 +1107,35 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedChildren.length > 0 ? (
-                                        <div className='flex flex-col gap-2'>
-                                            {searchedChildren.map(child => (
-                                                <LocationListItem
-                                                    key={child.id}
-                                                    location={child}
-                                                    counts={childCounts?.[child.id]}
-                                                    selectable={selectionMode}
-                                                    selected={selectedLocationIds.has(child.id)}
-                                                    onToggle={toggleLocationSelection}
-                                                />
-                                            ))}
+                                        <div
+                                            className={cn('gap-2', {
+                                                'grid grid-cols-2': viewType === 'cards',
+                                                'flex flex-col': viewType !== 'cards',
+                                            })}
+                                        >
+                                            {searchedChildren.map(child =>
+                                                viewType === 'cards' ? (
+                                                    <LocationCardItem
+                                                        key={child.id}
+                                                        location={child}
+                                                        counts={childCounts?.[child.id]}
+                                                        selectable={isSelecting}
+                                                        selected={selectedLocationIds.has(
+                                                            child.id,
+                                                        )}
+                                                        onToggle={toggleLocationSelection}
+                                                    />
+                                                ) : (
+                                                    <LocationListItem
+                                                        key={child.id}
+                                                        location={child}
+                                                        counts={childCounts?.[child.id]}
+                                                        selectable={isSelecting}
+                                                        selected={selectedLocationIds.has(child.id)}
+                                                        onToggle={toggleLocationSelection}
+                                                    />
+                                                ),
+                                            )}
                                         </div>
                                     ) : (
                                         <Empty data-block='MobileLocationsEmpty'>
@@ -1107,17 +1196,33 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedItems.length > 0 ? (
-                                        <div className='flex flex-col gap-2'>
-                                            {searchedItems.map(item => (
-                                                <ItemListRow
-                                                    key={item.id}
-                                                    item={item}
-                                                    selectable={selectionMode}
-                                                    selected={selectedItemIds.has(item.id)}
-                                                    onToggle={toggleItemSelection}
-                                                    {...getItemRatingCounts(item.id)}
-                                                />
-                                            ))}
+                                        <div
+                                            className={cn('gap-2', {
+                                                'grid grid-cols-2': viewType === 'cards',
+                                                'flex flex-col': viewType !== 'cards',
+                                            })}
+                                        >
+                                            {searchedItems.map(item =>
+                                                viewType === 'cards' ? (
+                                                    <ItemCardItem
+                                                        key={item.id}
+                                                        item={item}
+                                                        selectable={isSelecting}
+                                                        selected={selectedItemIds.has(item.id)}
+                                                        onToggle={toggleItemSelection}
+                                                        {...getItemRatingCounts(item.id)}
+                                                    />
+                                                ) : (
+                                                    <ItemListRow
+                                                        key={item.id}
+                                                        item={item}
+                                                        selectable={isSelecting}
+                                                        selected={selectedItemIds.has(item.id)}
+                                                        onToggle={toggleItemSelection}
+                                                        {...getItemRatingCounts(item.id)}
+                                                    />
+                                                ),
+                                            )}
                                         </div>
                                     ) : (
                                         <Empty data-block='MobileItemsEmpty'>

@@ -84,7 +84,7 @@ export default function MovesPage() {
                         </EmptyMedia>
                         <EmptyTitle>Sin mudanzas todavía</EmptyTitle>
                         <EmptyDescription>
-                            Crea una para planear el traslado entre dos casas.
+                            Crea una para planear el traslado entre dos ubicaciones.
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>

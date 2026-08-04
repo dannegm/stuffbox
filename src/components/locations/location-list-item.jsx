@@ -69,7 +69,10 @@ export const LocationListItem = ({
             {selectable && (
                 // Same fix as ItemListRow — stop the click from bubbling to the
                 // row's own button, which shares this exact toggle handler.
-                <span className='z-1' onClick={event => event.stopPropagation()}>
+                <span
+                    className='z-1 cursor-default'
+                    onClick={event => event.stopPropagation()}
+                >
                     <Checkbox checked={selected} onCheckedChange={() => onToggle(location.id)} />
                 </span>
             )}

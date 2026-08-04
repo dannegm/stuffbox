@@ -26,3 +26,12 @@ export const getLocationPhotoUrl = location => {
     const photo = getFirstLocationPhoto(location);
     return photo ? `${R2_PUBLIC_URL}/${photo.r2_key}` : null;
 };
+
+// Mirrors getItemPhotos (src/helpers/item.js) — every photo, sorted and
+// pre-resolved to `{ src, photo }`, for PhotoLightbox.
+export const getLocationPhotos = location => {
+    const photos = location?.location_photos ?? [];
+    return [...photos]
+        .sort((a, b) => a.order - b.order)
+        .map(photo => ({ src: `${R2_PUBLIC_URL}/${photo.r2_key}`, photo }));
+};

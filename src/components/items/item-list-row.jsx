@@ -54,7 +54,10 @@ export const ItemListRow = ({
                 // The row itself is a button with the same onToggle click handler —
                 // without stopping propagation, clicking the checkbox bubbles up and
                 // fires both, toggling twice (i.e. visually doing nothing).
-                <span className='z-1' onClick={event => event.stopPropagation()}>
+                <span
+                    className='z-1 cursor-default'
+                    onClick={event => event.stopPropagation()}
+                >
                     <Checkbox checked={selected} onCheckedChange={() => onToggle(item.id)} />
                 </span>
             )}

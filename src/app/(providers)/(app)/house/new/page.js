@@ -79,7 +79,7 @@ export default function NewHousePage() {
                     </span>
                     <div className='min-w-0'>
                         <h1 className='truncate font-heading text-xl font-semibold tracking-tight'>
-                            Nueva casa
+                            Nueva ubicación
                         </h1>
                         <p className='text-sm text-muted-foreground'>
                             Registra tu primer espacio para empezar a organizar tu inventario.
@@ -177,7 +177,7 @@ export default function NewHousePage() {
 
                 <Button type='submit' disabled={isPending || !name.trim()} className='w-full'>
                     {isPending && <Spinner data-icon='inline-start' />}
-                    Crear casa
+                    Crear ubicación
                 </Button>
             </form>
         </div>

@@ -86,7 +86,7 @@ export const MoveEditDialog = ({ move, workspaceId, open, onOpenChange }) => {
                                 workspaceId={workspaceId}
                                 value={originId}
                                 onChange={setOriginId}
-                                placeholder='Elegir casa de origen'
+                                placeholder='Elegir ubicación de origen'
                                 exclude={destinationId}
                             />
                         </Field>
@@ -97,7 +97,7 @@ export const MoveEditDialog = ({ move, workspaceId, open, onOpenChange }) => {
                                 workspaceId={workspaceId}
                                 value={destinationId}
                                 onChange={setDestinationId}
-                                placeholder='Elegir casa de destino'
+                                placeholder='Elegir ubicación de destino'
                                 exclude={originId}
                             />
                         </Field>

@@ -15,7 +15,7 @@ import { useFocusWithoutScroll } from '@/hooks/use-focus-without-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/helpers/utils';
 
-// Generic multi-select popover filter — backs the type/casa filters on the
+// Generic multi-select popover filter — backs the type/ubicación filters on the
 // search page (checkbox-style, same as tags: pick several, not just one).
 // A fixed-height trigger that collapses to "N seleccionados" once more than
 // a couple options are checked, so it never grows past one grid cell.
