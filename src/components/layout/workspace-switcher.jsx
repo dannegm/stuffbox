@@ -34,7 +34,7 @@ import { cn } from '@/helpers/utils';
 // language as `Stat`, just tinted per-workspace instead of neutral. Replaces
 // the old plain color dot with something that reads as an identity, not just
 // a status light.
-const WorkspaceAvatar = ({ workspace, size = 'default', className }) => (
+export const WorkspaceAvatar = ({ workspace, size = 'default', className }) => (
     <span
         className={cn(
             'flex shrink-0 items-center justify-center rounded-md bg-(--workspace-color) font-heading font-semibold text-white',
@@ -42,6 +42,7 @@ const WorkspaceAvatar = ({ workspace, size = 'default', className }) => (
                 'size-8 text-xs group-data-[collapsible=icon]:size-6 group-data-[collapsible=icon]:text-[0.65rem]':
                     size === 'default',
                 'size-6 text-xs': size === 'sm',
+                'size-11 text-base': size === 'lg',
             },
             className,
         )}

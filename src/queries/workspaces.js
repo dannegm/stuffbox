@@ -12,6 +12,34 @@ export const workspacesQuery = (opts = {}) => ({
     ...opts,
 });
 
+// Same batched-counts shape as locationCountsQuery — one round trip for every
+// workspace in the list rather than N per-workspace queries, for the
+// overview cards (ubicaciones + colaboradores per workspace).
+export const workspaceStatsQuery = (workspaceIds = [], opts = {}) => ({
+    queryKey: ['workspace-stats', workspaceIds],
+    queryFn: async () => {
+        const [membersRes, locationsRes] = await Promise.all([
+            supabase().from('workspace_members').select('workspace_id').in('workspace_id', workspaceIds),
+            supabase()
+                .from('locations')
+                .select('workspace_id')
+                .in('workspace_id', workspaceIds)
+                .is('parent_id', null),
+        ]);
+        if (membersRes.error) throw membersRes.error;
+        if (locationsRes.error) throw locationsRes.error;
+
+        const stats = Object.fromEntries(
+            workspaceIds.map(id => [id, { members: 0, locations: 0 }]),
+        );
+        for (const row of membersRes.data) stats[row.workspace_id].members += 1;
+        for (const row of locationsRes.data) stats[row.workspace_id].locations += 1;
+        return stats;
+    },
+    enabled: workspaceIds.length > 0,
+    ...opts,
+});
+
 export const workspaceQuery = (id, opts = {}) => ({
     queryKey: ['workspace', id],
     queryFn: async () => {
