@@ -162,6 +162,7 @@ export default function TagsPage() {
                 </Empty>
             ) : (
                 <VirtualList
+                    nav
                     className='min-h-0 flex-1'
                     items={filteredTags}
                     getItemKey={tag => tag.id}

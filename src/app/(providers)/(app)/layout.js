@@ -21,7 +21,7 @@ export default function AppLayout({ children }) {
                         <span className='font-heading text-sm font-semibold'>Stuffbox</span>
                     </div>
                 </header>
-                {children}
+                <div className='relative min-h-0 flex-1'>{children}</div>
             </SidebarInset>
         </SidebarProvider>
     );

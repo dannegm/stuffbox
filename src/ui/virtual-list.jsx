@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
 
@@ -23,6 +24,11 @@ import { cn } from '@/helpers/utils';
 // `footer` renders as a normal (non-virtualized) trailing element inside the
 // same scrollable div, right after the virtualized rows — e.g. a "cargar
 // más" trigger that lives at the true end of the list and scrolls with it.
+//
+// `nav` mirrors ScrollArea's own scroll-to-top/scroll-to-bottom bars (same
+// docked-above/below-the-viewport, never-overlaps-content shape) — kept as a
+// near-identical copy here rather than shared code, since this component's
+// scroll element is a plain div instead of Base UI's ScrollArea primitive.
 export const VirtualList = ({
     items,
     estimateSize,
@@ -32,9 +38,12 @@ export const VirtualList = ({
     onScrollBottom,
     bottomThreshold = 400,
     overscan = 6,
+    nav = false,
     className,
 }) => {
     const $scroll = React.useRef(null);
+    const [canScrollUp, setCanScrollUp] = React.useState(false);
+    const [canScrollDown, setCanScrollDown] = React.useState(false);
 
     const virtualizer = useVirtualizer({
         count: items.length,
@@ -44,45 +53,100 @@ export const VirtualList = ({
         overscan,
     });
 
+    const updateNav = React.useCallback(() => {
+        const el = $scroll.current;
+        if (!el) return;
+        setCanScrollUp(el.scrollTop > 1);
+        setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+    }, []);
+
+    React.useEffect(() => {
+        if (!nav) return;
+        const el = $scroll.current;
+        if (!el) return;
+        updateNav();
+        const resizeObserver = new ResizeObserver(updateNav);
+        resizeObserver.observe(el);
+        const mutationObserver = new MutationObserver(updateNav);
+        mutationObserver.observe(el, { childList: true, subtree: true });
+        return () => {
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+        };
+    }, [nav, updateNav, items.length]);
+
     const handleScroll = () => {
         const el = $scroll.current;
-        if (!el || !onScrollBottom) return;
+        if (!el) return;
+        if (nav) updateNav();
+        if (!onScrollBottom) return;
         const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
         if (distanceToBottom < bottomThreshold) onScrollBottom();
     };
 
+    const scrollToEdge = edge =>
+        $scroll.current?.scrollTo({
+            top: edge === 'top' ? 0 : $scroll.current.scrollHeight,
+            behavior: 'smooth',
+        });
+
     return (
         <div
-            ref={$scroll}
-            onScroll={handleScroll}
-            data-slot='virtual-list'
-            className={cn('min-h-0 overflow-y-auto', className)}
+            data-slot='virtual-list-root'
+            className={cn('flex min-h-0 flex-col overflow-hidden', className)}
         >
+            {nav && canScrollUp && (
+                <button
+                    type='button'
+                    aria-label='Ir arriba'
+                    onClick={() => scrollToEdge('top')}
+                    className='flex w-full shrink-0 items-center justify-center rounded-t-[inherit] border-b bg-muted/50 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5'
+                >
+                    <CaretUpIcon />
+                </button>
+            )}
             <div
-                style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: virtualizer.getTotalSize(),
-                }}
+                ref={$scroll}
+                onScroll={handleScroll}
+                data-slot='virtual-list'
+                className='min-h-0 flex-1 overflow-y-auto'
             >
-                {virtualizer.getVirtualItems().map(virtualRow => (
-                    <div
-                        key={virtualRow.key}
-                        data-index={virtualRow.index}
-                        ref={virtualizer.measureElement}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                    >
-                        {renderItem(items[virtualRow.index], virtualRow.index)}
-                    </div>
-                ))}
+                <div
+                    style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: virtualizer.getTotalSize(),
+                    }}
+                >
+                    {virtualizer.getVirtualItems().map(virtualRow => (
+                        <div
+                            key={virtualRow.key}
+                            data-index={virtualRow.index}
+                            ref={virtualizer.measureElement}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                        >
+                            {renderItem(items[virtualRow.index], virtualRow.index)}
+                        </div>
+                    ))}
+                </div>
+                {footer}
             </div>
-            {footer}
+            {nav && canScrollDown && (
+                <button
+                    type='button'
+                    aria-label='Ir abajo'
+                    onClick={() => scrollToEdge('bottom')}
+                    className='flex w-full shrink-0 items-center justify-center rounded-b-[inherit] border-t bg-muted/50 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5'
+                >
+                    <CaretDownIcon />
+                </button>
+            )}
         </div>
     );
 };

@@ -146,6 +146,7 @@ export const RatedEntitiesDialog = ({
                         </div>
                     ) : (
                         <VirtualList
+                            nav
                             className='min-h-0 flex-1'
                             items={filtered}
                             getItemKey={({ rating }) => rating.id}

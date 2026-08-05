@@ -235,6 +235,7 @@ export default function SearchPage() {
                 </Empty>
             ) : (
                 <VirtualList
+                    nav
                     className='min-h-0 flex-1'
                     items={flatItems}
                     getItemKey={item => item.key}
