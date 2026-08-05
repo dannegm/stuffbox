@@ -18,6 +18,7 @@ import {
     ResponsiveDialogDescription,
 } from '@/ui/responsive-dialog';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
+import { VirtualList } from '@/ui/virtual-list';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
@@ -30,6 +31,29 @@ import { cn } from '@/helpers/utils';
 // through the same search box used to filter rated items, instead of only
 // ever showing it as a static row someone has to already know is there.
 const DANGER_ZONE_KEYWORDS = ['eliminar', 'reiniciar', 'borrar', 'clear', 'empezar de nuevo'];
+
+const DangerZone = ({ className, isClearingAll, onClearAll }) => (
+    <div
+        className={cn(
+            'flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3',
+            className,
+        )}
+        data-block='DeckDangerZone'
+    >
+        <p className='flex items-center gap-1.5 text-xs font-medium text-destructive'>
+            <WarningIcon weight='fill' />
+            Zona de peligro
+        </p>
+        <Button type='button' variant='destructive' disabled={isClearingAll} onClick={onClearAll}>
+            {isClearingAll ? (
+                <Spinner data-icon='inline-start' />
+            ) : (
+                <TrashIcon data-icon='inline-start' />
+            )}
+            Eliminar todo y empezar de nuevo
+        </Button>
+    </div>
+);
 
 // `ratedItems` is pre-joined by the deck page: [{ rating, entity }], entity
 // carrying whatever the deck queue already fetched (name/icon) — this dialog
@@ -97,7 +121,7 @@ export const RatedEntitiesDialog = ({
                         Lo que ya calificaste — quita un like o dislike si te arrepentiste.
                     </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
-                <div className='flex flex-col gap-3 px-4 pb-4 sm:px-0 sm:pb-0'>
+                <div className='flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 sm:px-0 sm:pb-0'>
                     <InputGroup>
                         <InputGroupAddon>
                             <MagnifyingGlassIcon />
@@ -108,16 +132,27 @@ export const RatedEntitiesDialog = ({
                             placeholder='Buscar…'
                         />
                     </InputGroup>
-                    <div className='flex max-h-96 flex-col gap-2 overflow-y-auto'>
-                        {filtered.length === 0 ? (
+                    {filtered.length === 0 ? (
+                        <div className='flex min-h-0 flex-1 flex-col gap-2'>
                             <p className='py-6 text-center text-sm text-muted-foreground'>
                                 Nada por aquí todavía.
                             </p>
-                        ) : (
-                            filtered.map(({ rating, entity }) => (
+                            {ratedItems.length > 0 && showDangerZone && (
+                                <DangerZone
+                                    isClearingAll={isClearingAll}
+                                    onClearAll={handleClearAll}
+                                />
+                            )}
+                        </div>
+                    ) : (
+                        <VirtualList
+                            className='min-h-0 flex-1'
+                            items={filtered}
+                            getItemKey={({ rating }) => rating.id}
+                            estimateSize={() => 68}
+                            renderItem={({ rating, entity }) => (
                                 <div
-                                    key={rating.id}
-                                    className='flex items-center gap-3 rounded-lg border p-3'
+                                    className='mb-2 flex items-center gap-3 rounded-lg border p-3'
                                     data-block='RatedEntityRow'
                                 >
                                     <span className='relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
@@ -155,33 +190,19 @@ export const RatedEntitiesDialog = ({
                                         <TrashIcon />
                                     </Button>
                                 </div>
-                            ))
-                        )}
-                        {ratedItems.length > 0 && showDangerZone && (
-                            <div
-                                className='flex shrink-0 flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3'
-                                data-block='DeckDangerZone'
-                            >
-                                <p className='flex items-center gap-1.5 text-xs font-medium text-destructive'>
-                                    <WarningIcon weight='fill' />
-                                    Zona de peligro
-                                </p>
-                                <Button
-                                    type='button'
-                                    variant='destructive'
-                                    disabled={isClearingAll}
-                                    onClick={handleClearAll}
-                                >
-                                    {isClearingAll ? (
-                                        <Spinner data-icon='inline-start' />
-                                    ) : (
-                                        <TrashIcon data-icon='inline-start' />
-                                    )}
-                                    Eliminar todo y empezar de nuevo
-                                </Button>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                            footer={
+                                ratedItems.length > 0 &&
+                                showDangerZone && (
+                                    <DangerZone
+                                        className='mt-2'
+                                        isClearingAll={isClearingAll}
+                                        onClearAll={handleClearAll}
+                                    />
+                                )
+                            }
+                        />
+                    )}
                 </div>
             </ResponsiveDialogContent>
         </ResponsiveDialog>

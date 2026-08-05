@@ -132,14 +132,14 @@
         @apply border-border outline-ring/50;
     }
     body {
-        @apply bg-background text-foreground;
+        @apply overscroll-y-none bg-background text-foreground;
     }
     button:not(:disabled),
     [role='button']:not(:disabled) {
         cursor: pointer;
     }
     html {
-        @apply font-sans;
+        @apply overscroll-y-none font-sans;
     }
     .maplibregl-popup-content {
         @apply bg-transparent! shadow-none! p-0! rounded-none!;

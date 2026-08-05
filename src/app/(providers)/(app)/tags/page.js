@@ -23,6 +23,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import { FALLBACK_TAG_ICON } from '@/constants/location-icons';
 import { Stat } from '@/ui/stat';
+import { VirtualList } from '@/ui/virtual-list';
 
 const Loading = () => (
     <div
@@ -84,7 +85,7 @@ export default function TagsPage() {
 
     return (
         <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+            className='absolute inset-0 mx-auto flex w-full max-w-lg flex-col gap-4 overflow-hidden p-4'
             data-block='TagsPage'
         >
             <div
@@ -160,11 +161,14 @@ export default function TagsPage() {
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <div className='flex flex-col gap-2 mb-12'>
-                    {filteredTags.map(tag => (
+                <VirtualList
+                    className='min-h-0 flex-1'
+                    items={filteredTags}
+                    getItemKey={tag => tag.id}
+                    estimateSize={index => (filteredTags[index].sku ? 76 : 60)}
+                    renderItem={tag => (
                         <div
-                            key={tag.id}
-                            className='group relative flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
+                            className='group relative mb-2 flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-3 text-sm shadow-xs ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10'
                             style={{ '--tag-color': tag.color }}
                         >
                             <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-(--tag-color)/15 text-(--tag-color) [&_svg]:size-4.5'>
@@ -185,16 +189,12 @@ export default function TagsPage() {
                             >
                                 <PencilSimpleIcon />
                             </Button>
-                            <Button
-                                size='icon-sm'
-                                variant='ghost'
-                                onClick={() => handleDelete(tag)}
-                            >
+                            <Button size='icon-sm' variant='ghost' onClick={() => handleDelete(tag)}>
                                 <TrashIcon />
                             </Button>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
             )}
         </div>
     );

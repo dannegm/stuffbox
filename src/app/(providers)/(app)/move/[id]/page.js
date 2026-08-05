@@ -42,6 +42,7 @@ import { useConfirm } from '@/hooks/use-confirm';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
+import { ScrollArea } from '@/ui/scroll-area';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import {
     ResponsiveDropdownMenu,
@@ -343,37 +344,43 @@ export default function MovePage({ params }) {
                                 />
                             </div>
                             {searchedLocations.length > 0 ? (
-                                searchedLocations.map(location => (
-                                    <div
-                                        key={location.id}
-                                        className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                                    >
-                                        <Link
-                                            href={`/location/${location.id}`}
-                                            className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                                        >
-                                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                                <DynamicIcon icon={getLocationIcon(location)} />
-                                            </span>
-                                            <span className='min-w-0 flex-1 truncate font-medium'>
-                                                {location.name}
-                                            </span>
-                                        </Link>
-                                        <Button
-                                            size='sm'
-                                            variant='outline'
-                                            onClick={() =>
-                                                setUnpackTarget({
-                                                    type: 'location',
-                                                    id: location.id,
-                                                })
-                                            }
-                                        >
-                                            <ArrowsLeftRightIcon data-icon='inline-start' />
-                                            Desempacar
-                                        </Button>
+                                <ScrollArea nav className='max-h-96'>
+                                    <div className='flex flex-col gap-2'>
+                                        {searchedLocations.map(location => (
+                                            <div
+                                                key={location.id}
+                                                className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                            >
+                                                <Link
+                                                    href={`/location/${location.id}`}
+                                                    className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                                >
+                                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                        <DynamicIcon
+                                                            icon={getLocationIcon(location)}
+                                                        />
+                                                    </span>
+                                                    <span className='min-w-0 flex-1 truncate font-medium'>
+                                                        {location.name}
+                                                    </span>
+                                                </Link>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={() =>
+                                                        setUnpackTarget({
+                                                            type: 'location',
+                                                            id: location.id,
+                                                        })
+                                                    }
+                                                >
+                                                    <ArrowsLeftRightIcon data-icon='inline-start' />
+                                                    Desempacar
+                                                </Button>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))
+                                </ScrollArea>
                             ) : (
                                 <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
                                     Sin resultados.
@@ -403,34 +410,41 @@ export default function MovePage({ params }) {
                                 />
                             </div>
                             {searchedItems.length > 0 ? (
-                                searchedItems.map(item => (
-                                    <div
-                                        key={item.id}
-                                        className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                                    >
-                                        <Link
-                                            href={`/item/${item.id}`}
-                                            className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                                        >
-                                            <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                                <DynamicIcon icon={getItemIcon(item)} />
-                                            </span>
-                                            <span className='min-w-0 flex-1 truncate font-medium'>
-                                                {item.name}
-                                            </span>
-                                        </Link>
-                                        <Button
-                                            size='sm'
-                                            variant='outline'
-                                            onClick={() =>
-                                                setUnpackTarget({ type: 'item', id: item.id })
-                                            }
-                                        >
-                                            <ArrowsLeftRightIcon data-icon='inline-start' />
-                                            Desempacar
-                                        </Button>
+                                <ScrollArea nav className='max-h-96'>
+                                    <div className='flex flex-col gap-2'>
+                                        {searchedItems.map(item => (
+                                            <div
+                                                key={item.id}
+                                                className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                            >
+                                                <Link
+                                                    href={`/item/${item.id}`}
+                                                    className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                                >
+                                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                        <DynamicIcon icon={getItemIcon(item)} />
+                                                    </span>
+                                                    <span className='min-w-0 flex-1 truncate font-medium'>
+                                                        {item.name}
+                                                    </span>
+                                                </Link>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={() =>
+                                                        setUnpackTarget({
+                                                            type: 'item',
+                                                            id: item.id,
+                                                        })
+                                                    }
+                                                >
+                                                    <ArrowsLeftRightIcon data-icon='inline-start' />
+                                                    Desempacar
+                                                </Button>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))
+                                </ScrollArea>
                             ) : (
                                 <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
                                     Sin resultados.

@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useQueryState, parseAsString, parseAsArrayOf, parseAsBoolean } from 'nuqs';
 import { MagnifyingGlassIcon, WarningCircleIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
-import { searchQuery, SEARCH_PAGE_SIZE } from '@/queries/search';
+import { searchQuery } from '@/queries/search';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { SearchFilters } from '@/components/search/search-filters';
 import { SearchResultRow } from '@/components/search/search-result-row';
@@ -15,9 +15,35 @@ import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { parseSku } from '@/helpers/barcode';
 import { matchDeepLink } from '@/helpers/deep-link';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/ui/input-group';
+import { VirtualList } from '@/ui/virtual-list';
 import { Button } from '@/ui/button';
+import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
+
+// A row between each fetched page's results — "cargar más" now appends a
+// distinct page (src/queries/search.js) instead of re-fetching a growing
+// window, so it's cheap to always show which page a result came from.
+const SearchPageSeparator = ({ pageNumber }) => (
+    <div className='flex items-center gap-2 py-2 text-xs text-muted-foreground'>
+        <span className='h-px flex-1 bg-border' />
+        <span>Página {pageNumber}</span>
+        <span className='h-px flex-1 bg-border' />
+    </div>
+);
+
+// Flat item type per virtualized row, since @tanstack/react-virtual needs a
+// single flat list to index into (separators and result rows can't live in
+// nested per-page arrays the way they do in `data.pages`).
+const flattenPages = pages =>
+    pages.flatMap((page, pageIndex) => [
+        { type: 'separator', key: `separator-${pageIndex}`, pageNumber: pageIndex + 1 },
+        ...page.rows.map(result => ({
+            type: 'result',
+            key: `${result.kind}-${result.data.id}`,
+            result,
+        })),
+    ]);
 
 const Loading = () => (
     <div
@@ -81,11 +107,6 @@ export default function SearchPage() {
         setQ(code || null);
     };
 
-    const [limit, setLimit] = useState(SEARCH_PAGE_SIZE);
-    useEffect(() => {
-        setLimit(SEARCH_PAGE_SIZE);
-    }, [q, tagIds, typeIds, packed, houseIds]);
-
     const { data: workspaces, isPending: isWorkspacesPending } = useQuery(
         workspacesQuery({ enabled: !!user }),
     );
@@ -96,7 +117,11 @@ export default function SearchPage() {
         data,
         isPending: isSearchPending,
         isError,
-    } = useQuery(
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isFetchNextPageError,
+    } = useInfiniteQuery(
         searchQuery({
             workspaceId: workspace?.id,
             q,
@@ -104,7 +129,6 @@ export default function SearchPage() {
             typeIds,
             packed,
             houseIds,
-            limit,
         }),
     );
 
@@ -112,13 +136,18 @@ export default function SearchPage() {
         return <Loading />;
     }
 
-    const total = data?.total ?? 0;
-    const rows = data?.rows ?? [];
-    const hasMore = rows.length < total;
+    const pages = data?.pages ?? [];
+    const total = pages.at(-1)?.total ?? 0;
+    const rowCount = pages.reduce((sum, page) => sum + page.rows.length, 0);
+    const flatItems = flattenPages(pages);
+
+    const loadMore = () => {
+        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+    };
 
     return (
         <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4'
+            className='absolute inset-0 mx-auto flex w-full max-w-lg flex-col gap-4 overflow-hidden p-4'
             data-block='SearchPage'
         >
             <div
@@ -173,7 +202,7 @@ export default function SearchPage() {
             />
 
             <p className='text-xs text-muted-foreground'>
-                {isSearchPending ? 'Buscando…' : `Mostrando ${rows.length} de ${total} resultados`}
+                {isSearchPending ? 'Buscando…' : `Mostrando ${rowCount} de ${total} resultados`}
             </p>
 
             {isError ? (
@@ -192,7 +221,7 @@ export default function SearchPage() {
                     <Skeleton className='h-16 w-full rounded-lg' />
                     <Skeleton className='h-16 w-full rounded-lg' />
                 </div>
-            ) : rows.length === 0 ? (
+            ) : rowCount === 0 ? (
                 <Empty className='flex-1' data-block='SearchEmpty'>
                     <EmptyHeader>
                         <EmptyMedia variant='icon' className='bg-primary/10 text-primary'>
@@ -205,25 +234,38 @@ export default function SearchPage() {
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <>
-                    <div className='flex flex-col gap-2'>
-                        {rows.map(result => (
-                            <SearchResultRow
-                                key={`${result.kind}-${result.data.id}`}
-                                result={result}
-                            />
-                        ))}
-                    </div>
-                    {hasMore && (
-                        <Button
-                            variant='outline'
-                            className='w-full'
-                            onClick={() => setLimit(current => current + SEARCH_PAGE_SIZE)}
-                        >
-                            Cargar más
-                        </Button>
+                <VirtualList
+                    className='min-h-0 flex-1'
+                    items={flatItems}
+                    getItemKey={item => item.key}
+                    estimateSize={index => (flatItems[index].type === 'separator' ? 40 : 68)}
+                    onScrollBottom={loadMore}
+                    renderItem={item => (
+                        <div className='pb-2'>
+                            {item.type === 'separator' ? (
+                                <SearchPageSeparator pageNumber={item.pageNumber} />
+                            ) : (
+                                <SearchResultRow result={item.result} />
+                            )}
+                        </div>
                     )}
-                </>
+                    footer={
+                        hasNextPage && (
+                            <div className='pt-2'>
+                                {isFetchingNextPage ? (
+                                    <div className='flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground'>
+                                        <Spinner />
+                                        Cargando más resultados…
+                                    </div>
+                                ) : (
+                                    <Button variant='outline' className='w-full' onClick={loadMore}>
+                                        {isFetchNextPageError ? 'Reintentar' : 'Cargar más'}
+                                    </Button>
+                                )}
+                            </div>
+                        )
+                    }
+                />
             )}
         </div>
     );

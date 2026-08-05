@@ -1,9 +1,57 @@
 import * as React from 'react';
 import { ScrollArea as ScrollAreaPrimitive } from '@base-ui/react/scroll-area';
+import { CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
 
-function ScrollArea({ className, children, ...props }) {
+// `nav` adds a pair of "scroll to top"/"scroll to bottom" bars, each only
+// rendered while there's actually more content in that direction. They're
+// full-width siblings of Viewport (docked above/below it, both still inside
+// Root's own flex column) rather than absolutely-positioned overlays — that
+// was the first cut, but it floated over whatever row happened to be
+// scrolled to that spot, fighting the row's own action buttons (e.g.
+// RatedEntitiesDialog's per-row trash button). Docked bars instead claim
+// their own shrink-0 slice of Root's height, shrinking Viewport to make
+// room, so they can never sit on top of scrolled content.
+//
+// Recomputed on scroll, on the viewport's own size changing (ResizeObserver —
+// e.g. the dialog itself resizing), and on the content's size changing
+// (MutationObserver — e.g. RatedEntitiesDialog's list shrinking as the user
+// types into its search box, which can flip a still-overflowing list back to
+// fully-visible without the viewport itself ever firing a scroll event).
+function ScrollArea({ className, children, nav = false, ...props }) {
+    const $viewport = React.useRef(null);
+    const [canScrollUp, setCanScrollUp] = React.useState(false);
+    const [canScrollDown, setCanScrollDown] = React.useState(false);
+
+    const updateNav = React.useCallback(() => {
+        const viewport = $viewport.current;
+        if (!viewport) return;
+        setCanScrollUp(viewport.scrollTop > 1);
+        setCanScrollDown(viewport.scrollTop + viewport.clientHeight < viewport.scrollHeight - 1);
+    }, []);
+
+    React.useEffect(() => {
+        if (!nav) return;
+        const viewport = $viewport.current;
+        if (!viewport) return;
+        updateNav();
+        const resizeObserver = new ResizeObserver(updateNav);
+        resizeObserver.observe(viewport);
+        const mutationObserver = new MutationObserver(updateNav);
+        mutationObserver.observe(viewport, { childList: true, subtree: true });
+        return () => {
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+        };
+    }, [nav, updateNav]);
+
+    const scrollToEdge = edge =>
+        $viewport.current?.scrollTo({
+            top: edge === 'top' ? 0 : $viewport.current.scrollHeight,
+            behavior: 'smooth',
+        });
+
     return (
         <ScrollAreaPrimitive.Root
             data-slot='scroll-area'
@@ -28,7 +76,19 @@ function ScrollArea({ className, children, ...props }) {
             className={cn('relative flex flex-col overflow-hidden', className)}
             {...props}
         >
+            {nav && canScrollUp && (
+                <button
+                    type='button'
+                    aria-label='Ir arriba'
+                    onClick={() => scrollToEdge('top')}
+                    className='flex w-full shrink-0 items-center justify-center rounded-t-[inherit] border-b bg-muted/50 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5'
+                >
+                    <CaretUpIcon />
+                </button>
+            )}
             <ScrollAreaPrimitive.Viewport
+                ref={$viewport}
+                onScroll={nav ? updateNav : undefined}
                 data-slot='scroll-area-viewport'
                 className='min-h-0 w-full flex-1 rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1'
             >
@@ -36,6 +96,16 @@ function ScrollArea({ className, children, ...props }) {
             </ScrollAreaPrimitive.Viewport>
             <ScrollBar />
             <ScrollAreaPrimitive.Corner />
+            {nav && canScrollDown && (
+                <button
+                    type='button'
+                    aria-label='Ir abajo'
+                    onClick={() => scrollToEdge('bottom')}
+                    className='flex w-full shrink-0 items-center justify-center rounded-b-[inherit] border-t bg-muted/50 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5'
+                >
+                    <CaretDownIcon />
+                </button>
+            )}
         </ScrollAreaPrimitive.Root>
     );
 }

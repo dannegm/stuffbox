@@ -94,6 +94,7 @@ import {
     EmptyContent,
 } from '@/ui/empty';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
+import { ScrollArea } from '@/ui/scroll-area';
 import { Separator } from '@/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
@@ -523,10 +524,7 @@ export default function LocationPage({ params }) {
 
     return (
         <div
-            className={cn(
-                'flex flex-col gap-4 p-4',
-                isDesktop ? 'absolute inset-0 overflow-hidden' : 'relative flex-1',
-            )}
+            className='absolute inset-0 flex flex-col gap-4 overflow-hidden p-4'
             data-block='LocationPage'
         >
             {location.active_move_id && (
@@ -813,7 +811,7 @@ export default function LocationPage({ params }) {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className={cn('flex flex-col gap-4', isDesktop && 'min-h-0 flex-1')}>
+                <div className='flex min-h-0 flex-1 flex-col gap-4'>
                     <div className='flex items-center justify-between gap-2'>
                         <Tabs value={packFilter} onValueChange={setPackFilter}>
                             <TabsList>
@@ -890,7 +888,8 @@ export default function LocationPage({ params }) {
                                             )}
                                         />
                                     </div>
-                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
+                                    <ScrollArea nav className='min-h-0 flex-1'>
+                                    <div className='flex min-h-full flex-col gap-2'>
                                         {location.parent_id && (
                                             <MoveOutDropZone parentName={parentName} />
                                         )}
@@ -966,6 +965,7 @@ export default function LocationPage({ params }) {
                                             </Empty>
                                         )}
                                     </div>
+                                    </ScrollArea>
                                 </div>
                                 <Separator orientation='vertical' />
                                 <div className='flex min-h-0 min-w-0 flex-3 flex-col gap-2'>
@@ -989,7 +989,8 @@ export default function LocationPage({ params }) {
                                             onChange={setTagFilter}
                                         />
                                     </div>
-                                    <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto'>
+                                    <ScrollArea nav className='min-h-0 flex-1'>
+                                    <div className='flex min-h-full flex-col gap-2'>
                                         {searchedItems.length > 0 ? (
                                             viewType === 'cards' ? (
                                                 <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
@@ -1056,6 +1057,7 @@ export default function LocationPage({ params }) {
                                             </Empty>
                                         )}
                                     </div>
+                                    </ScrollArea>
                                 </div>
                             </div>
                             <DragOverlay>
@@ -1063,7 +1065,7 @@ export default function LocationPage({ params }) {
                             </DragOverlay>
                         </DndContext>
                     ) : (
-                        <>
+                        <div className='flex min-h-0 flex-1 flex-col gap-2'>
                             <Tabs value={mobileView} onValueChange={setMobileView}>
                                 <TabsList className='w-full'>
                                     <TabsTrigger value='locations'>Ubicaciones</TabsTrigger>
@@ -1107,36 +1109,40 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedChildren.length > 0 ? (
-                                        <div
-                                            className={cn('gap-2', {
-                                                'grid grid-cols-2': viewType === 'cards',
-                                                'flex flex-col': viewType !== 'cards',
-                                            })}
-                                        >
-                                            {searchedChildren.map(child =>
-                                                viewType === 'cards' ? (
-                                                    <LocationCardItem
-                                                        key={child.id}
-                                                        location={child}
-                                                        counts={childCounts?.[child.id]}
-                                                        selectable={isSelecting}
-                                                        selected={selectedLocationIds.has(
-                                                            child.id,
-                                                        )}
-                                                        onToggle={toggleLocationSelection}
-                                                    />
-                                                ) : (
-                                                    <LocationListItem
-                                                        key={child.id}
-                                                        location={child}
-                                                        counts={childCounts?.[child.id]}
-                                                        selectable={isSelecting}
-                                                        selected={selectedLocationIds.has(child.id)}
-                                                        onToggle={toggleLocationSelection}
-                                                    />
-                                                ),
-                                            )}
-                                        </div>
+                                        <ScrollArea nav className='min-h-0 flex-1'>
+                                            <div
+                                                className={cn('gap-2', {
+                                                    'grid grid-cols-2': viewType === 'cards',
+                                                    'flex flex-col': viewType !== 'cards',
+                                                })}
+                                            >
+                                                {searchedChildren.map(child =>
+                                                    viewType === 'cards' ? (
+                                                        <LocationCardItem
+                                                            key={child.id}
+                                                            location={child}
+                                                            counts={childCounts?.[child.id]}
+                                                            selectable={isSelecting}
+                                                            selected={selectedLocationIds.has(
+                                                                child.id,
+                                                            )}
+                                                            onToggle={toggleLocationSelection}
+                                                        />
+                                                    ) : (
+                                                        <LocationListItem
+                                                            key={child.id}
+                                                            location={child}
+                                                            counts={childCounts?.[child.id]}
+                                                            selectable={isSelecting}
+                                                            selected={selectedLocationIds.has(
+                                                                child.id,
+                                                            )}
+                                                            onToggle={toggleLocationSelection}
+                                                        />
+                                                    ),
+                                                )}
+                                            </div>
+                                        </ScrollArea>
                                     ) : (
                                         <Empty data-block='MobileLocationsEmpty'>
                                             <EmptyHeader>
@@ -1196,34 +1202,36 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedItems.length > 0 ? (
-                                        <div
-                                            className={cn('gap-2', {
-                                                'grid grid-cols-2': viewType === 'cards',
-                                                'flex flex-col': viewType !== 'cards',
-                                            })}
-                                        >
-                                            {searchedItems.map(item =>
-                                                viewType === 'cards' ? (
-                                                    <ItemCardItem
-                                                        key={item.id}
-                                                        item={item}
-                                                        selectable={isSelecting}
-                                                        selected={selectedItemIds.has(item.id)}
-                                                        onToggle={toggleItemSelection}
-                                                        {...getItemRatingCounts(item.id)}
-                                                    />
-                                                ) : (
-                                                    <ItemListRow
-                                                        key={item.id}
-                                                        item={item}
-                                                        selectable={isSelecting}
-                                                        selected={selectedItemIds.has(item.id)}
-                                                        onToggle={toggleItemSelection}
-                                                        {...getItemRatingCounts(item.id)}
-                                                    />
-                                                ),
-                                            )}
-                                        </div>
+                                        <ScrollArea nav className='min-h-0 flex-1'>
+                                            <div
+                                                className={cn('gap-2', {
+                                                    'grid grid-cols-2': viewType === 'cards',
+                                                    'flex flex-col': viewType !== 'cards',
+                                                })}
+                                            >
+                                                {searchedItems.map(item =>
+                                                    viewType === 'cards' ? (
+                                                        <ItemCardItem
+                                                            key={item.id}
+                                                            item={item}
+                                                            selectable={isSelecting}
+                                                            selected={selectedItemIds.has(item.id)}
+                                                            onToggle={toggleItemSelection}
+                                                            {...getItemRatingCounts(item.id)}
+                                                        />
+                                                    ) : (
+                                                        <ItemListRow
+                                                            key={item.id}
+                                                            item={item}
+                                                            selectable={isSelecting}
+                                                            selected={selectedItemIds.has(item.id)}
+                                                            onToggle={toggleItemSelection}
+                                                            {...getItemRatingCounts(item.id)}
+                                                        />
+                                                    ),
+                                                )}
+                                            </div>
+                                        </ScrollArea>
                                     ) : (
                                         <Empty data-block='MobileItemsEmpty'>
                                             <EmptyHeader>
@@ -1256,7 +1264,7 @@ export default function LocationPage({ params }) {
                                     )}
                                 </>
                             )}
-                        </>
+                        </div>
                     )}
                 </div>
             )}

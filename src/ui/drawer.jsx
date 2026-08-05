@@ -194,7 +194,7 @@ function DrawerContent({ className, children, disableContentDrag = false, ...pro
                 data-slot='drawer-content'
                 style={{ '--drawer-drag-y': '0px' }}
                 className={cn(
-                    'fixed inset-x-0 bottom-0 z-50 flex h-auto max-h-[80vh] min-h-0 flex-col rounded-t-xl border-t bg-popover text-sm text-popover-foreground outline-none translate-y-(--drawer-drag-y) data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom',
+                    'fixed inset-x-0 bottom-0 z-50 flex h-auto max-h-[80vh] min-h-0 flex-col overflow-hidden rounded-t-xl border-t bg-popover text-sm text-popover-foreground outline-none translate-y-(--drawer-drag-y) data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom',
                     className,
                 )}
                 {...(disableContentDrag ? null : contentDragHandlers)}
@@ -211,7 +211,7 @@ function DrawerHeader({ className, ...props }) {
     return (
         <div
             data-slot='drawer-header'
-            className={cn('flex flex-col gap-0.5 p-4 text-left', className)}
+            className={cn('flex shrink-0 flex-col gap-0.5 p-4 text-left', className)}
             {...props}
         />
     );
@@ -221,7 +221,7 @@ function DrawerFooter({ className, ...props }) {
     return (
         <div
             data-slot='drawer-footer'
-            className={cn('mt-auto flex flex-col gap-2 p-4', className)}
+            className={cn('mt-auto flex shrink-0 flex-col gap-2 p-4', className)}
             {...props}
         />
     );
