@@ -66,7 +66,7 @@ export const ScrollToolbar = ({ start, end, children, className, ...props }) => 
 
                 <div
                     ref={$scroll}
-                    className='flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                    className='flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth sm:gap-2 scrollbar-none [&::-webkit-scrollbar]:hidden'
                 >
                     {children}
                 </div>

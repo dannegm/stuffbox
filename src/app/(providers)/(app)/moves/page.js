@@ -9,7 +9,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { workspacesQuery } from '@/queries/workspaces';
 import { movesQuery } from '@/queries/moves';
 import { MoveDialog } from '@/components/moves/move-dialog';
-import { getMoveStatusLabel, MOVE_STATUS_DOT } from '@/constants/move-status';
+import { getMoveStatusLabel, getMoveStatusDot } from '@/constants/move-status';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
@@ -106,7 +106,7 @@ export default function MovesPage() {
                                         aria-hidden
                                         className={cn(
                                             'size-1.5 shrink-0 rounded-full',
-                                            MOVE_STATUS_DOT[move.status],
+                                            getMoveStatusDot(move),
                                         )}
                                     />
                                     {move.origin?.name} → {move.destination?.name} ·{' '}

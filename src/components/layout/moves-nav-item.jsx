@@ -12,7 +12,7 @@ import {
     SidebarMenuSubItem,
 } from '@/ui/sidebar';
 import { movesQuery } from '@/queries/moves';
-import { MOVE_STATUS_DOT } from '@/constants/move-status';
+import { getMoveStatusDot } from '@/constants/move-status';
 import { cn } from '@/helpers/utils';
 
 // The one "Mudanzas" row in the main nav list — not a separate sidebar
@@ -57,7 +57,7 @@ export const MovesNavItem = ({ icon: Icon, label, href, isActive, workspace }) =
                                         aria-hidden
                                         className={cn(
                                             'size-1.5 shrink-0 rounded-full',
-                                            MOVE_STATUS_DOT[move.status],
+                                            getMoveStatusDot(move),
                                         )}
                                     />
                                 </SidebarMenuSubButton>

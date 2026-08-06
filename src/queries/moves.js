@@ -1,6 +1,10 @@
 import { nanoid } from 'nanoid';
 import { supabase } from '@/services/supabase';
 
+// `has_items` (used by getMoveStatusDot to tell an empty planning move
+// apart from one that's already got stuff packed into it) isn't a moves
+// column — it's derived here from whatever items/locations currently point
+// active_move_id at each move, same two-table shape as packedInMoveQuery.
 export const movesQuery = (workspaceId, opts = {}) => ({
     queryKey: ['moves', workspaceId],
     queryFn: async () => {
@@ -10,7 +14,21 @@ export const movesQuery = (workspaceId, opts = {}) => ({
             .eq('workspace_id', workspaceId)
             .order('created_at', { ascending: false });
         if (error) throw error;
-        return data;
+        if (data.length === 0) return data;
+
+        const moveIds = data.map(move => move.id);
+        const [itemsRes, locationsRes] = await Promise.all([
+            supabase().from('items').select('active_move_id').in('active_move_id', moveIds),
+            supabase().from('locations').select('active_move_id').in('active_move_id', moveIds),
+        ]);
+        if (itemsRes.error) throw itemsRes.error;
+        if (locationsRes.error) throw locationsRes.error;
+
+        const idsWithItems = new Set([
+            ...itemsRes.data.map(row => row.active_move_id),
+            ...locationsRes.data.map(row => row.active_move_id),
+        ]);
+        return data.map(move => ({ ...move, has_items: idsWithItems.has(move.id) }));
     },
     enabled: !!workspaceId,
     ...opts,

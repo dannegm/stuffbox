@@ -10,15 +10,9 @@ import {
 } from '@/ui/responsive-dialog';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Skeleton } from '@/ui/skeleton';
-import { getMoveStatusLabel } from '@/constants/move-status';
+import { getMoveStatusLabel, getMoveStatusDot } from '@/constants/move-status';
 import { movesQuery } from '@/queries/moves';
 import { cn } from '@/helpers/utils';
-
-const STATUS_DOT = {
-    planning: 'bg-muted-foreground',
-    in_transit: 'bg-flourish',
-    done: 'bg-emerald-500',
-};
 
 const Loading = () => (
     <div className='flex flex-col gap-2 py-1' data-block='PackIntoMoveLoading'>
@@ -77,7 +71,7 @@ export const PackIntoMoveDialog = ({ workspaceId, open, onOpenChange, onSelect }
                                                 aria-hidden
                                                 className={cn(
                                                     'size-1.5 shrink-0 rounded-full',
-                                                    STATUS_DOT[move.status],
+                                                    getMoveStatusDot(move),
                                                 )}
                                             />
                                             {move.origin?.name} → {move.destination?.name} ·{' '}
