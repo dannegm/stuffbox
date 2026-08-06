@@ -174,7 +174,7 @@ export default function SearchPage() {
                         value={inputValue}
                         onChange={event => setInputValue(event.target.value)}
                         onFocus={event => event.target.select()}
-                        placeholder='Nombre de un item o lugar…'
+                        placeholder='Nombre de un artículo o lugar…'
                     />
                     <InputGroupAddon align='inline-end'>
                         <InputGroupButton

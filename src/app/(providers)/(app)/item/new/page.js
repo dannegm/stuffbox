@@ -202,10 +202,10 @@ export default function NewItemPage() {
                         </span>
                         <div className='min-w-0'>
                             <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
-                                ITEM
+                                ARTÍCULO
                             </p>
                             <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
-                                {name.trim() || 'Nuevo item'}
+                                {name.trim() || 'Nuevo artículo'}
                             </h1>
                         </div>
                     </div>

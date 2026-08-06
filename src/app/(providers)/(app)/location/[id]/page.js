@@ -309,7 +309,7 @@ export default function LocationPage({ params }) {
     const handleTransfer = async newParentId => {
         if (!(await isDestinationSafe(newParentId, [id]))) {
             await confirm({
-                title: 'No puedes mover esta location dentro de sí misma o de algo que contiene.',
+                title: 'No puedes mover esta ubicación dentro de sí misma o de algo que contiene.',
                 cancelLabel: null,
                 confirmLabel: 'Entendido',
             });
@@ -448,7 +448,7 @@ export default function LocationPage({ params }) {
         if (ids.includes(destinationId)) return;
         if (!(await isDestinationSafe(destinationId, ids))) {
             await confirm({
-                title: 'No puedes soltar ahí — es la misma location o algo que ya contiene.',
+                title: 'No puedes soltar ahí — es la misma ubicación o algo que ya contiene.',
                 cancelLabel: null,
                 confirmLabel: 'Entendido',
             });
@@ -477,7 +477,7 @@ export default function LocationPage({ params }) {
         const ok = await confirm({
             title: `¿Eliminar "${location?.name}"?`,
             description: hasContents
-                ? `Tiene ${children?.length} location(s) y ${items?.length} item(s) dentro. Se eliminará todo.`
+                ? `Tiene ${children?.length} ubicación(es) y ${items?.length} artículo(s) dentro. Se eliminará todo.`
                 : 'Esto no se puede deshacer.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
@@ -736,7 +736,7 @@ export default function LocationPage({ params }) {
                                             {children.length}
                                         </span>
                                         <span className='hidden text-muted-foreground sm:inline'>
-                                            dentro
+                                            ubicaciones
                                         </span>
                                     </span>
                                 )}
@@ -747,7 +747,7 @@ export default function LocationPage({ params }) {
                                             {items.length}
                                         </span>
                                         <span className='hidden text-muted-foreground sm:inline'>
-                                            items
+                                            artículos
                                         </span>
                                     </span>
                                 )}
@@ -805,7 +805,7 @@ export default function LocationPage({ params }) {
                         <CreateLocationDialog
                             workspaceId={location.workspace_id}
                             parentId={id}
-                            title='Agregar dentro'
+                            title='Agregar ubicación'
                         >
                             <Button size='sm' variant='outline'>
                                 <PlusIcon />
@@ -903,7 +903,7 @@ export default function LocationPage({ params }) {
                         <CreateLocationDialog
                             workspaceId={location.workspace_id}
                             parentId={id}
-                            title='Agregar dentro'
+                            title='Agregar ubicación'
                         >
                             <Button variant='outline'>
                                 <PlusIcon />
@@ -969,7 +969,7 @@ export default function LocationPage({ params }) {
                                                 onChange={event =>
                                                     setLocationSearch(event.target.value)
                                                 }
-                                                placeholder='Filtrar locations…'
+                                                placeholder='Filtrar ubicaciones…'
                                             />
                                         </InputGroup>
                                         <MultiSelectFilter
@@ -1042,12 +1042,12 @@ export default function LocationPage({ params }) {
                                                     <EmptyTitle>
                                                         {locationSearch.trim()
                                                             ? 'Sin resultados'
-                                                            : 'Sin locations'}
+                                                            : 'Sin ubicaciones'}
                                                     </EmptyTitle>
                                                     <EmptyDescription>
                                                         {locationSearch.trim()
                                                             ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Agrega una location para organizar lo que guardes aquí.'}
+                                                            : 'Agrega una ubicación para organizar lo que guardes aquí.'}
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                                 {!locationSearch.trim() && (
@@ -1055,12 +1055,12 @@ export default function LocationPage({ params }) {
                                                         <CreateLocationDialog
                                                             workspaceId={location.workspace_id}
                                                             parentId={id}
-                                                            title='Agregar dentro'
+                                                            title='Agregar ubicación'
                                                         >
                                                             <Button size='sm' variant='outline'>
                                                                 <PlusIcon />
                                                                 <PackageIcon />
-                                                                Location
+                                                                Ubicación
                                                             </Button>
                                                         </CreateLocationDialog>
                                                     </EmptyContent>
@@ -1082,7 +1082,7 @@ export default function LocationPage({ params }) {
                                                 onChange={event =>
                                                     setItemSearch(event.target.value)
                                                 }
-                                                placeholder='Filtrar items…'
+                                                placeholder='Filtrar artículos…'
                                             />
                                         </InputGroup>
                                         <SearchTagFilter
@@ -1136,12 +1136,12 @@ export default function LocationPage({ params }) {
                                                     <EmptyTitle>
                                                         {itemSearch.trim()
                                                             ? 'Sin resultados'
-                                                            : 'Sin items'}
+                                                            : 'Sin artículos'}
                                                     </EmptyTitle>
                                                     <EmptyDescription>
                                                         {itemSearch.trim()
                                                             ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Agrega un item para empezar a guardar cosas aquí.'}
+                                                            : 'Agrega un artículo para empezar a guardar cosas aquí.'}
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                                 {!itemSearch.trim() && (
@@ -1188,7 +1188,7 @@ export default function LocationPage({ params }) {
                                                 onChange={event =>
                                                     setLocationSearch(event.target.value)
                                                 }
-                                                placeholder='Filtrar locations…'
+                                                placeholder='Filtrar ubicaciones…'
                                             />
                                         </InputGroup>
                                         <MultiSelectFilter
@@ -1249,12 +1249,12 @@ export default function LocationPage({ params }) {
                                                 <EmptyTitle>
                                                     {locationSearch.trim()
                                                         ? 'Sin resultados'
-                                                        : 'Sin locations'}
+                                                        : 'Sin ubicaciones'}
                                                 </EmptyTitle>
                                                 <EmptyDescription>
                                                     {locationSearch.trim()
                                                         ? 'Nada coincide con tu búsqueda.'
-                                                        : 'Agrega una location para organizar lo que guardes aquí.'}
+                                                        : 'Agrega una ubicación para organizar lo que guardes aquí.'}
                                                 </EmptyDescription>
                                             </EmptyHeader>
                                             {!locationSearch.trim() && (
@@ -1262,12 +1262,12 @@ export default function LocationPage({ params }) {
                                                     <CreateLocationDialog
                                                         workspaceId={location.workspace_id}
                                                         parentId={id}
-                                                        title='Agregar dentro'
+                                                        title='Agregar ubicación'
                                                     >
                                                         <Button size='sm' variant='outline'>
                                                             <PlusIcon />
                                                             <PackageIcon />
-                                                            Location
+                                                            Ubicación
                                                         </Button>
                                                     </CreateLocationDialog>
                                                 </EmptyContent>
@@ -1287,7 +1287,7 @@ export default function LocationPage({ params }) {
                                                 onChange={event =>
                                                     setItemSearch(event.target.value)
                                                 }
-                                                placeholder='Filtrar items…'
+                                                placeholder='Filtrar artículos…'
                                             />
                                         </InputGroup>
                                         <SearchTagFilter
@@ -1334,12 +1334,12 @@ export default function LocationPage({ params }) {
                                                     <DynamicIcon icon={FALLBACK_ITEM_ICON} />
                                                 </EmptyMedia>
                                                 <EmptyTitle>
-                                                    {itemSearch.trim() ? 'Sin resultados' : 'Sin items'}
+                                                    {itemSearch.trim() ? 'Sin resultados' : 'Sin artículos'}
                                                 </EmptyTitle>
                                                 <EmptyDescription>
                                                     {itemSearch.trim()
                                                         ? 'Nada coincide con tu búsqueda.'
-                                                        : 'Agrega un item para empezar a guardar cosas aquí.'}
+                                                        : 'Agrega un artículo para empezar a guardar cosas aquí.'}
                                                 </EmptyDescription>
                                             </EmptyHeader>
                                             {!itemSearch.trim() && (

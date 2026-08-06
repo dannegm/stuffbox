@@ -339,7 +339,7 @@ export default function ItemPage({ params }) {
                         </span>
                         <div className='min-w-0'>
                             <p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>
-                                ITEM
+                                ARTÍCULO
                             </p>
                             <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
                                 {name}

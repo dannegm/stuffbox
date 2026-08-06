@@ -68,7 +68,7 @@ export default function TagsPage() {
     const handleDelete = async tag => {
         const ok = await confirm({
             title: `¿Eliminar el tag "${tag.name}"?`,
-            description: 'Se quita de todos los items que lo tengan.',
+            description: 'Se quita de todos los artículos que lo tengan.',
             confirmLabel: 'Eliminar',
             variant: 'destructive',
             confirmText: tag.name || 'eliminar',
