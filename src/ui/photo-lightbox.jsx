@@ -60,6 +60,13 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
             <DialogPrimitive.Portal>
                 <DialogPrimitive.Backdrop
                     data-slot='photo-lightbox-overlay'
+                    // Base UI skips a nested Dialog's own backdrop by default
+                    // (DialogBackdrop's `enabled: forceRender || !nested`) —
+                    // this lightbox is routinely opened from inside another
+                    // open Dialog/Drawer (both are Base UI Dialog.Root
+                    // underneath), so it must force its own dim layer or it
+                    // renders with no backdrop at all.
+                    forceRender
                     className='fixed inset-0 z-50 bg-black/85 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0'
                 />
                 <DialogPrimitive.Popup

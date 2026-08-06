@@ -50,13 +50,13 @@ export const deckQueueQuery = (workspaceId, opts = {}) => ({
             supabase()
                 .from('items')
                 .select(
-                    'id, name, icon, sentimental_value, condition, location_id, item_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y), item_tags(tags(id, name, icon, color))',
+                    'id, name, icon, sentimental_value, condition, location_id, active_move_id, item_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y), item_tags(tags(id, name, icon, color))',
                 )
                 .eq('workspace_id', workspaceId),
             supabase()
                 .from('locations')
                 .select(
-                    'id, name, icon, sentimental_value, parent_id, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)',
+                    'id, name, icon, sentimental_value, parent_id, active_move_id, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)',
                 )
                 .eq('workspace_id', workspaceId)
                 .eq('is_item', true),

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Fuse from 'fuse.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     ThumbsUpIcon,
     ThumbsDownIcon,
@@ -23,8 +24,11 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { CroppedPhoto } from '@/ui/cropped-photo';
+import { PhotoLightbox } from '@/ui/photo-lightbox';
+import { PackedTape } from '@/components/moves/packed-tape';
 import { useConfirm } from '@/hooks/use-confirm';
 import { deleteEntityRatingMutation, deleteAllEntityRatingsMutation } from '@/queries/entity-ratings';
+import { locationAncestorsQuery } from '@/queries/locations';
 import { cn } from '@/helpers/utils';
 
 // Lets "eliminar"/"reiniciar"/"borrar"/"clear" surface the danger-zone action
@@ -54,6 +58,94 @@ const DangerZone = ({ className, isClearingAll, onClearAll }) => (
         </Button>
     </div>
 );
+
+// A real component, not an inline arrow returned straight from
+// VirtualList's renderItem — it needs its own useQuery (the ancestor walk
+// below), and renderItem is called directly inside VirtualList's own render
+// loop, so hooks can only live here, in a component React mounts on its own
+// fiber per row, not in the renderItem callback itself.
+const RatedEntityRow = ({ rating, entity, isRemoving, onRemove }) => {
+    const [lightboxIndex, setLightboxIndex] = useState(null);
+    // Boxed items/locations inherit their nearest packed ancestor's move —
+    // same rule as DeckEntityCard/location/[id]/page.js's packedAncestor.
+    const { data: locationAncestors = [] } = useQuery(
+        locationAncestorsQuery(entity?.containerId, { enabled: !!entity?.containerId }),
+    );
+    const isPacked =
+        !!entity?.active_move_id || locationAncestors.some(ancestor => ancestor.active_move_id);
+    const photos = entity?.photos ?? [];
+    const detailHref = entity
+        ? `/${entity.entityType === 'item' ? 'item' : 'location'}/${entity.entityId}`
+        : null;
+
+    return (
+        <>
+            <div
+                className='relative mb-2 flex items-center gap-3 overflow-hidden rounded-lg border p-3'
+                data-block='RatedEntityRow'
+            >
+                {isPacked && <PackedTape />}
+                {photos.length > 0 ? (
+                    <button
+                        type='button'
+                        aria-label='Ver fotos'
+                        onClick={() => setLightboxIndex(0)}
+                        className='relative z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'
+                    >
+                        <CroppedPhoto src={entity.photoUrl} photo={entity.photo} />
+                    </button>
+                ) : (
+                    <span className='relative z-1 flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                        <DynamicIcon icon={entity?.icon} />
+                    </span>
+                )}
+                {detailHref ? (
+                    <Link
+                        href={detailHref}
+                        className='relative z-1 min-w-0 flex-1 truncate font-medium hover:underline'
+                    >
+                        {entity.name}
+                    </Link>
+                ) : (
+                    <span className='relative z-1 min-w-0 flex-1 truncate font-medium text-muted-foreground'>
+                        Eliminado
+                    </span>
+                )}
+                <span
+                    className={cn(
+                        'relative z-1 flex size-6 shrink-0 items-center justify-center rounded-full [&_svg]:size-3.5',
+                        rating.liked
+                            ? 'bg-emerald-500/15 text-emerald-600'
+                            : 'bg-rose-500/15 text-rose-600',
+                    )}
+                >
+                    {rating.liked ? (
+                        <ThumbsUpIcon weight='fill' />
+                    ) : (
+                        <ThumbsDownIcon weight='fill' />
+                    )}
+                </span>
+                <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon-sm'
+                    className='relative z-1'
+                    aria-label='Quitar calificación'
+                    disabled={isRemoving}
+                    onClick={onRemove}
+                >
+                    <TrashIcon />
+                </Button>
+            </div>
+            <PhotoLightbox
+                photos={photos}
+                index={lightboxIndex}
+                onIndexChange={setLightboxIndex}
+                onClose={() => setLightboxIndex(null)}
+            />
+        </>
+    );
+};
 
 // `ratedItems` is pre-joined by the deck page: [{ rating, entity }], entity
 // carrying whatever the deck queue already fetched (name/icon) — this dialog
@@ -152,45 +244,12 @@ export const RatedEntitiesDialog = ({
                             getItemKey={({ rating }) => rating.id}
                             estimateSize={() => 68}
                             renderItem={({ rating, entity }) => (
-                                <div
-                                    className='mb-2 flex items-center gap-3 rounded-lg border p-3'
-                                    data-block='RatedEntityRow'
-                                >
-                                    <span className='relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                        {entity?.photoUrl ? (
-                                            <CroppedPhoto src={entity.photoUrl} photo={entity.photo} />
-                                        ) : (
-                                            <DynamicIcon icon={entity?.icon} />
-                                        )}
-                                    </span>
-                                    <span className='min-w-0 flex-1 truncate font-medium'>
-                                        {entity?.name ?? 'Eliminado'}
-                                    </span>
-                                    <span
-                                        className={cn(
-                                            'flex size-6 shrink-0 items-center justify-center rounded-full [&_svg]:size-3.5',
-                                            rating.liked
-                                                ? 'bg-emerald-500/15 text-emerald-600'
-                                                : 'bg-rose-500/15 text-rose-600',
-                                        )}
-                                    >
-                                        {rating.liked ? (
-                                            <ThumbsUpIcon weight='fill' />
-                                        ) : (
-                                            <ThumbsDownIcon weight='fill' />
-                                        )}
-                                    </span>
-                                    <Button
-                                        type='button'
-                                        variant='ghost'
-                                        size='icon-sm'
-                                        aria-label='Quitar calificación'
-                                        disabled={isPending && pendingId === rating.id}
-                                        onClick={() => removeRating(rating.id)}
-                                    >
-                                        <TrashIcon />
-                                    </Button>
-                                </div>
+                                <RatedEntityRow
+                                    rating={rating}
+                                    entity={entity}
+                                    isRemoving={isPending && pendingId === rating.id}
+                                    onRemove={() => removeRating(rating.id)}
+                                />
                             )}
                             footer={
                                 ratedItems.length > 0 &&

@@ -6,6 +6,7 @@ import { CaretRightIcon, HeartIcon, LeafIcon, PencilSimpleIcon } from '@phosphor
 import { DeckItem } from '@/ui/deck';
 import { DeckCardPhotos } from '@/components/deck/deck-card-photos';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
+import { PackedTapeCard } from '@/components/moves/packed-tape';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getEntityRatingKey } from '@/helpers/entity-ratings';
 import { getItemIcon } from '@/helpers/item';
@@ -46,12 +47,18 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
     const [rootLocation, childLocation] = locationAncestors;
     const showRoot = showRootLocation && !!rootLocation;
     const showChild = !!childLocation;
+    // Boxed items/locations inherit their nearest packed ancestor's move —
+    // only the box actually packed has active_move_id set in the DB (same
+    // rule as location/[id]/page.js's packedAncestor), so "packed" here
+    // means the entity's own flag OR any ancestor's, any depth up.
+    const isPacked =
+        !!entity.active_move_id || locationAncestors.some(ancestor => ancestor.active_move_id);
 
     return (
         <DeckItem
             data-block='DeckEntityCard'
             className={cn(
-                'flex-col items-stretch justify-start overflow-hidden border-border/40 ring-1 ring-foreground/5',
+                'relative flex-col items-stretch justify-start overflow-hidden border-border/40 ring-1 ring-foreground/5',
                 className,
                 // Pinned last: DeckCards clones the top (draggable) card with
                 // its own hardcoded 'rounded-lg', which would otherwise win
@@ -59,6 +66,7 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                 'rounded-4xl',
             )}
         >
+            {isPacked && <PackedTapeCard className='absolute w-full h-12 z-0' />}
             <div className='relative m-3 sm:m-5 aspect-square shrink-0 overflow-hidden rounded-2xl'>
                 <DeckCardPhotos photos={photos} icon={icon} seed={seed} />
                 <Link

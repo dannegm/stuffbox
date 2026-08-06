@@ -17,8 +17,13 @@ import { locationDescendantIdsQuery } from '@/queries/locations';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { buildDeckQueue } from '@/helpers/deck';
-import { getItemIcon, getFirstItemPhoto, getItemPhotoUrl } from '@/helpers/item';
-import { getLocationIcon, getFirstLocationPhoto, getLocationPhotoUrl } from '@/helpers/location';
+import { getItemIcon, getFirstItemPhoto, getItemPhotoUrl, getItemPhotos } from '@/helpers/item';
+import {
+    getLocationIcon,
+    getFirstLocationPhoto,
+    getLocationPhotoUrl,
+    getLocationPhotos,
+} from '@/helpers/location';
 import { Deck, DeckCards, DeckEmpty } from '@/ui/deck';
 import { DeckEntityCard } from '@/components/deck/deck-entity-card';
 import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
@@ -227,10 +232,15 @@ export default function DeckPage() {
             return {
                 rating,
                 entity: entity && {
+                    entityType: entity.entityType,
+                    entityId: entity.entityId,
                     name: entity.name,
                     icon: isItem ? getItemIcon(entity) : getLocationIcon(entity),
                     photo: isItem ? getFirstItemPhoto(entity) : getFirstLocationPhoto(entity),
                     photoUrl: isItem ? getItemPhotoUrl(entity) : getLocationPhotoUrl(entity),
+                    photos: isItem ? getItemPhotos(entity) : getLocationPhotos(entity),
+                    containerId: entity.containerId,
+                    active_move_id: entity.active_move_id,
                 },
             };
         });
