@@ -30,6 +30,7 @@ import {
     FunnelIcon,
     ListIcon,
     SquaresFourIcon,
+    EyeIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -73,7 +74,14 @@ import { ItemCardItem } from '@/components/items/item-card-item';
 import { MultiSelectFilter } from '@/components/search/multi-select-filter';
 import { SearchTagFilter } from '@/components/search/search-tag-filter';
 import { DynamicIcon } from '@/ui/dynamic-icon';
-import { getLocationIcon } from '@/helpers/location';
+import { CroppedPhoto } from '@/ui/cropped-photo';
+import { PhotoLightbox } from '@/ui/photo-lightbox';
+import {
+    getLocationIcon,
+    getFirstLocationPhoto,
+    getLocationPhotoUrl,
+    getLocationPhotos,
+} from '@/helpers/location';
 import {
     DEFAULT_LOCATION_ICONS,
     FALLBACK_LOCATION_ICON,
@@ -84,7 +92,7 @@ import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
-import { Stat } from '@/ui/stat';
+import { ScrollToolbar } from '@/ui/scroll-toolbar';
 import {
     Empty,
     EmptyHeader,
@@ -174,6 +182,7 @@ export default function LocationPage({ params }) {
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
     const confirm = useConfirm();
+    const [lightboxIndex, setLightboxIndex] = useState(null);
     const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
@@ -224,9 +233,9 @@ export default function LocationPage({ params }) {
         moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
     );
     // Recursive rollup of everything under this location, regardless of
-    // is_item — that flag only gates pack/unpack eligibility and the rate
-    // deck, not the value stat (a house/room's total is just as meaningful
-    // as a box's).
+    // is_item — that flag only gates the rate deck now (pack/unpack is
+    // available on any non-root location), not the value stat (a house/room's
+    // total is just as meaningful as a box's).
     const { data: totalPrice } = useQuery(locationTotalPriceQuery(id, { enabled: !!location }));
     const { data: childCounts } = useQuery(
         locationCountsQuery(children?.map(child => child.id) ?? [], {
@@ -483,6 +492,9 @@ export default function LocationPage({ params }) {
         return <Loading />;
     }
 
+    const locationPhoto = getFirstLocationPhoto(location);
+    const locationPhotoUrl = getLocationPhotoUrl(location);
+    const locationPhotos = getLocationPhotos(location);
     const isEmpty = children.length === 0 && items.length === 0;
     // Default to the locations tab, unless there are none — then default to
     // items. Once the user taps a tab, that choice is saved to settings and
@@ -522,11 +534,8 @@ export default function LocationPage({ params }) {
         : filteredItems;
     const parentName = ancestors?.[ancestors.length - 1]?.name;
 
-    return (
-        <div
-            className='absolute inset-0 flex flex-col gap-4 overflow-hidden p-4'
-            data-block='LocationPage'
-        >
+    const mainContent = (
+        <>
             {location.active_move_id && (
                 <PackedTapeTop moveId={location.active_move_id} moveName={packedMove?.name} />
             )}
@@ -538,174 +547,73 @@ export default function LocationPage({ params }) {
             />
 
             <div
-                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                className='relative flex items-center gap-3 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
                 data-block='LocationHero'
             >
-                <div className='flex items-center justify-between gap-2'>
-                    <div className='flex min-w-0 items-center gap-3'>
-                        <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-foreground shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
-                            <DynamicIcon icon={getLocationIcon(location)} />
-                        </span>
-
-                        <div className='min-w-0'>
-                            <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
-                                {location.name}
-                            </h1>
-                            <p className='truncate text-xs text-muted-foreground capitalize'>
-                                {location.type}
-                            </p>
-                        </div>
-                    </div>
-
-                    {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
-                        <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-2'>
-                            {children.length > 0 && (
-                                <Stat icon={PackageIcon} value={children.length} label='dentro' />
-                            )}
-                            {items.length > 0 && (
-                                <Stat icon={LeafIcon} value={items.length} label='items' />
-                            )}
-                            {totalPrice > 0 && (
-                                <Stat
-                                    className='hidden sm:flex'
-                                    icon={CurrencyDollarIcon}
-                                    value={`$${Number(totalPrice).toLocaleString('es-MX')}`}
-                                    label='valor total'
-                                />
-                            )}
-                        </div>
+                <span
+                    className={cn(
+                        'group relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-card text-foreground shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5',
+                        locationPhotoUrl && 'cursor-pointer',
                     )}
-                </div>
-
-                <div className='h-1 bg-muted/50' />
-
-                <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
-                    {isSelecting ? (
+                    {...(locationPhotoUrl && {
+                        role: 'button',
+                        tabIndex: 0,
+                        'aria-label': 'Ver foto',
+                        onClick: () => setLightboxIndex(0),
+                        onKeyDown: event => {
+                            if (event.key === 'Enter' || event.key === ' ') setLightboxIndex(0);
+                        },
+                    })}
+                >
+                    {locationPhotoUrl ? (
                         <>
-                            <span className='text-sm text-muted-foreground'>
-                                {selectedCount} sel.
+                            <CroppedPhoto src={locationPhotoUrl} photo={locationPhoto} />
+                            <span className='absolute inset-0 z-1 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40 group-focus-visible:bg-black/40'>
+                                <EyeIcon
+                                    weight='fill'
+                                    className='size-4 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100'
+                                />
                             </span>
-
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPickerMode('transfer')}
-                            >
-                                <ArrowsLeftRightIcon />
-                                Transferir
-                            </Button>
-
-                            <div className='flex flex-1' />
-
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPackOpen(true)}
-                            >
-                                <LucidePackageIcon className='stroke-1' />
-                                <span className='hidden sm:inline'>Empacar</span>
-                            </Button>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={selectedCount === 0}
-                                onClick={() => setBulkPickerMode('unpack')}
-                            >
-                                <LucidePackageOpenIcon className='stroke-1' />
-                                <span className='hidden sm:inline'>Desempacar</span>
-                            </Button>
-
-                            <Button size='sm' variant='ghost' onClick={exitSelectionMode}>
-                                <XIcon />
-                            </Button>
                         </>
                     ) : (
-                        <>
-                            {!isEmpty && (
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={() => setSelectionMode(true)}
-                                >
-                                    <CheckSquareIcon />
-                                </Button>
-                            )}
+                        <DynamicIcon icon={getLocationIcon(location)} />
+                    )}
+                </span>
 
-                            {location.parent_id && (
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    disabled={isTransferring}
-                                    onClick={() => setTransferOpen(true)}
-                                >
-                                    {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
-                                    <span className='hidden sm:inline'>Transferir</span>
-                                </Button>
-                            )}
-
-                            {location.is_item &&
-                                (location.active_move_id ? (
-                                    <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => setUnpackOpen(true)}
-                                    >
-                                        <LucidePackageOpenIcon className='stroke-1' />
-                                        <span
-                                            className={cn('after:content-[_]', {
-                                                'hidden sm:inline': packedMove,
-                                            })}
-                                        >
-                                            Desempacar
-                                        </span>
-                                        <span>{packedMove ? `(${packedMove.name})` : ''}</span>
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => setPackDialogOpen(true)}
-                                    >
-                                        <LucidePackageIcon className='stroke-1' />
-                                        <span className='hidden sm:inline'>Empacar</span>
-                                    </Button>
-                                ))}
-
-                            <div className='flex flex-1' />
-
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                render={<Link href={`/item/new?location=${id}`} />}
-                            >
-                                <PlusIcon />
+                <div className='min-w-0'>
+                    <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                        {location.name}
+                    </h1>
+                    <div className='flex items-center gap-1.5'>
+                        <p className='truncate text-xs text-muted-foreground capitalize'>
+                            {location.type}
+                        </p>
+                        {location.is_item && (
+                            <span className='flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary [&_svg]:size-3'>
                                 <LeafIcon />
-                                <span className='hidden sm:inline'>Item</span>
-                            </Button>
+                                Item
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
 
-                            <CreateLocationDialog
-                                workspaceId={location.workspace_id}
-                                parentId={id}
-                                title='Agregar dentro'
-                            >
-                                <Button size='sm' variant='outline'>
-                                    <PlusIcon />
-                                    <PackageIcon />
-                                    <span className='hidden sm:inline'>Location</span>
-                                </Button>
-                            </CreateLocationDialog>
-
-                            {location.is_item && (
-                                <RatingToggle
-                                    workspaceId={location.workspace_id}
-                                    entityType='location'
-                                    entityId={id}
-                                    ratings={locationRatings}
-                                />
-                            )}
-
+            <ScrollToolbar
+                data-block='LocationToolbar'
+                start={
+                    isSelecting || isEmpty ? null : (
+                        <Button size='icon-sm' variant='outline' onClick={() => setSelectionMode(true)}>
+                            <CheckSquareIcon />
+                        </Button>
+                    )
+                }
+                end={
+                    isSelecting ? (
+                        <Button size='icon-sm' variant='ghost' onClick={exitSelectionMode}>
+                            <XIcon />
+                        </Button>
+                    ) : (
+                        canDeleteLocation && (
                             <ResponsiveDropdownMenu>
                                 <ResponsiveDropdownMenuTrigger
                                     render={<Button size='icon-sm' variant='outline' />}
@@ -714,26 +622,163 @@ export default function LocationPage({ params }) {
                                 </ResponsiveDropdownMenuTrigger>
                                 <ResponsiveDropdownMenuContent align='end'>
                                     <ResponsiveDropdownMenuItem
-                                        render={<Link href={`/location/${id}/edit`} />}
+                                        variant='destructive'
+                                        onClick={handleDelete}
                                     >
-                                        <PencilSimpleIcon />
-                                        Editar
+                                        <TrashIcon />
+                                        Eliminar
                                     </ResponsiveDropdownMenuItem>
-                                    {canDeleteLocation && (
-                                        <ResponsiveDropdownMenuItem
-                                            variant='destructive'
-                                            onClick={handleDelete}
-                                        >
-                                            <TrashIcon />
-                                            Eliminar
-                                        </ResponsiveDropdownMenuItem>
-                                    )}
                                 </ResponsiveDropdownMenuContent>
                             </ResponsiveDropdownMenu>
-                        </>
-                    )}
-                </div>
-            </div>
+                        )
+                    )
+                }
+            >
+                {isSelecting ? (
+                    <>
+                        <span className='shrink-0 px-1 text-sm text-muted-foreground'>
+                            {selectedCount} sel.
+                        </span>
+
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPickerMode('transfer')}
+                        >
+                            <ArrowsLeftRightIcon />
+                            Transferir
+                        </Button>
+
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPackOpen(true)}
+                        >
+                            <LucidePackageIcon className='stroke-1' />
+                            <span className='hidden sm:inline'>Empacar</span>
+                        </Button>
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={selectedCount === 0}
+                            onClick={() => setBulkPickerMode('unpack')}
+                        >
+                            <LucidePackageOpenIcon className='stroke-1' />
+                            <span className='hidden sm:inline'>Desempacar</span>
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
+                            <div className='flex h-8 shrink-0 items-center divide-x divide-border rounded-[min(var(--radius-md),10px)] border border-border bg-background shadow-xs dark:border-input dark:bg-input/30'>
+                                {children.length > 0 && (
+                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
+                                        <PackageIcon className='text-muted-foreground' />
+                                        <span className='font-medium tabular-nums'>
+                                            {children.length}
+                                        </span>
+                                        <span className='hidden text-muted-foreground sm:inline'>
+                                            dentro
+                                        </span>
+                                    </span>
+                                )}
+                                {items.length > 0 && (
+                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
+                                        <LeafIcon className='text-muted-foreground' />
+                                        <span className='font-medium tabular-nums'>
+                                            {items.length}
+                                        </span>
+                                        <span className='hidden text-muted-foreground sm:inline'>
+                                            items
+                                        </span>
+                                    </span>
+                                )}
+                                {totalPrice > 0 && (
+                                    <span className='hidden h-full items-center gap-1.5 px-2.5 text-sm sm:flex [&_svg]:size-3.5'>
+                                        <CurrencyDollarIcon className='text-muted-foreground' />
+                                        <span className='font-medium tabular-nums'>
+                                            ${Number(totalPrice).toLocaleString('es-MX')}
+                                        </span>
+                                        <span className='text-muted-foreground'>valor total</span>
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        <div className='flex-1' />
+
+                        {location.parent_id && (
+                            <Button
+                                size='sm'
+                                variant='outline'
+                                disabled={isTransferring}
+                                onClick={() => setTransferOpen(true)}
+                            >
+                                {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
+                                <span className='hidden sm:inline'>Transferir</span>
+                            </Button>
+                        )}
+
+                        {location.parent_id &&
+                            (location.active_move_id ? (
+                                <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
+                                    <LucidePackageOpenIcon className='stroke-1' />
+                                    <span
+                                        className={cn('after:content-[_]', {
+                                            'hidden sm:inline': packedMove,
+                                        })}
+                                    >
+                                        Desempacar
+                                    </span>
+                                    <span>{packedMove ? `(${packedMove.name})` : ''}</span>
+                                </Button>
+                            ) : (
+                                <Button size='sm' variant='outline' onClick={() => setPackDialogOpen(true)}>
+                                    <LucidePackageIcon className='stroke-1' />
+                                    <span className='hidden sm:inline'>Empacar</span>
+                                </Button>
+                            ))}
+
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            render={<Link href={`/item/new?location=${id}`} />}
+                        >
+                            <PlusIcon />
+                            <LeafIcon />
+                            <span className='hidden sm:inline'>Item</span>
+                        </Button>
+
+                        <CreateLocationDialog
+                            workspaceId={location.workspace_id}
+                            parentId={id}
+                            title='Agregar dentro'
+                        >
+                            <Button size='sm' variant='outline'>
+                                <PlusIcon />
+                                <PackageIcon />
+                                <span className='hidden sm:inline'>Location</span>
+                            </Button>
+                        </CreateLocationDialog>
+
+                        {location.is_item && (
+                            <RatingToggle
+                                workspaceId={location.workspace_id}
+                                entityType='location'
+                                entityId={id}
+                                ratings={locationRatings}
+                            />
+                        )}
+
+                        <Button size='sm' variant='outline' render={<Link href={`/location/${id}/edit`} />}>
+                            <PencilSimpleIcon />
+                            <span className='hidden sm:inline'>Editar</span>
+                        </Button>
+                    </>
+                )}
+            </ScrollToolbar>
 
             <LocationPicker
                 open={transferOpen}
@@ -759,6 +804,13 @@ export default function LocationPage({ params }) {
                 open={packDialogOpen}
                 onOpenChange={setPackDialogOpen}
                 onSelect={handlePack}
+            />
+
+            <PhotoLightbox
+                photos={locationPhotos}
+                index={lightboxIndex}
+                onIndexChange={setLightboxIndex}
+                onClose={() => setLightboxIndex(null)}
             />
 
             <LocationPicker
@@ -811,7 +863,7 @@ export default function LocationPage({ params }) {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className='flex min-h-0 flex-1 flex-col gap-4'>
+                <div className={cn('flex flex-col gap-4', isDesktop && 'min-h-0 flex-1')}>
                     <div className='flex items-center justify-between gap-2'>
                         <Tabs value={packFilter} onValueChange={setPackFilter}>
                             <TabsList>
@@ -1065,7 +1117,7 @@ export default function LocationPage({ params }) {
                             </DragOverlay>
                         </DndContext>
                     ) : (
-                        <div className='flex min-h-0 flex-1 flex-col gap-2'>
+                        <div className='flex flex-col gap-2'>
                             <Tabs value={mobileView} onValueChange={setMobileView}>
                                 <TabsList className='w-full'>
                                     <TabsTrigger value='locations'>Ubicaciones</TabsTrigger>
@@ -1109,40 +1161,34 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedChildren.length > 0 ? (
-                                        <ScrollArea nav className='min-h-0 flex-1'>
-                                            <div
-                                                className={cn('gap-2', {
-                                                    'grid grid-cols-2': viewType === 'cards',
-                                                    'flex flex-col': viewType !== 'cards',
-                                                })}
-                                            >
-                                                {searchedChildren.map(child =>
-                                                    viewType === 'cards' ? (
-                                                        <LocationCardItem
-                                                            key={child.id}
-                                                            location={child}
-                                                            counts={childCounts?.[child.id]}
-                                                            selectable={isSelecting}
-                                                            selected={selectedLocationIds.has(
-                                                                child.id,
-                                                            )}
-                                                            onToggle={toggleLocationSelection}
-                                                        />
-                                                    ) : (
-                                                        <LocationListItem
-                                                            key={child.id}
-                                                            location={child}
-                                                            counts={childCounts?.[child.id]}
-                                                            selectable={isSelecting}
-                                                            selected={selectedLocationIds.has(
-                                                                child.id,
-                                                            )}
-                                                            onToggle={toggleLocationSelection}
-                                                        />
-                                                    ),
-                                                )}
-                                            </div>
-                                        </ScrollArea>
+                                        <div
+                                            className={cn('gap-2', {
+                                                'grid grid-cols-2': viewType === 'cards',
+                                                'flex flex-col': viewType !== 'cards',
+                                            })}
+                                        >
+                                            {searchedChildren.map(child =>
+                                                viewType === 'cards' ? (
+                                                    <LocationCardItem
+                                                        key={child.id}
+                                                        location={child}
+                                                        counts={childCounts?.[child.id]}
+                                                        selectable={isSelecting}
+                                                        selected={selectedLocationIds.has(child.id)}
+                                                        onToggle={toggleLocationSelection}
+                                                    />
+                                                ) : (
+                                                    <LocationListItem
+                                                        key={child.id}
+                                                        location={child}
+                                                        counts={childCounts?.[child.id]}
+                                                        selectable={isSelecting}
+                                                        selected={selectedLocationIds.has(child.id)}
+                                                        onToggle={toggleLocationSelection}
+                                                    />
+                                                ),
+                                            )}
+                                        </div>
                                     ) : (
                                         <Empty data-block='MobileLocationsEmpty'>
                                             <EmptyHeader>
@@ -1202,36 +1248,34 @@ export default function LocationPage({ params }) {
                                     </div>
 
                                     {searchedItems.length > 0 ? (
-                                        <ScrollArea nav className='min-h-0 flex-1'>
-                                            <div
-                                                className={cn('gap-2', {
-                                                    'grid grid-cols-2': viewType === 'cards',
-                                                    'flex flex-col': viewType !== 'cards',
-                                                })}
-                                            >
-                                                {searchedItems.map(item =>
-                                                    viewType === 'cards' ? (
-                                                        <ItemCardItem
-                                                            key={item.id}
-                                                            item={item}
-                                                            selectable={isSelecting}
-                                                            selected={selectedItemIds.has(item.id)}
-                                                            onToggle={toggleItemSelection}
-                                                            {...getItemRatingCounts(item.id)}
-                                                        />
-                                                    ) : (
-                                                        <ItemListRow
-                                                            key={item.id}
-                                                            item={item}
-                                                            selectable={isSelecting}
-                                                            selected={selectedItemIds.has(item.id)}
-                                                            onToggle={toggleItemSelection}
-                                                            {...getItemRatingCounts(item.id)}
-                                                        />
-                                                    ),
-                                                )}
-                                            </div>
-                                        </ScrollArea>
+                                        <div
+                                            className={cn('gap-2', {
+                                                'grid grid-cols-2': viewType === 'cards',
+                                                'flex flex-col': viewType !== 'cards',
+                                            })}
+                                        >
+                                            {searchedItems.map(item =>
+                                                viewType === 'cards' ? (
+                                                    <ItemCardItem
+                                                        key={item.id}
+                                                        item={item}
+                                                        selectable={isSelecting}
+                                                        selected={selectedItemIds.has(item.id)}
+                                                        onToggle={toggleItemSelection}
+                                                        {...getItemRatingCounts(item.id)}
+                                                    />
+                                                ) : (
+                                                    <ItemListRow
+                                                        key={item.id}
+                                                        item={item}
+                                                        selectable={isSelecting}
+                                                        selected={selectedItemIds.has(item.id)}
+                                                        onToggle={toggleItemSelection}
+                                                        {...getItemRatingCounts(item.id)}
+                                                    />
+                                                ),
+                                            )}
+                                        </div>
                                     ) : (
                                         <Empty data-block='MobileItemsEmpty'>
                                             <EmptyHeader>
@@ -1267,6 +1311,21 @@ export default function LocationPage({ params }) {
                         </div>
                     )}
                 </div>
+            )}
+        </>
+    );
+
+    return (
+        <div
+            className={cn('absolute inset-0 flex flex-col overflow-hidden p-4', isDesktop && 'gap-4')}
+            data-block='LocationPage'
+        >
+            {isDesktop ? (
+                mainContent
+            ) : (
+                <ScrollArea nav className='min-h-0 flex-1'>
+                    <div className='flex flex-col gap-4 pb-4'>{mainContent}</div>
+                </ScrollArea>
             )}
         </div>
     );

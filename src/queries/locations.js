@@ -7,7 +7,7 @@ export const locationQuery = (id, opts = {}) => ({
     queryFn: async () => {
         const { data, error } = await supabase()
             .from('locations')
-            .select('*')
+            .select('*, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)')
             .eq('id', id)
             .single();
         if (error) throw error;

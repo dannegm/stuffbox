@@ -54,10 +54,10 @@ export const LOCATION_TYPE_PRESETS = Object.keys(DEFAULT_LOCATION_ICONS).filter(
 export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse'];
 
 // `is_item` is the single flag the app reads for "this location behaves like
-// an item" — descriptive fields (location/[id]/edit/page.js), pack/unpack
-// eligibility, the total-price rollup, and the rate-deck toggle
-// (location/[id]/page.js) all key off it now. These types only feed
-// CreateLocationDialog's smart default (box/shelf/toolbox/baggage start with
+// an item" — descriptive fields (location/[id]/edit/page.js) and the
+// rate-deck toggle (location/[id]/page.js) key off it now; pack/unpack is
+// available on any non-root location regardless of this flag. These types
+// only feed CreateLocationDialog's smart default (box/shelf/toolbox/baggage start with
 // is_item on, until the user manually flips the switch) — they no longer
 // gate anything directly. `locations.is_container` still exists and is still
 // written on create/update (also computed from this list), but nothing reads

@@ -110,6 +110,10 @@ function ScrollArea({ className, children, nav = false, ...props }) {
     );
 }
 
+// Overlay-style: invisible at rest, fades in only while the pointer is over
+// the scroll area or a scroll is actually happening (Base UI's own
+// `data-hovering`/`data-scrolling`, set on this element) — so it never sits
+// on screen as a permanent bar when the content isn't being scrolled.
 function ScrollBar({ className, orientation = 'vertical', ...props }) {
     return (
         <ScrollAreaPrimitive.Scrollbar
@@ -117,7 +121,7 @@ function ScrollBar({ className, orientation = 'vertical', ...props }) {
             data-orientation={orientation}
             orientation={orientation}
             className={cn(
-                'flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent',
+                'flex touch-none p-px opacity-0 transition-[color,opacity] select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent data-hovering:opacity-100 data-scrolling:opacity-100',
                 className,
             )}
             {...props}
