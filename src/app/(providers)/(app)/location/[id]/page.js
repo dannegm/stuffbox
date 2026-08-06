@@ -229,8 +229,15 @@ export default function LocationPage({ params }) {
     const { data: items, isPending: isItemsPending } = useQuery(
         itemsAtLocationQuery(id, { enabled: !!location }),
     );
+    // Boxed locations/items inherit their nearest packed ancestor's move —
+    // only the box that was actually packed has active_move_id set in the
+    // DB, so anything nested inside it (any depth) is "packed" only by
+    // walking up the ancestor chain, never by its own column.
+    const packedAncestor = (ancestors ?? []).find(ancestor => ancestor.active_move_id);
+    const packedMoveId = location?.active_move_id ?? packedAncestor?.active_move_id ?? null;
+    const isLocationPacked = !!packedMoveId;
     const { data: packedMove } = useQuery(
-        moveQuery(location?.active_move_id, { enabled: !!location?.active_move_id }),
+        moveQuery(packedMoveId, { enabled: !!packedMoveId }),
     );
     // Recursive rollup of everything under this location, regardless of
     // is_item — that flag only gates the rate deck now (pack/unpack is
@@ -506,6 +513,20 @@ export default function LocationPage({ params }) {
     const isOwner = workspace.owner_id === user.id;
     const canDeleteLocation = !!location.parent_id || isOwner;
 
+    // Everything directly inside this location inherits its pack state (see
+    // isLocationPacked above) — the child/item's own active_move_id still
+    // wins when set, so a location individually packed while its own
+    // container isn't stays correctly self-packed.
+    const inheritedMoveId = isLocationPacked ? packedMoveId : null;
+    const displayChildren = children.map(child => ({
+        ...child,
+        active_move_id: child.active_move_id ?? inheritedMoveId,
+    }));
+    const displayItems = items.map(item => ({
+        ...item,
+        active_move_id: item.active_move_id ?? inheritedMoveId,
+    }));
+
     const matchesPackFilter = entity => {
         if (packFilter === 'packed') return !!entity.active_move_id;
         if (packFilter === 'unpacked') return !entity.active_move_id;
@@ -516,8 +537,8 @@ export default function LocationPage({ params }) {
     const matchesTagFilter = item =>
         tagFilter.length === 0 ||
         item.item_tags.some(itemTag => tagFilter.includes(itemTag.tags?.id));
-    const filteredChildren = children.filter(matchesPackFilter).filter(matchesTypeFilter);
-    const filteredItems = items.filter(matchesPackFilter).filter(matchesTagFilter);
+    const filteredChildren = displayChildren.filter(matchesPackFilter).filter(matchesTypeFilter);
+    const filteredItems = displayItems.filter(matchesPackFilter).filter(matchesTagFilter);
 
     // Filters what's already loaded via Fuse, no refetch. Locations search by
     // name/type, items by name/tag name.
@@ -536,9 +557,6 @@ export default function LocationPage({ params }) {
 
     const mainContent = (
         <>
-            {location.active_move_id && (
-                <PackedTapeTop moveId={location.active_move_id} moveName={packedMove?.name} />
-            )}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={ancestors ?? []}
@@ -696,12 +714,14 @@ export default function LocationPage({ params }) {
                                     </span>
                                 )}
                                 {totalPrice > 0 && (
-                                    <span className='hidden h-full items-center gap-1.5 px-2.5 text-sm sm:flex [&_svg]:size-3.5'>
+                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
                                         <CurrencyDollarIcon className='text-muted-foreground' />
                                         <span className='font-medium tabular-nums'>
                                             ${Number(totalPrice).toLocaleString('es-MX')}
                                         </span>
-                                        <span className='text-muted-foreground'>valor total</span>
+                                        <span className='hidden text-muted-foreground sm:inline'>
+                                            valor total
+                                        </span>
                                     </span>
                                 )}
                             </div>
@@ -725,14 +745,7 @@ export default function LocationPage({ params }) {
                             (location.active_move_id ? (
                                 <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
                                     <LucidePackageOpenIcon className='stroke-1' />
-                                    <span
-                                        className={cn('after:content-[_]', {
-                                            'hidden sm:inline': packedMove,
-                                        })}
-                                    >
-                                        Desempacar
-                                    </span>
-                                    <span>{packedMove ? `(${packedMove.name})` : ''}</span>
+                                    <span className='hidden sm:inline'>Desempacar</span>
                                 </Button>
                             ) : (
                                 <Button size='sm' variant='outline' onClick={() => setPackDialogOpen(true)}>
@@ -1317,14 +1330,28 @@ export default function LocationPage({ params }) {
 
     return (
         <div
-            className={cn('absolute inset-0 flex flex-col overflow-hidden p-4', isDesktop && 'gap-4')}
+            className='absolute inset-0 flex flex-col gap-4 overflow-hidden p-4'
             data-block='LocationPage'
         >
+            {// PackedTapeTop is absolutely positioned against this page's own
+            // padding box — kept outside the mobile ScrollArea below so it
+            // never scrolls away with the rest of the content. Shown for an
+            // inherited pack too (see isLocationPacked above), not just this
+            // location's own active_move_id.
+            isLocationPacked && (
+                <PackedTapeTop moveId={packedMoveId} moveName={packedMove?.name} />
+            )}
+
             {isDesktop ? (
                 mainContent
             ) : (
-                <ScrollArea nav className='min-h-0 flex-1'>
-                    <div className='flex flex-col gap-4 pb-4'>{mainContent}</div>
+                // `-m-4` cancels this page's own p-4 so the ScrollArea's Root
+                // (nav bars, scrollbar thumb) reaches the true screen edges
+                // instead of floating inset with dead space around it; the
+                // p-4 moves onto the inner content div so the actual content
+                // keeps the same visual margin as before.
+                <ScrollArea nav className='-m-4 min-h-0 flex-1'>
+                    <div className='flex flex-col gap-4 p-4'>{mainContent}</div>
                 </ScrollArea>
             )}
         </div>

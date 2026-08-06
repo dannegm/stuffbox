@@ -9,7 +9,7 @@ import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
-import { PackedTape } from '@/components/moves/packed-tape';
+import { PackedTapeCard } from '@/components/moves/packed-tape';
 import {
     getLocationIcon,
     getLocationPhotoUrl,
@@ -68,9 +68,9 @@ export const LocationCardItem = ({
 
     const content = (
         <>
+            {location.active_move_id && <PackedTapeCard />}
             <div className='p-2 pb-0'>
                 <div className='group relative aspect-square w-full shrink-0 overflow-hidden rounded-lg bg-muted'>
-                    {location.active_move_id && <PackedTape />}
                     <div className='absolute inset-0 z-1'>
                         {photoUrl ? (
                             <CroppedPhoto src={photoUrl} photo={photo} />

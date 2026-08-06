@@ -87,7 +87,7 @@ export const MoveSummary = ({ move, packed, totalValue, isTotalValuePending }) =
                 {isTotalValuePending ? (
                     <Skeleton className='h-6 w-20' />
                 ) : (
-                    <span className='font-heading text-lg font-semibold tabular-nums'>
+                    <span className='font-heading text-2xl font-semibold tabular-nums ml-8.5'>
                         {formatMoney(totalValue ?? 0)}
                     </span>
                 )}
@@ -108,7 +108,7 @@ export const MoveSummary = ({ move, packed, totalValue, isTotalValuePending }) =
                     </Button>
                 }
             >
-                <span className='font-heading text-lg font-semibold tabular-nums'>
+                <span className='font-heading text-2xl font-semibold tabular-nums ml-8.5'>
                     {move.cost != null ? formatMoney(move.cost) : 'N/A'}
                 </span>
             </SummaryBox>
@@ -130,14 +130,15 @@ export const MoveSummary = ({ move, packed, totalValue, isTotalValuePending }) =
             >
                 <span
                     className={cn(
-                        'font-heading text-lg font-semibold tabular-nums',
+                        'font-heading text-base font-semibold tabular-nums',
                         progress.isLate && 'text-destructive',
                     )}
                 >
                     {progress.text}
                 </span>
+
                 {move.started_at && (
-                    <span className='truncate text-xs text-muted-foreground'>
+                    <span className='truncate text-xs text-muted-foreground -mt-1'>
                         {formatDate(move.started_at)}
                         {move.status === 'done' && move.completed_at
                             ? ` – ${formatDate(move.completed_at)}`

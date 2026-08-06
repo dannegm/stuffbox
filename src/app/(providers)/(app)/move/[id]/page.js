@@ -275,6 +275,7 @@ export default function MovePage({ params }) {
                 open={editOpen}
                 onOpenChange={setEditOpen}
             />
+
             <MoveDatesDialog move={move} open={datesOpen} onOpenChange={setDatesOpen} />
 
             {hasRoute ? (
@@ -300,7 +301,7 @@ export default function MovePage({ params }) {
             />
 
             {isEmpty ? (
-                <Empty className='flex-1 -mt-16' data-block='MovePackedEmpty'>
+                <Empty className='flex-1' data-block='MovePackedEmpty'>
                     <EmptyHeader>
                         <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
                             <PackageIcon />

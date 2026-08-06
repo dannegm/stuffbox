@@ -23,6 +23,22 @@ export const PackedTape = ({ className }) => (
     />
 );
 
+// Card-grid counterpart to `PackedTape` — a cover photo fills the icon
+// square edge-to-edge (z-1, above the tape's z-0), which hid the left-edge
+// strip entirely whenever a card had a photo. This one lives on the card's
+// own outer container instead of inside that square, so it's never behind
+// the photo layer — a short flag clipped by the card's own rounded corner
+// rather than a strip running the square's full height.
+export const PackedTapeCard = ({ className }) => (
+    <span
+        aria-hidden
+        className={cn(
+            'absolute top-0 left-0 z-20 h-2 w-16 border-r border-b border-black/10 bg-strip-flourish shadow-sm shadow-black/20 dark:border-white/10',
+            className,
+        )}
+    />
+);
+
 export const PackedTapeTop = ({ className, moveId, moveName }) => (
     <div className={cn('absolute inset-x-0 top-0 z-0', className)}>
         <span

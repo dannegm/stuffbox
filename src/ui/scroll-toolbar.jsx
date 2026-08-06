@@ -4,15 +4,15 @@ import * as React from 'react';
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react/ssr';
 
 import { cn } from '@/helpers/utils';
-import { Button } from '@/ui/button';
 
 // Horizontal counterpart to ScrollArea/VirtualList's `nav` bars (docked
 // affordances that claim their own shrink-0 slice instead of overlaying
 // content) — three slots: `start`/`end` stay fixed, `children` is the strip
 // that actually scrolls. The strip is plain native overflow-x-auto, so touch
 // swipe/trackpad gestures work for free on every platform; the chevrons
-// (shown only while there's actually more content in that direction, same
-// as Bins' tab-bar) are a pointer-only convenience layered on top.
+// (shown only while there's actually more content in that direction, thin
+// bordered strips edge-to-edge with the row's height, same shape as Bins'
+// tab-bar) are a pointer-only convenience layered on top.
 export const ScrollToolbar = ({ start, end, children, className, ...props }) => {
     const $scroll = React.useRef(null);
     const [overflow, setOverflow] = React.useState({ left: false, right: false });
@@ -52,38 +52,34 @@ export const ScrollToolbar = ({ start, end, children, className, ...props }) => 
         >
             {start && <div className='flex shrink-0 items-center gap-1 sm:gap-2'>{start}</div>}
 
-            <div className='flex min-w-0 flex-1 items-stretch overflow-hidden'>
+            <div className='flex min-w-0 flex-1 items-stretch gap-1 overflow-hidden'>
                 {overflow.left && (
-                    <Button
+                    <button
                         type='button'
-                        variant='ghost'
-                        size='icon-sm'
                         aria-label='Desplazar a la izquierda'
                         onClick={() => scroll(-120)}
-                        className='shrink-0'
+                        className='flex w-5 shrink-0 items-center justify-center self-stretch rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 [&_svg]:size-3'
                     >
                         <CaretLeftIcon />
-                    </Button>
+                    </button>
                 )}
 
                 <div
                     ref={$scroll}
-                    className='flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scroll-smooth sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                    className='flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
                 >
                     {children}
                 </div>
 
                 {overflow.right && (
-                    <Button
+                    <button
                         type='button'
-                        variant='ghost'
-                        size='icon-sm'
                         aria-label='Desplazar a la derecha'
                         onClick={() => scroll(120)}
-                        className='shrink-0'
+                        className='flex w-5 shrink-0 items-center justify-center self-stretch rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 [&_svg]:size-3'
                     >
                         <CaretRightIcon />
-                    </Button>
+                    </button>
                 )}
             </div>
 

@@ -97,7 +97,7 @@ export const locationAncestorsQuery = (parentId, opts = {}) => ({
         while (currentId) {
             const { data, error } = await supabase()
                 .from('locations')
-                .select('id, name, type, icon, parent_id')
+                .select('id, name, type, icon, parent_id, active_move_id')
                 .eq('id', currentId)
                 .maybeSingle();
             if (error) throw error;
