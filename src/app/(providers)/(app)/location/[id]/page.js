@@ -22,7 +22,6 @@ import {
     LeafIcon,
     TrashIcon,
     ArrowsLeftRightIcon,
-    CheckSquareIcon,
     XIcon,
     ArrowUpIcon,
     CurrencyDollarIcon,
@@ -90,6 +89,7 @@ import {
 } from '@/constants/location-icons';
 import { cn } from '@/helpers/utils';
 import { Button } from '@/ui/button';
+import { Checkbox } from '@/ui/checkbox';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
 import { ScrollToolbar } from '@/ui/scroll-toolbar';
@@ -555,6 +555,27 @@ export default function LocationPage({ params }) {
         : filteredItems;
     const parentName = ancestors?.[ancestors.length - 1]?.name;
 
+    // "Select all" targets whatever's currently visible (post search/filter),
+    // matching what the user actually sees — not every child/item at this
+    // location regardless of filters.
+    const visibleLocationIds = searchedChildren.map(child => child.id);
+    const visibleItemIds = searchedItems.map(item => item.id);
+    const visibleSelectableCount = visibleLocationIds.length + visibleItemIds.length;
+    const isAllSelected =
+        visibleSelectableCount > 0 &&
+        visibleLocationIds.every(childId => selectedLocationIds.has(childId)) &&
+        visibleItemIds.every(itemId => selectedItemIds.has(itemId));
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedLocationIds(new Set());
+            setSelectedItemIds(new Set());
+        } else {
+            setSelectedLocationIds(new Set(visibleLocationIds));
+            setSelectedItemIds(new Set(visibleItemIds));
+        }
+    };
+
     const mainContent = (
         <>
             <LocationBreadcrumb
@@ -619,36 +640,37 @@ export default function LocationPage({ params }) {
             <ScrollToolbar
                 data-block='LocationToolbar'
                 start={
-                    isSelecting || isEmpty ? null : (
-                        <Button size='icon-sm' variant='outline' onClick={() => setSelectionMode(true)}>
-                            <CheckSquareIcon />
-                        </Button>
-                    )
-                }
-                end={
                     isSelecting ? (
-                        <Button size='icon-sm' variant='ghost' onClick={exitSelectionMode}>
+                        <Button size='icon-sm' variant='outline' onClick={exitSelectionMode}>
                             <XIcon />
                         </Button>
                     ) : (
-                        canDeleteLocation && (
-                            <ResponsiveDropdownMenu>
-                                <ResponsiveDropdownMenuTrigger
-                                    render={<Button size='icon-sm' variant='outline' />}
-                                >
-                                    <DotsThreeVerticalIcon />
-                                </ResponsiveDropdownMenuTrigger>
-                                <ResponsiveDropdownMenuContent align='end'>
-                                    <ResponsiveDropdownMenuItem
-                                        variant='destructive'
-                                        onClick={handleDelete}
-                                    >
-                                        <TrashIcon />
-                                        Eliminar
-                                    </ResponsiveDropdownMenuItem>
-                                </ResponsiveDropdownMenuContent>
-                            </ResponsiveDropdownMenu>
+                        !isEmpty && (
+                            <Button size='icon-sm' variant='outline' onClick={() => setSelectionMode(true)}>
+                                <Checkbox checked={true} tabIndex={-1} className='pointer-events-none' />
+                            </Button>
                         )
+                    )
+                }
+                end={
+                    !isSelecting &&
+                    canDeleteLocation && (
+                        <ResponsiveDropdownMenu>
+                            <ResponsiveDropdownMenuTrigger
+                                render={<Button size='icon-sm' variant='outline' />}
+                            >
+                                <DotsThreeVerticalIcon />
+                            </ResponsiveDropdownMenuTrigger>
+                            <ResponsiveDropdownMenuContent align='end'>
+                                <ResponsiveDropdownMenuItem
+                                    variant='destructive'
+                                    onClick={handleDelete}
+                                >
+                                    <TrashIcon />
+                                    Eliminar
+                                </ResponsiveDropdownMenuItem>
+                            </ResponsiveDropdownMenuContent>
+                        </ResponsiveDropdownMenu>
                     )
                 }
             >
@@ -657,6 +679,22 @@ export default function LocationPage({ params }) {
                         <span className='shrink-0 px-1 text-sm text-muted-foreground'>
                             {selectedCount} sel.
                         </span>
+
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={visibleSelectableCount === 0}
+                            onClick={toggleSelectAll}
+                        >
+                            <Checkbox
+                                checked={isAllSelected}
+                                tabIndex={-1}
+                                className='pointer-events-none'
+                            />
+                            <span className='hidden sm:inline'>
+                                {isAllSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                            </span>
+                        </Button>
 
                         <Button
                             size='sm'
