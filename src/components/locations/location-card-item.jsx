@@ -68,7 +68,7 @@ export const LocationCardItem = ({
 
     const content = (
         <>
-            {location.active_move_id && <PackedTapeCard />}
+            {location.active_move_id && <PackedTapeCard className='absolute w-full h-6 z-0' />}
             <div className='p-2 pb-0'>
                 <div className='group relative aspect-square w-full shrink-0 overflow-hidden rounded-lg bg-muted'>
                     <div className='absolute inset-0 z-1'>
@@ -92,17 +92,20 @@ export const LocationCardItem = ({
                         </span>
                     )}
                     {!selectable && photos.length > 0 && (
-                        <span
-                            role='button'
-                            tabIndex={0}
-                            aria-label='Ver fotos'
-                            onClick={openLightbox}
-                            onKeyDown={event => {
-                                if (event.key === 'Enter' || event.key === ' ') openLightbox(event);
-                            }}
-                            className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:bg-black/40 group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:bg-black/40 focus-visible:opacity-100'
-                        >
-                            <EyeIcon weight='fill' className='size-6 text-white' />
+                        <span className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none group-hover:pointer-events-auto'>
+                            <span
+                                className='flex h-3/5 w-3/5 items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100'
+                                role='button'
+                                tabIndex={0}
+                                aria-label='Ver fotos'
+                                onClick={openLightbox}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' || event.key === ' ')
+                                        openLightbox(event);
+                                }}
+                            >
+                                <EyeIcon weight='fill' className='size-6 text-white' />
+                            </span>
                         </span>
                     )}
                 </div>

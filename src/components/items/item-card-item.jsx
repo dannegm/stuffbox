@@ -79,17 +79,20 @@ export const ItemCardItem = ({
                         </span>
                     )}
                     {!selectable && photos.length > 0 && (
-                        <span
-                            role='button'
-                            tabIndex={0}
-                            aria-label='Ver fotos'
-                            onClick={openLightbox}
-                            onKeyDown={event => {
-                                if (event.key === 'Enter' || event.key === ' ') openLightbox(event);
-                            }}
-                            className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:bg-black/40 group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:bg-black/40 focus-visible:opacity-100'
-                        >
-                            <EyeIcon weight='fill' className='size-6 text-white' />
+                        <span className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none group-hover:pointer-events-auto'>
+                            <span
+                                className='flex h-3/5 w-3/5 items-center justify-center opacity-0 bg-black/40 hover:opacity-100 focus-visible:opacity-100 transition-opacity rounded-xl'
+                                role='button'
+                                tabIndex={0}
+                                aria-label='Ver fotos'
+                                onClick={openLightbox}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' || event.key === ' ')
+                                        openLightbox(event);
+                                }}
+                            >
+                                <EyeIcon weight='fill' className='size-6 text-white' />
+                            </span>
                         </span>
                     )}
                 </div>

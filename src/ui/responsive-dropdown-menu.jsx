@@ -108,6 +108,13 @@ export const ResponsiveDropdownMenuItem = ({
                 data-variant={variant}
                 className={cn(ITEM_CLASS, className)}
                 render={render}
+                // `render` here is always something like a Link (an <a>), never
+                // a native <button> — DrawerClose (Base UI Dialog.Close)
+                // defaults nativeButton to true and warns unless told
+                // otherwise. Plain action items (no `render`) still resolve to
+                // Close's own default <button>, so they're unaffected either
+                // way — but only opt out when there's a custom render.
+                nativeButton={render ? false : undefined}
                 {...props}
             >
                 {children}

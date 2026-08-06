@@ -12,7 +12,10 @@ import { cn } from '@/helpers/utils';
 // clipped on with a punched hole and given a one-shot `animate-tag-swing`
 // settle. Both bands sit behind via `z-0` and need their wrapper to be
 // `relative overflow-hidden` (PackedTapeTop's parent should also allow the
-// tag to overflow — it deliberately pokes out past the band).
+// tag to overflow — it deliberately pokes out past the band). On mobile (see
+// MoveTag below) it instead escapes to `fixed`, since some pages
+// (location/[id]) wrap this in an `overflow-hidden` ancestor that clips
+// anything poking out past it.
 export const PackedTape = ({ className }) => (
     <span
         aria-hidden
@@ -49,14 +52,24 @@ export const PackedTapeTop = ({ className, moveId, moveName }) => (
     </div>
 );
 
-// The tag itself is a real link to the move — not just decoration.
+// The tag itself is a real link to the move — not just decoration. On mobile
+// it's `fixed` instead of `absolute` — some pages wrap PackedTapeTop in an
+// `overflow-hidden` ancestor that otherwise clips it — pinned near the true
+// viewport top, above the in-flow mobile header (src/app/(providers)/(app)/
+// layout.js's `MobileHeader`, which sets no z-index of its own) but below
+// the mobile sidebar's Sheet overlay+panel (`z-50`, src/ui/sheet.jsx) so
+// that scrim still correctly covers it once the sidebar opens — hence `z-40`,
+// the one open slot in this app's 0/1 → 10/20 → 50 z-index scale. `md:`
+// (matching MobileHeader's own `md:hidden` breakpoint, not the `sm:` used
+// elsewhere in this file) reverts to the original locally-absolute
+// positioning once the persistent desktop sidebar replaces that header.
 export const MoveTag = ({ moveId, moveName }) => (
     <Link
         href={`/move/${moveId}`}
         aria-label={`Empacado en la mudanza: ${moveName}`}
         data-block='MoveTag'
         className={cn(
-            'group/tag absolute -top-2.5 sm:top-1 right-3 z-10 -rotate-3 animate-tag-swing',
+            'group/tag fixed top-10 right-3 z-40 -rotate-3 animate-tag-swing md:absolute md:top-1 md:z-10',
             'flex items-center gap-1.5 rounded-md border border-dashed border-flourish/50',
             'bg-card py-1 pr-2.5 pl-1.5 text-xs font-medium text-foreground',
             'shadow-sm shadow-black/20 transition-transform hover:-translate-y-0.5 hover:rotate-0',

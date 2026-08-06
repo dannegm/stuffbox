@@ -27,14 +27,17 @@ import { cn } from '@/helpers/utils';
 // `item.icon` field) — two different shapes, same component.
 //
 // Responsive shape: on mobile the workspace crumb and `current` itself both
-// disappear (the page's own hero header already names the current item/
-// location, so repeating it in the breadcrumb is redundant on a narrow
-// screen) — the first ancestor (root) and the last one (`current`'s direct
-// parent — a de-facto "back" button) stay visible, and whatever's between
-// them collapses behind a `BreadcrumbEllipsis` that opens a `DropdownMenu`
-// listing those hidden ancestors (shadcn's documented ellipsis+dropdown
-// composition) — not a static "…", an actual way back to them. Desktop
-// (`sm:`) shows the full chain instead, `current` included; the mobile-only
+// disappear from the inline row (the page's own hero header already names
+// the current item/location, so repeating it in the breadcrumb is redundant
+// on a narrow screen) — the first ancestor (root) and the last one
+// (`current`'s direct parent — a de-facto "back" button) stay visible
+// inline, and a `BreadcrumbEllipsis` opens a `DropdownMenu` with the full
+// path instead (shadcn's documented ellipsis+dropdown composition, extended
+// into a vertical timeline): root flush at the top, then everything under
+// it — middle ancestors, the last ancestor, and `current` — in an indented,
+// dot-and-line column so the nesting reads visually, `current` itself
+// styled inert (no link, since it's the page already open). Desktop (`sm:`)
+// shows the full chain inline instead, `current` included; the mobile-only
 // bits are hidden there via `sm:hidden`, the always-visible ones use
 // `hidden sm:inline-flex`.
 export const LocationBreadcrumb = ({
@@ -49,6 +52,10 @@ export const LocationBreadcrumb = ({
     // (e.g. current sits directly inside a house) has nothing to duplicate.
     const lastAncestor = ancestors.length > 1 ? ancestors[ancestors.length - 1] : null;
     const middleAncestors = ancestors.length > 2 ? ancestors.slice(1, -1) : [];
+    // Everything under the root, for the mobile ellipsis dropdown's full-path
+    // view — the middle/last ancestors that stay hidden inline on mobile,
+    // plus `current` itself (never shown inline there at all).
+    const descendantPath = [...ancestors.slice(1), current];
 
     return (
         <Breadcrumb data-block='LocationBreadcrumb' className={cn('min-w-0', className)}>
@@ -109,7 +116,7 @@ export const LocationBreadcrumb = ({
                     </Fragment>
                 ))}
 
-                {middleAncestors.length > 0 && (
+                {firstAncestor && (
                     <>
                         <BreadcrumbItem className='sm:hidden'>
                             <ResponsiveDropdownMenu>
@@ -119,16 +126,44 @@ export const LocationBreadcrumb = ({
                                     <BreadcrumbEllipsis />
                                     <span className='sr-only'>Mostrar ruta completa</span>
                                 </ResponsiveDropdownMenuTrigger>
-                                <ResponsiveDropdownMenuContent align='start'>
-                                    {middleAncestors.map(ancestor => (
-                                        <ResponsiveDropdownMenuItem
-                                            key={ancestor.id}
-                                            render={<Link href={`/location/${ancestor.id}`} />}
-                                        >
-                                            <DynamicIcon icon={getLocationIcon(ancestor)} />
-                                            {ancestor.name}
-                                        </ResponsiveDropdownMenuItem>
-                                    ))}
+                                <ResponsiveDropdownMenuContent align='start' className='w-64'>
+                                    {/* Root sits flush, unindented — everything
+                                    below it is "inside" it, so it gets its own
+                                    left-margined column with a connecting
+                                    border-l standing in for the timeline line;
+                                    each row's dot is offset to sit centered on
+                                    that line (-1rem for the padding back to
+                                    the border, minus half the dot's own
+                                    width). */}
+                                    <ResponsiveDropdownMenuItem
+                                        render={<Link href={`/location/${firstAncestor.id}`} />}
+                                    >
+                                        <DynamicIcon icon={getLocationIcon(firstAncestor)} />
+                                        {firstAncestor.name}
+                                    </ResponsiveDropdownMenuItem>
+                                    <div className='ml-4.5 flex flex-col border-l pl-4'>
+                                        {descendantPath.map((node, nodeIndex) => {
+                                            const isCurrent = nodeIndex === descendantPath.length - 1;
+                                            return (
+                                                <div key={node.id} className='relative'>
+                                                    <span className='absolute top-1/2 -left-[1.1875rem] size-1.5 -translate-y-1/2 rounded-full bg-border ring-2 ring-background' />
+                                                    {isCurrent ? (
+                                                        <div className='flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2.5 text-left text-sm font-medium [&_svg]:size-4 [&_svg]:shrink-0'>
+                                                            <DynamicIcon icon={currentIcon} />
+                                                            {node.name}
+                                                        </div>
+                                                    ) : (
+                                                        <ResponsiveDropdownMenuItem
+                                                            render={<Link href={`/location/${node.id}`} />}
+                                                        >
+                                                            <DynamicIcon icon={getLocationIcon(node)} />
+                                                            {node.name}
+                                                        </ResponsiveDropdownMenuItem>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </ResponsiveDropdownMenuContent>
                             </ResponsiveDropdownMenu>
                         </BreadcrumbItem>
