@@ -59,7 +59,7 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                 'rounded-4xl',
             )}
         >
-            <div className='relative m-3 aspect-square shrink-0 overflow-hidden rounded-2xl'>
+            <div className='relative m-3 sm:m-5 aspect-square shrink-0 overflow-hidden rounded-2xl'>
                 <DeckCardPhotos photos={photos} icon={icon} seed={seed} />
                 <Link
                     href={editHref}
@@ -88,22 +88,22 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                 </div>
             </div>
 
-            <div className='flex flex-1 flex-col gap-1 px-4 pt-1 pb-4'>
+            <div className='flex flex-1 flex-col gap-1 sm:gap-2 px-4 sm:px-6 pt-1 pb-4 sm:pb-6'>
                 <div className='flex items-center gap-2'>
-                    <h2 className='truncate font-heading text-lg font-semibold leading-tight tracking-tight'>
+                    <h2 className='truncate font-heading text-lg sm:text-2xl font-semibold leading-tight tracking-tight'>
                         {entity.name}
                     </h2>
                 </div>
 
                 <div className='flex flex-wrap items-center gap-2'>
                     {entity.sentimental_value > 0 && (
-                        <span className='inline-flex items-center gap-1 text-sm text-destructive'>
+                        <span className='inline-flex items-center gap-1 text-sm sm:text-base text-destructive'>
                             <HeartIcon weight='fill' />
                             {getSentimentalValueLabel(entity.sentimental_value)}
                         </span>
                     )}
                     {entity.entityType === 'item' && entity.condition && (
-                        <span className='inline-flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground'>
+                        <span className='inline-flex min-w-0 items-center gap-1.5 text-sm sm:text-base text-muted-foreground'>
                             <span className='size-1.5 shrink-0 rounded-full bg-muted-foreground' />
                             <span className='min-w-0 truncate'>{entity.condition}</span>
                         </span>
@@ -116,14 +116,14 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                             <span
                                 key={tag.id}
                                 className={cn(
-                                    'inline-flex items-center gap-1 rounded-full bg-(--tag-color)/15 px-2 py-0.5 text-xs font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20',
+                                    'inline-flex items-center gap-1 rounded-full bg-(--tag-color)/15 px-2 py-0.5 text-xs sm:text-sm font-medium text-(--tag-color) ring-1 ring-(--tag-color)/20',
                                     TAG_MAX_WIDTH[tags.length],
                                 )}
                                 style={{ '--tag-color': tag.color }}
                             >
                                 <DynamicIcon
                                     icon={tag.icon ?? FALLBACK_TAG_ICON}
-                                    className='size-3 shrink-0'
+                                    className='size-3 sm:size-4 shrink-0'
                                 />
                                 <span className='min-w-0 truncate'>{tag.name}</span>
                             </span>
@@ -134,24 +134,24 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                 {(entity.itemsCount > 1 || showRoot || showChild) && (
                     <div className='mt-auto flex items-center gap-1.5 pt-1'>
                         {(showRoot || showChild) && (
-                            <span className='inline-flex min-w-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-foreground/10'>
+                            <span className='inline-flex min-w-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs sm:text-sm font-medium text-muted-foreground ring-1 ring-foreground/10'>
                                 {showRoot && (
                                     <>
                                         <DynamicIcon
                                             icon={getLocationIcon(rootLocation)}
-                                            className='size-3 shrink-0'
+                                            className='size-3 sm:size-4 shrink-0'
                                         />
                                         <span className='truncate'>{rootLocation.name}</span>
                                     </>
                                 )}
                                 {showRoot && showChild && (
-                                    <CaretRightIcon className='size-3 shrink-0' />
+                                    <CaretRightIcon className='size-3 sm:size-4 shrink-0' />
                                 )}
                                 {showChild && (
                                     <>
                                         <DynamicIcon
                                             icon={getLocationIcon(childLocation)}
-                                            className='size-3 shrink-0'
+                                            className='size-3 sm:size-4 shrink-0'
                                         />
                                         <span className='truncate'>{childLocation.name}</span>
                                     </>
@@ -159,8 +159,8 @@ export const DeckEntityCard = ({ entity, likes, dislikes, className, showRootLoc
                             </span>
                         )}
                         {entity.itemsCount > 1 && (
-                            <span className='ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground'>
-                                <LeafIcon className='size-3.5' />
+                            <span className='ml-auto flex shrink-0 items-center gap-1 text-xs sm:text-base text-muted-foreground'>
+                                <LeafIcon className='size-3.5 sm:size-4.5' />
                                 {entity.itemsCount}
                             </span>
                         )}
