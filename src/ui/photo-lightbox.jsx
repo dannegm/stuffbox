@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon, PencilSimpleIcon } from '@phosphor-icons/react/ssr';
 import { Button } from '@/ui/button';
@@ -14,7 +14,14 @@ import { cn } from '@/helpers/utils';
 // embla's (via Carousel), not hand-rolled touch math — it already handles
 // the drag-vs-tap distinction, native image-drag suppression, and
 // touch-action correctly. Click anywhere on the dark backdrop closes it; the
-// carousel and its own controls stop that click from bubbling. `photos` is
+// carousel and its own controls stop that click from bubbling. A drag/swipe
+// that starts on the carousel but releases outside it (a very natural mouse
+// gesture) must not close the lightbox either — the native 'click' event
+// fires on the nearest common ancestor of the pointerdown and pointerup
+// targets, which is the Popup itself once they differ, so without this guard
+// dragging off the carousel reads as a backdrop click. `$dragStartedInCarousel`
+// records where the pointerdown landed so the Popup's onClick can ignore
+// itself in that case, regardless of where the pointer ends up. `photos` is
 // `[{ src, photo }]` — resolving r2_key/previewUrl into `src` is the
 // caller's job; `photo` (the raw row) feeds CroppedPhoto's crop_x/crop_y/
 // zoom and is forwarded to `onEditPhoto`. `onEditPhoto` is optional — omit
@@ -23,6 +30,7 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
     const open = index !== null && index !== undefined;
     const hasMultiple = photos.length > 1;
     const [api, setApi] = useState();
+    const $dragStartedInCarousel = useRef(false);
 
     // Carousel only mounts while open (below), so `opts.startIndex` — read
     // once at embla's init — is always fresh for whichever photo was
@@ -58,7 +66,13 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                     data-slot='photo-lightbox-content'
                     data-block='PhotoLightbox'
                     className='fixed inset-0 z-50 flex items-center justify-center p-4 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0'
-                    onClick={onClose}
+                    onPointerDown={event => {
+                        $dragStartedInCarousel.current = !!event.target.closest('[data-slot="carousel"]');
+                    }}
+                    onClick={() => {
+                        if ($dragStartedInCarousel.current) return;
+                        onClose();
+                    }}
                 >
                     {open && (
                         <Carousel
@@ -77,7 +91,14 @@ export const PhotoLightbox = ({ photos, index, onIndexChange, onClose, onEditPho
                                 {photos.map((photo, photoIndex) => (
                                     <CarouselItem
                                         key={photoIndex}
-                                        className='flex h-full items-center justify-center pl-0'
+                                        // mr-4 on the last slide only: embla's loop math reads the
+                                        // end-of-track gap via getComputedStyle(lastSlide).marginRight,
+                                        // not the flex `gap` above — without it, the last→first loop
+                                        // point measures a 0 gap while every other transition measures
+                                        // the real gap-4, so only the wraparound looked gap-less.
+                                        className={cn('flex h-full items-center justify-center pl-0', {
+                                            'mr-4': photoIndex === photos.length - 1,
+                                        })}
                                     >
                                         <div className='relative size-full overflow-hidden rounded-2xl shadow-lg shadow-black/40'>
                                             <CroppedPhoto src={photo.src} photo={photo.photo} />
