@@ -41,14 +41,20 @@ export const DeckCards = ({
   // Detect external currentIndex changes and trigger animation
   useEffect(() => {
     const prevIndex = prevIndexRef.current;
+    const wasInternalChange = isInternalChangeRef.current;
+    isInternalChangeRef.current = false;
 
-    // Skip initial mount and internal changes
-    if (prevIndex === currentIndex || isInternalChangeRef.current) {
-      isInternalChangeRef.current = false;
-      prevIndexRef.current = currentIndex;
-      setDisplayIndex(currentIndex);
-      return;
-    }
+    // Skip initial mount, and skip re-runs where currentIndex itself didn't
+    // move — this effect also re-fires on childrenArray.length changes alone
+    // (e.g. a caller appending more cards to `children` mid-session), and
+    // forcing setDisplayIndex here would snap a card that's mid-exit
+    // animation (from a prior, real currentIndex change) back into view.
+    if (prevIndex === currentIndex) return;
+
+    prevIndexRef.current = currentIndex;
+
+    // Already handled inline by handleSwipe's own setTimeout below.
+    if (wasInternalChange) return;
 
     // Only animate if the option is enabled and we have cards to show
     if (animateOnIndexChange && prevIndex < childrenArray.length) {
@@ -63,8 +69,6 @@ export const DeckCards = ({
       // No animation, update display index immediately
       setDisplayIndex(currentIndex);
     }
-
-    prevIndexRef.current = currentIndex;
   }, [
     currentIndex,
     animateOnIndexChange,

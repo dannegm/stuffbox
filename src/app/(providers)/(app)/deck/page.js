@@ -32,6 +32,12 @@ import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 
+// How many cards of the already-shuffled queue get handed to <DeckCards> at
+// once — the full queue can be 500+ entities long, and there's no reason to
+// mount that many DeckEntityCard elements up front when the stack only ever
+// shows `stackSize` of them.
+const PAGE_SIZE = 10;
+
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='DeckLoading'>
         <Skeleton className='h-4 w-32 rounded' />
@@ -69,6 +75,11 @@ export default function DeckPage() {
     );
 
     const [queue, setQueue] = useState(null);
+    // How much of `queue` has been revealed to <DeckCards> so far — grown in
+    // PAGE_SIZE steps as currentIndex approaches the end of what's loaded,
+    // instead of handing the whole (potentially 500+ entity) queue over at
+    // once. Reset alongside queue itself (see the queue-build effect below).
+    const [loadedCount, setLoadedCount] = useState(PAGE_SIZE);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [indexChangeDirection, setIndexChangeDirection] = useState('left');
     const [ratedDialogOpen, setRatedDialogOpen] = useState(false);
@@ -125,6 +136,19 @@ export default function DeckPage() {
         );
     }, [ratings, user]);
 
+    // Debug-only sanity check for the queue split (buildDeckQueue does the
+    // exact same rated/unrated partitioning) — surfaces here as plain
+    // numbers so a "why do I keep seeing the same cards" report is either
+    // confirmed as a small unrated pool or ruled out.
+    const debugCounts = useMemo(() => {
+        if (!filteredEntities) return null;
+        const total = filteredEntities.length;
+        const rated = filteredEntities.filter(entity =>
+            ratedKeys.has(getEntityRatingKey(entity.entityType, entity.entityId)),
+        ).length;
+        return { total, rated, unrated: total - rated };
+    }, [filteredEntities, ratedKeys]);
+
     // Builds the queue exactly once, when data first arrives — recomputing it
     // on every refetch (e.g. after each vote invalidates entity-ratings)
     // would reshuffle the deck out from under the card being looked at.
@@ -137,6 +161,7 @@ export default function DeckPage() {
         if (!isDefaultLocationResolved) return;
         if (filterLocationId && isDescendantIdsPending) return;
         setQueue(buildDeckQueue(filteredEntities, ratedKeys));
+        setLoadedCount(PAGE_SIZE);
     }, [
         filteredEntities,
         ratings,
@@ -148,9 +173,23 @@ export default function DeckPage() {
         isDefaultLocationResolved,
     ]);
 
+    // Reveals the next page once the stack is about to run into the edge of
+    // what's currently loaded — stackSize (4) cards ahead of currentIndex is
+    // the same lookahead <DeckCards> itself renders, so a new page is always
+    // in place before it'd actually be visible.
+    useEffect(() => {
+        if (!queue) return;
+        if (currentIndex + 4 >= loadedCount && loadedCount < queue.length) {
+            setLoadedCount(count => Math.min(count + PAGE_SIZE, queue.length));
+        }
+    }, [currentIndex, queue, loadedCount]);
+
+    const visibleQueue = useMemo(() => queue?.slice(0, loadedCount) ?? [], [queue, loadedCount]);
+
     const handleFilterChange = nextLocationId => {
         setFilterLocationId(nextLocationId);
         setQueue(null);
+        setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
     };
 
@@ -202,6 +241,7 @@ export default function DeckPage() {
     const handleReshuffle = () => {
         if (!filteredEntities) return;
         setQueue(buildDeckQueue(filteredEntities, ratedKeys));
+        setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
     };
 
@@ -211,6 +251,7 @@ export default function DeckPage() {
     // above, which rebuilds once the now-empty rated set actually lands.
     const handleClearAll = () => {
         setQueue(null);
+        setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
     };
 
@@ -297,6 +338,17 @@ export default function DeckPage() {
                 </div>
             </div>
 
+            {debug && debugCounts && (
+                <div
+                    className='rounded-lg border border-dashed bg-muted/50 px-3 py-2 text-xs text-muted-foreground'
+                    data-block='DeckDebugCounts'
+                >
+                    {debugCounts.total} traídos · {debugCounts.unrated} sin calificar ·{' '}
+                    {debugCounts.rated} calificados · cola: {queue?.length ?? 0} · cargados:{' '}
+                    {loadedCount}
+                </div>
+            )}
+
             <div className='flex min-h-0 flex-1 items-center justify-center pb-4'>
                 <div className='relative mx-auto aspect-2/3 w-4/5 sm:w-full sm:max-w-sm'>
                     <Deck className='size-full'>
@@ -309,7 +361,7 @@ export default function DeckPage() {
                             scale={0.06}
                             className='size-full'
                         >
-                            {queue.map(entity => {
+                            {visibleQueue.map(entity => {
                                 const key = getEntityRatingKey(entity.entityType, entity.entityId);
                                 return (
                                     <DeckEntityCard
