@@ -111,6 +111,7 @@ const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
                             <Input
                                 id='invite-max-uses'
                                 type='number'
+                                inputMode='numeric'
                                 min={1}
                                 value={maxUses}
                                 onChange={event => setMaxUses(event.target.value)}

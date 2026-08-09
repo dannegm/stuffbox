@@ -274,6 +274,7 @@ export default function NewItemPage() {
                                     <Input
                                         id='item-quantity'
                                         type='number'
+                                        inputMode='numeric'
                                         min={1}
                                         value={quantity}
                                         onChange={event => setQuantity(event.target.value)}
@@ -289,6 +290,7 @@ export default function NewItemPage() {
                                         <InputGroupInput
                                             id='item-price'
                                             type='number'
+                                            inputMode='decimal'
                                             min={0}
                                             step='0.01'
                                             value={purchasePrice}

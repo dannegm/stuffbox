@@ -57,6 +57,7 @@ export const MoveCostDialog = ({ move, open, onOpenChange }) => {
                                 id='move-cost'
                                 autoFocus
                                 type='number'
+                                inputMode='decimal'
                                 min={0}
                                 step='0.01'
                                 value={cost}

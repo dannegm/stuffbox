@@ -503,6 +503,7 @@ export default function ItemPage({ params }) {
                                     <Input
                                         id='item-quantity'
                                         type='number'
+                                        inputMode='numeric'
                                         min={1}
                                         value={quantity}
                                         onChange={event => setQuantity(event.target.value)}
@@ -519,6 +520,7 @@ export default function ItemPage({ params }) {
                                         <InputGroupInput
                                             id='item-price'
                                             type='number'
+                                            inputMode='decimal'
                                             min={0}
                                             step='0.01'
                                             value={purchasePrice}

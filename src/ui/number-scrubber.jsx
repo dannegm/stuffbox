@@ -74,6 +74,10 @@ export const NumberScrubber = ({
             <Input
                 ref={ref}
                 type='number'
+                // iOS ignores `type='number'` for keyboard choice — without an
+                // explicit inputMode it shows full QWERTY (+ a number row)
+                // instead of a real numeric keypad.
+                inputMode={decimals > 0 ? 'decimal' : 'numeric'}
                 step={step}
                 value={internal}
                 onChange={handleChange}
