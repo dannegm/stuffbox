@@ -16,8 +16,10 @@ import {
 import { pdf } from '@react-pdf/renderer';
 import { moveQuery, packedInMoveQuery } from '@/queries/moves';
 import { locationCountsQuery } from '@/queries/locations';
+import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { LabelDocument } from '@/components/moves/label-document';
 import { generateQrDataUrl } from '@/helpers/qr';
+import { DEFAULT_LABEL_LAYOUT } from '@/helpers/label-layout';
 import { getItemIcon } from '@/helpers/item';
 import { getLocationIcon } from '@/helpers/location';
 import { cn } from '@/helpers/utils';
@@ -203,6 +205,9 @@ export default function MoveLabelsPage({ params }) {
 
     const { data: move, isPending: isMovePending } = useQuery(moveQuery(id));
     const { data: packed, isPending: isPackedPending } = useQuery(packedInMoveQuery(id));
+    const { data: labelLayoutSettings } = useQuery(
+        workspaceSettingQuery(move?.workspace_id, 'labelLayoutSettings', { enabled: !!move }),
+    );
 
     useEffect(() => {
         if (!packed || seeded) return;
@@ -300,8 +305,13 @@ export default function MoveLabelsPage({ params }) {
                 }),
             );
 
+            const layout = { ...DEFAULT_LABEL_LAYOUT, ...(labelLayoutSettings ?? {}) };
             const blob = await pdf(
-                <LabelDocument labels={[...locationLabels, ...itemLabels]} debug={false} />,
+                <LabelDocument
+                    labels={[...locationLabels, ...itemLabels]}
+                    debug={false}
+                    {...layout}
+                />,
             ).toBlob();
             setPdfBlob(blob);
             setPdfUrl(URL.createObjectURL(blob));

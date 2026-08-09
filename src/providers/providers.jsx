@@ -13,6 +13,7 @@ import { HeadlessGuard } from './headless-guard';
 import { AuthProvider } from './auth-provider';
 import { ConfirmProvider } from './confirm-provider';
 import { Toaster } from '@/ui/sonner';
+import { BreakpointIndicator } from '@/components/debug/breakpoint-indicator';
 
 // 'use client' alone doesn't skip SSR — a client component still pre-renders
 // on the server and hydrates, which is where hydration errors come from.
@@ -38,13 +39,15 @@ const AppProviders = createProviders([
     [ConfirmProvider],
 ]);
 
-// Toaster isn't a context provider (it doesn't wrap children, it just
-// renders its own fixed-position portal), so it sits as a sibling here
-// instead of joining the AppProviders array — same mount-gated subtree as
-// everything else, since it reads the resolved theme via useSettings.
+// Toaster and BreakpointIndicator aren't context providers (they don't wrap
+// children, they just render their own fixed-position portal/overlay), so
+// they sit as siblings here instead of joining the AppProviders array — same
+// mount-gated subtree as everything else, since both read settings via
+// useSettings.
 export const Providers = ({ children }) => (
     <ClientComponent>
         <AppProviders>{children}</AppProviders>
         <Toaster />
+        <BreakpointIndicator />
     </ClientComponent>
 );

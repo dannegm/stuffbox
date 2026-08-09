@@ -1,16 +1,41 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { BroomIcon, BugIcon, DatabaseIcon } from '@phosphor-icons/react/ssr';
+import {
+    BroomIcon,
+    BugIcon,
+    CaretDownIcon,
+    DatabaseIcon,
+    FrameCornersIcon,
+} from '@phosphor-icons/react/ssr';
 import { useSettings } from '@/hooks/use-settings';
 import { optimizeStorage } from '@/services/uploads';
+import {
+    BREAKPOINT_INDICATOR_POSITIONS,
+    BREAKPOINT_INDICATOR_POSITION_LABELS,
+} from '@/components/debug/breakpoint-indicator';
 import { Field, FieldGroup, FieldContent, FieldLabel, FieldDescription } from '@/ui/field';
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+} from '@/ui/dropdown-menu';
 import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 
 export default function AdminSettingsPage() {
     const [debug, setDebug] = useSettings('debug', false);
+    const [breakpointIndicatorEnabled, setBreakpointIndicatorEnabled] = useSettings(
+        'debugTools.breakpointIndicator.enabled',
+        false,
+    );
+    const [breakpointIndicatorPosition, setBreakpointIndicatorPosition] = useSettings(
+        'debugTools.breakpointIndicator.position',
+        'bottom-right',
+    );
 
     const {
         mutate: optimize,
@@ -45,6 +70,59 @@ export default function AdminSettingsPage() {
                         </FieldContent>
                         <Switch id='admin-debug-mode' checked={debug} onCheckedChange={setDebug} />
                     </Field>
+
+                    <Field orientation='horizontal'>
+                        <FieldContent>
+                            <FieldLabel htmlFor='admin-breakpoint-indicator'>
+                                Indicador de breakpoint
+                            </FieldLabel>
+                            <FieldDescription>
+                                Muestra el breakpoint activo y el tamaño de ventana en una
+                                esquina — también local, oculto por defecto.
+                            </FieldDescription>
+                        </FieldContent>
+                        <Switch
+                            id='admin-breakpoint-indicator'
+                            checked={breakpointIndicatorEnabled}
+                            onCheckedChange={setBreakpointIndicatorEnabled}
+                        />
+                    </Field>
+
+                    {breakpointIndicatorEnabled && (
+                        <Field orientation='horizontal'>
+                            <FieldContent>
+                                <FieldLabel htmlFor='admin-breakpoint-indicator-position'>
+                                    Posición
+                                </FieldLabel>
+                            </FieldContent>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger
+                                    id='admin-breakpoint-indicator-position'
+                                    render={
+                                        <Button type='button' variant='outline' size='sm' />
+                                    }
+                                >
+                                    <FrameCornersIcon data-icon='inline-start' />
+                                    {BREAKPOINT_INDICATOR_POSITION_LABELS[
+                                        breakpointIndicatorPosition
+                                    ] ?? BREAKPOINT_INDICATOR_POSITION_LABELS['bottom-right']}
+                                    <CaretDownIcon data-icon='inline-end' />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='end'>
+                                    <DropdownMenuRadioGroup
+                                        value={breakpointIndicatorPosition}
+                                        onValueChange={setBreakpointIndicatorPosition}
+                                    >
+                                        {BREAKPOINT_INDICATOR_POSITIONS.map(position => (
+                                            <DropdownMenuRadioItem key={position} value={position}>
+                                                {BREAKPOINT_INDICATOR_POSITION_LABELS[position]}
+                                            </DropdownMenuRadioItem>
+                                        ))}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </Field>
+                    )}
                 </FieldGroup>
             </div>
 

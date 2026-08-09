@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CaretLeftIcon, GearSixIcon, SignOutIcon, TrashIcon } from '@phosphor-icons/react/ssr';
+import {
+    ArrowCounterClockwiseIcon,
+    CaretLeftIcon,
+    GearSixIcon,
+    SignOutIcon,
+    TrashIcon,
+} from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
 import {
@@ -16,11 +22,15 @@ import {
 import { workspaceSettingQuery, setWorkspaceSettingMutation } from '@/queries/workspace-settings';
 import { removeWorkspaceMemberMutation } from '@/queries/collaborators';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
+import { DEFAULT_LABEL_LAYOUT } from '@/helpers/label-layout';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
 import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
+import { LabelLayoutPreview } from '@/components/moves/label-layout-preview';
+import { LabelLayoutPreviewDialog } from '@/components/moves/label-layout-preview-dialog';
 import { ColorPicker } from '@/ui/color-picker';
 import { Field, FieldGroup, FieldContent, FieldLabel, FieldDescription } from '@/ui/field';
 import { Input } from '@/ui/input';
+import { NumberScrubber } from '@/ui/number-scrubber';
 import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -82,6 +92,9 @@ export default function WorkspaceSettingsPage({ params }) {
     const { data: deckDefaultLocationId, isPending: isDeckDefaultPending } = useQuery(
         workspaceSettingQuery(id, 'deckDefaultLocationId', { enabled: !!user }),
     );
+    const { data: labelLayoutSettings, isPending: isLabelLayoutPending } = useQuery(
+        workspaceSettingQuery(id, 'labelLayoutSettings', { enabled: !!user }),
+    );
 
     const [name, setName] = useState('');
     const [color, setColor] = useState('#6366f1');
@@ -97,6 +110,8 @@ export default function WorkspaceSettingsPage({ params }) {
     const [allowMemberInvites, setAllowMemberInvites] = useState(false);
     const [allowMemberRemove, setAllowMemberRemove] = useState(false);
     const [allowMemberEditSettings, setAllowMemberEditSettings] = useState(false);
+    const [labelLayout, setLabelLayout] = useState(DEFAULT_LABEL_LAYOUT);
+    const [isLabelPreviewOpen, setIsLabelPreviewOpen] = useState(false);
 
     useEffect(() => {
         if (!workspace) return;
@@ -119,6 +134,11 @@ export default function WorkspaceSettingsPage({ params }) {
         if (isDeckDefaultPending) return;
         setDeckDefault(deckDefaultLocationId ?? null);
     }, [isDeckDefaultPending, deckDefaultLocationId]);
+
+    useEffect(() => {
+        if (isLabelLayoutPending) return;
+        setLabelLayout({ ...DEFAULT_LABEL_LAYOUT, ...(labelLayoutSettings ?? {}) });
+    }, [isLabelLayoutPending, labelLayoutSettings]);
 
     const { mutate: saveWorkspace, isPending: isSavingWorkspace } = useMutation(
         updateWorkspaceMutation({
@@ -156,6 +176,15 @@ export default function WorkspaceSettingsPage({ params }) {
             onSuccess: () =>
                 queryClient.invalidateQueries({
                     queryKey: ['workspace-setting', id, 'deckDefaultLocationId'],
+                }),
+        }),
+    );
+
+    const { mutate: saveLabelLayout, isPending: isSavingLabelLayout } = useMutation(
+        setWorkspaceSettingMutation({
+            onSuccess: () =>
+                queryClient.invalidateQueries({
+                    queryKey: ['workspace-setting', id, 'labelLayoutSettings'],
                 }),
         }),
     );
@@ -202,6 +231,7 @@ export default function WorkspaceSettingsPage({ params }) {
         // meaningful value here ("sin ubicación por defecto, todos los
         // items"), not just "hasn't been touched yet".
         saveDeckDefault({ workspaceId: id, key: 'deckDefaultLocationId', value: deckDefault });
+        saveLabelLayout({ workspaceId: id, key: 'labelLayoutSettings', value: labelLayout });
     };
 
     const handleLeave = async () => {
@@ -241,7 +271,8 @@ export default function WorkspaceSettingsPage({ params }) {
         !workspace ||
         !isMapDefaultReady ||
         isCollabPending ||
-        isDeckDefaultPending
+        isDeckDefaultPending ||
+        isLabelLayoutPending
     ) {
         return <Loading />;
     }
@@ -251,7 +282,12 @@ export default function WorkspaceSettingsPage({ params }) {
     // allowMemberEditSettings is on. Collaboración and the danger zone below
     // stay owner-only regardless — this only ever gates General/Mapa/Baraja.
     const canEditGeneralSettings = isOwner || !!collaborationSettings?.allowMemberEditSettings;
-    const isPending = isSavingWorkspace || isSavingMap || isSavingCollab || isSavingDeckDefault;
+    const isPending =
+        isSavingWorkspace ||
+        isSavingMap ||
+        isSavingCollab ||
+        isSavingDeckDefault ||
+        isSavingLabelLayout;
 
     return (
         <div
@@ -349,6 +385,133 @@ export default function WorkspaceSettingsPage({ params }) {
                     </FieldGroup>
                 </SectionCard>
 
+                <SectionCard label='Etiquetas'>
+                    <FieldGroup>
+                        <Field orientation='horizontal'>
+                            <FieldLabel>Hoja de impresión</FieldLabel>
+                            <Button
+                                type='button'
+                                variant='ghost'
+                                size='sm'
+                                disabled={!canEditGeneralSettings}
+                                onClick={() => setLabelLayout(DEFAULT_LABEL_LAYOUT)}
+                                className='shrink-0'
+                            >
+                                <ArrowCounterClockwiseIcon data-icon='inline-start' />
+                                Restaurar
+                            </Button>
+                        </Field>
+                        <FieldDescription>
+                            Tamaño de cada etiqueta y márgenes de la hoja Carta — el margen
+                            inferior siempre iguala al superior, y el derecho al izquierdo. Los
+                            espacios entre etiquetas se calculan solos.
+                        </FieldDescription>
+                        <div
+                            className={cn('grid grid-cols-2 gap-3', {
+                                'pointer-events-none opacity-60': !canEditGeneralSettings,
+                            })}
+                        >
+                            <Field>
+                                <FieldLabel htmlFor='label-box-width'>Ancho caja (mm)</FieldLabel>
+                                <NumberScrubber
+                                    id='label-box-width'
+                                    min={10}
+                                    max={300}
+                                    step={0.1}
+                                    value={labelLayout.boxWidthMm}
+                                    onChange={next =>
+                                        setLabelLayout(current => ({
+                                            ...current,
+                                            boxWidthMm: next,
+                                        }))
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor='label-box-height'>Alto caja (mm)</FieldLabel>
+                                <NumberScrubber
+                                    id='label-box-height'
+                                    min={10}
+                                    max={300}
+                                    step={0.1}
+                                    value={labelLayout.boxHeightMm}
+                                    onChange={next =>
+                                        setLabelLayout(current => ({
+                                            ...current,
+                                            boxHeightMm: next,
+                                        }))
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor='label-margin-vertical'>
+                                    Margen vertical (mm)
+                                </FieldLabel>
+                                <NumberScrubber
+                                    id='label-margin-vertical'
+                                    min={0}
+                                    max={50}
+                                    step={0.1}
+                                    value={labelLayout.marginVerticalMm}
+                                    onChange={next =>
+                                        setLabelLayout(current => ({
+                                            ...current,
+                                            marginVerticalMm: next,
+                                        }))
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor='label-margin-horizontal'>
+                                    Margen horizontal (mm)
+                                </FieldLabel>
+                                <NumberScrubber
+                                    id='label-margin-horizontal'
+                                    min={0}
+                                    max={50}
+                                    step={0.1}
+                                    value={labelLayout.marginHorizontalMm}
+                                    onChange={next =>
+                                        setLabelLayout(current => ({
+                                            ...current,
+                                            marginHorizontalMm: next,
+                                        }))
+                                    }
+                                />
+                            </Field>
+                            <Field className='col-span-2'>
+                                <FieldLabel htmlFor='label-tags-per-page'>
+                                    Etiquetas por página
+                                </FieldLabel>
+                                <NumberScrubber
+                                    id='label-tags-per-page'
+                                    min={1}
+                                    max={60}
+                                    step={1}
+                                    value={labelLayout.tagsPerPage}
+                                    onChange={next =>
+                                        setLabelLayout(current => ({
+                                            ...current,
+                                            tagsPerPage: next,
+                                        }))
+                                    }
+                                />
+                            </Field>
+                        </div>
+
+                        <div className='flex flex-col items-center gap-3 rounded-lg bg-muted/30 p-3'>
+                            <LabelLayoutPreview {...labelLayout} />
+                            <Button
+                                type='button'
+                                variant='outline'
+                                onClick={() => setIsLabelPreviewOpen(true)}
+                            >
+                                Vista previa con datos de ejemplo
+                            </Button>
+                        </div>
+                    </FieldGroup>
+                </SectionCard>
+
                 {!isOwner && !canEditGeneralSettings && (
                     <p className='text-xs text-muted-foreground'>
                         El dueño del espacio no te ha dado permiso para modificar estos ajustes.
@@ -418,6 +581,12 @@ export default function WorkspaceSettingsPage({ params }) {
                     Guardar
                 </Button>
             </form>
+
+            <LabelLayoutPreviewDialog
+                open={isLabelPreviewOpen}
+                onOpenChange={setIsLabelPreviewOpen}
+                layout={labelLayout}
+            />
 
             {!isOwner && (
                 <div

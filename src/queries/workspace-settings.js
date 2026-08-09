@@ -1,10 +1,12 @@
 import { supabase } from '@/services/supabase';
 
 // Generic per-workspace key/value store (stuffbox-plan.md's 5-level settings
-// cascade: env < app < workspace < user < localStorage) — only the
-// `mapDefaultViewport` key is actually read/written today (see
-// LocationMapPicker), not a full cascade resolver. `.maybeSingle()` since an
-// unset key is a normal, expected state, not an error.
+// cascade: env < app < workspace < user < localStorage) — this is just the
+// per-key read/write, not a full cascade resolver. Keys in use today:
+// `mapDefaultViewport` (LocationMapPicker), `collaborationSettings`,
+// `deckDefaultLocationId`, `labelLayoutSettings` (label PDF box/margin/grid
+// config — see src/helpers/label-layout.js). `.maybeSingle()` since an unset
+// key is a normal, expected state, not an error.
 export const workspaceSettingQuery = (workspaceId, key, opts = {}) => ({
     queryKey: ['workspace-setting', workspaceId, key],
     queryFn: async () => {

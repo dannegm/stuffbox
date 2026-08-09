@@ -1,6 +1,6 @@
 // Grows as features need local settings — nothing is pre-declared beyond
-// what's actually in use. Keys are flat (no nesting) since useSettings()
-// paths are dot-notation and these don't need grouping yet.
+// what's actually in use. useSettings() paths are dot-notation, so a key can
+// be flat or a nested object grouping a feature's settings (e.g. `ai` below).
 export const defaultSettings = {
     theme: 'system', // 'system' | 'light' | 'dark'
     debug: false,
@@ -21,5 +21,13 @@ export const defaultSettings = {
         provider: 'openrouter',
         model: '',
         keys: {},
+    },
+    // src/components/debug/breakpoint-indicator.jsx, configured on
+    // /admin/settings — off by default, ported from ../aura.
+    debugTools: {
+        breakpointIndicator: {
+            enabled: false,
+            position: 'bottom-right', // see BREAKPOINT_INDICATOR_POSITIONS
+        },
     },
 };

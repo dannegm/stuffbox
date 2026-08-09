@@ -1,19 +1,7 @@
 'use client';
 
 import { Document, Page, View, Text, Image, Svg, Path, StyleSheet } from '@react-pdf/renderer';
-
-const MM_PER_IN = 25.4;
-const LETTER_WIDTH_MM = 215.9;
-const LETTER_HEIGHT_MM = 279.4;
-
-// Defaults match a real 4x2in label sheet, Letter size, 2 columns x 5 rows —
-// stuffbox-plan.md §8. Callers can override any of these to fit a different
-// sheet without touching the layout math below.
-const DEFAULT_BOX_WIDTH_MM = 4 * MM_PER_IN; // 101.6mm
-const DEFAULT_BOX_HEIGHT_MM = 2 * MM_PER_IN; // 50.8mm
-const DEFAULT_MARGIN_VERTICAL_MM = 12.7;
-const DEFAULT_MARGIN_HORIZONTAL_MM = 5;
-const DEFAULT_TAGS_PER_PAGE = 10;
+import { DEFAULT_LABEL_LAYOUT, buildLabelGrid } from '@/helpers/label-layout';
 
 // The printable content area inset from each box's die-cut edge — fixed,
 // not exposed as a prop (nothing so far has asked to tune it).
@@ -23,25 +11,6 @@ const CONTENT_INSET_MM = 5;
 // degrees to rotate the arrow so it still reads as "this side up" pointing
 // the right way. UP is the icon's native drawn direction, hence 0.
 const ORIENTATION_ROTATION = { UP: 0, RIGHT: 90, DOWN: 180, LEFT: 270 };
-
-// Bottom margin mirrors top, right margin mirrors left — the grid always
-// sits symmetrically inset from the page. Columns/rows are however many
-// boxes fit in that inset area; gaps are whatever's left over, split evenly
-// space-between style (flush against the margins, space only between
-// boxes) so the grid always spans edge-to-edge with no extra centering step.
-const buildGrid = ({ boxWidthMm, boxHeightMm, marginVerticalMm, marginHorizontalMm, tagsPerPage }) => {
-    const availableWidthMm = LETTER_WIDTH_MM - 2 * marginHorizontalMm;
-    const availableHeightMm = LETTER_HEIGHT_MM - 2 * marginVerticalMm;
-
-    const columns = Math.max(1, Math.floor(availableWidthMm / boxWidthMm));
-    const rows = Math.max(1, Math.ceil(tagsPerPage / columns));
-
-    const columnGapMm =
-        columns > 1 ? (availableWidthMm - columns * boxWidthMm) / (columns - 1) : 0;
-    const rowGapMm = rows > 1 ? (availableHeightMm - rows * boxHeightMm) / (rows - 1) : 0;
-
-    return { columns, rows, columnGapMm, rowGapMm };
-};
 
 const styles = StyleSheet.create({
     page: {
@@ -203,7 +172,8 @@ const Label = ({ label, boxStyle, cellStyle }) => (
 // (bottom mirrors top, right mirrors left); columns/rows are derived from how many
 // boxes of that size fit in the inset area, and the gaps between them are
 // whatever's left over, split evenly (space-between: flush against the
-// margins, space only between boxes — see `buildGrid`).
+// margins, space only between boxes — see `buildLabelGrid` in
+// src/helpers/label-layout.js, shared with the settings-page live preview).
 // `labels` items need { id, name, qrDataUrl, summary, isFragile, orientation }
 // already resolved (QR generation is async, so it happens in the builder
 // before this renders — see move/[id]/labels/page.js). `orientation` is the
@@ -217,11 +187,11 @@ const Label = ({ label, boxStyle, cellStyle }) => (
 // die cut is the boundary); the admin labels-preview route turns it on.
 export const LabelDocument = ({
     labels,
-    boxWidthMm = DEFAULT_BOX_WIDTH_MM,
-    boxHeightMm = DEFAULT_BOX_HEIGHT_MM,
-    marginVerticalMm = DEFAULT_MARGIN_VERTICAL_MM,
-    marginHorizontalMm = DEFAULT_MARGIN_HORIZONTAL_MM,
-    tagsPerPage = DEFAULT_TAGS_PER_PAGE,
+    boxWidthMm = DEFAULT_LABEL_LAYOUT.boxWidthMm,
+    boxHeightMm = DEFAULT_LABEL_LAYOUT.boxHeightMm,
+    marginVerticalMm = DEFAULT_LABEL_LAYOUT.marginVerticalMm,
+    marginHorizontalMm = DEFAULT_LABEL_LAYOUT.marginHorizontalMm,
+    tagsPerPage = DEFAULT_LABEL_LAYOUT.tagsPerPage,
     debug = false,
 }) => {
     if (!labels || labels.length === 0) {
@@ -234,7 +204,7 @@ export const LabelDocument = ({
         );
     }
 
-    const { columnGapMm, rowGapMm } = buildGrid({
+    const { columnGapMm, rowGapMm } = buildLabelGrid({
         boxWidthMm,
         boxHeightMm,
         marginVerticalMm,
