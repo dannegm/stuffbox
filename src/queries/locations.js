@@ -225,6 +225,22 @@ export const locationTotalPriceQuery = (locationId, opts = {}) => ({
     ...opts,
 });
 
+// Recursive item count (nested boxes included, any depth) — unlike
+// `items.length` in the page (direct children only), this is every item
+// anywhere under the location.
+export const locationItemCountQuery = (locationId, opts = {}) => ({
+    queryKey: ['location-item-count', locationId],
+    queryFn: async () => {
+        const { data, error } = await supabase().rpc('location_item_count', {
+            p_location_id: locationId,
+        });
+        if (error) throw error;
+        return data;
+    },
+    enabled: !!locationId,
+    ...opts,
+});
+
 // Batched version for sorting a list of children by monetary value — the
 // `location_total_price` RPC only takes one id at a time, so this is N
 // round-trips (same shape as locationCountsQuery's two-table batch), kept

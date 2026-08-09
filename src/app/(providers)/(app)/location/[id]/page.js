@@ -33,6 +33,7 @@ import {
     SortAscendingIcon,
     SortDescendingIcon,
     CheckIcon,
+    StackIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -52,6 +53,7 @@ import {
     packLocationMutation,
     unpackLocationMutation,
     locationTotalPriceQuery,
+    locationItemCountQuery,
     locationTotalPricesQuery,
     locationCountsQuery,
     getLocationDescendantIds,
@@ -335,6 +337,12 @@ export default function LocationPage({ params }) {
     // available on any non-root location), not the value stat (a house/room's
     // total is just as meaningful as a box's).
     const { data: totalPrice } = useQuery(locationTotalPriceQuery(id, { enabled: !!location }));
+    // Recursive rollup, same reasoning as totalPrice above — every item
+    // anywhere under this location (nested boxes included), not just the
+    // ones directly inside it (that's `items.length`, one level only).
+    const { data: totalItemCount } = useQuery(
+        locationItemCountQuery(id, { enabled: !!location }),
+    );
     const { data: childCounts } = useQuery(
         locationCountsQuery(children?.map(child => child.id) ?? [], {
             enabled: !!children?.length,
@@ -875,7 +883,10 @@ export default function LocationPage({ params }) {
                     </>
                 ) : (
                     <>
-                        {(children.length > 0 || items.length > 0 || totalPrice > 0) && (
+                        {(children.length > 0 ||
+                            items.length > 0 ||
+                            totalItemCount > 0 ||
+                            totalPrice > 0) && (
                             <div className='flex h-8 shrink-0 items-center divide-x divide-border rounded-[min(var(--radius-md),10px)] border border-border bg-background shadow-xs dark:border-input dark:bg-input/30'>
                                 {children.length > 0 && (
                                     <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
@@ -896,6 +907,17 @@ export default function LocationPage({ params }) {
                                         </span>
                                         <span className='hidden text-muted-foreground sm:inline'>
                                             artículos
+                                        </span>
+                                    </span>
+                                )}
+                                {totalItemCount > 0 && (
+                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
+                                        <StackIcon className='text-muted-foreground' />
+                                        <span className='font-medium tabular-nums'>
+                                            {totalItemCount}
+                                        </span>
+                                        <span className='hidden text-muted-foreground sm:inline'>
+                                            en total
                                         </span>
                                     </span>
                                 )}
