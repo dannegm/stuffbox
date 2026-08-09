@@ -16,9 +16,8 @@ import { Spinner } from '@/ui/spinner';
 const MOCK_COUNT = 8;
 
 // Real PDFViewer + LabelDocument (debug mode, so the die-cut outline shows)
-// with Faker mocks — same generator as admin/labels-preview, just triggered
-// from the workspace settings form's "Vista previa" button instead of its
-// own dedicated route. Mocks regenerate every time the dialog opens.
+// with Faker mocks, triggered from the workspace settings form's "Vista
+// previa" button. Mocks regenerate every time the dialog opens.
 export const LabelLayoutPreviewDialog = ({ open, onOpenChange, layout }) => {
     const [labels, setLabels] = useState(null);
 

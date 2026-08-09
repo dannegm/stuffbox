@@ -184,7 +184,7 @@ const Label = ({ label, boxStyle, cellStyle }) => (
 // empty boxes so every printed sheet always has all die-cut positions filled.
 // `debug` shows the dashed die-cut outline for previewing the grid — off by
 // default since a real print run has no printed cut lines (the sheet's own
-// die cut is the boundary); the admin labels-preview route turns it on.
+// die cut is the boundary); LabelLayoutPreviewDialog turns it on.
 export const LabelDocument = ({
     labels,
     boxWidthMm = DEFAULT_LABEL_LAYOUT.boxWidthMm,

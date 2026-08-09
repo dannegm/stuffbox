@@ -9,7 +9,6 @@ import {
     HouseIcon,
     UsersIcon,
     GearIcon,
-    TagIcon,
     SparkleIcon,
     ArrowLeftIcon,
 } from '@phosphor-icons/react/ssr';
@@ -127,22 +126,16 @@ export default function AdminLayout({ children }) {
                     active={pathname.startsWith('/admin/users')}
                 />
                 <NavTab
-                    href='/admin/settings'
-                    icon={GearIcon}
-                    label='Ajustes'
-                    active={pathname.startsWith('/admin/settings')}
-                />
-                <NavTab
-                    href='/admin/labels-preview'
-                    icon={TagIcon}
-                    label='Etiquetas'
-                    active={pathname.startsWith('/admin/labels-preview')}
-                />
-                <NavTab
                     href='/admin/suggested-icons'
                     icon={SparkleIcon}
                     label='Íconos sugeridos'
                     active={pathname.startsWith('/admin/suggested-icons')}
+                />
+                <NavTab
+                    href='/admin/settings'
+                    icon={GearIcon}
+                    label='Ajustes'
+                    active={pathname.startsWith('/admin/settings')}
                 />
             </div>
 
