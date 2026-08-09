@@ -21,9 +21,11 @@ import { cn } from '@/helpers/utils';
 // fetch-more call (e.g. `if (hasNextPage && !isFetchingNextPage)
 // fetchNextPage()`) rather than relying on this to debounce for them.
 //
-// `footer` renders as a normal (non-virtualized) trailing element inside the
-// same scrollable div, right after the virtualized rows — e.g. a "cargar
-// más" trigger that lives at the true end of the list and scrolls with it.
+// `header`/`footer` render as normal (non-virtualized) elements inside the
+// same scrollable div, right before/after the virtualized rows — e.g. a page
+// hero + search box above the list (so the whole page scrolls as one unit
+// instead of just the list, without losing row virtualization) or a "cargar
+// más" trigger at the true end of the list.
 //
 // `nav` mirrors ScrollArea's own scroll-to-top/scroll-to-bottom bars (same
 // docked-above/below-the-viewport, never-overlaps-content shape) — kept as a
@@ -34,6 +36,7 @@ export const VirtualList = ({
     estimateSize,
     getItemKey,
     renderItem,
+    header,
     footer,
     onScrollBottom,
     bottomThreshold = 400,
@@ -111,6 +114,7 @@ export const VirtualList = ({
                 data-slot='virtual-list'
                 className='min-h-0 flex-1 overflow-y-auto'
             >
+                {header}
                 <div
                     style={{
                         position: 'relative',
