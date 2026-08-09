@@ -15,11 +15,17 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { pdf } from '@react-pdf/renderer';
 import { moveQuery, packedInMoveQuery } from '@/queries/moves';
-import { locationCountsQuery } from '@/queries/locations';
+import { locationChildrenQuery } from '@/queries/locations';
+import { itemsAtLocationQuery } from '@/queries/items';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { LabelDocument } from '@/components/moves/label-document';
 import { generateQrDataUrl } from '@/helpers/qr';
 import { DEFAULT_LABEL_LAYOUT } from '@/helpers/label-layout';
+import { isAIConfigured } from '@/services/ai';
+import {
+    generateItemLabelDescription,
+    generateContainerLabelDescription,
+} from '@/services/label-descriptions';
 import { getItemIcon } from '@/helpers/item';
 import { getLocationIcon } from '@/helpers/location';
 import { cn } from '@/helpers/utils';
@@ -32,7 +38,6 @@ import { Skeleton } from '@/ui/skeleton';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-const AI_SUMMARY_MIN_CHILDREN = 4;
 
 const Loading = () => (
     <div
@@ -216,12 +221,6 @@ export default function MoveLabelsPage({ params }) {
         setSeeded(true);
     }, [packed, seeded]);
 
-    const { data: locationCounts } = useQuery(
-        locationCountsQuery(packed?.locations.map(location => location.id) ?? [], {
-            enabled: !!packed?.locations.length,
-        }),
-    );
-
     const toggleSelectedItem = itemId =>
         setSelectedItemIds(current => {
             const next = new Set(current);
@@ -277,28 +276,56 @@ export default function MoveLabelsPage({ params }) {
             const confirmedLocations = packed?.locations.filter(location =>
                 confirmedLocationIds.has(location.id),
             );
+            const aiEnabled = isAIConfigured();
 
             const itemLabels = await Promise.all(
-                confirmedItems.map(async item => ({
-                    id: `item-${item.id}`,
-                    name: item.name,
-                    isFragile: item.is_fragile,
-                    summary: null,
-                    orientation: item.storage_orientation,
-                    qrDataUrl: await generateQrDataUrl(`${APP_URL}/i/${item.id}`),
-                })),
+                confirmedItems.map(async item => {
+                    const summary = aiEnabled
+                        ? await generateItemLabelDescription({
+                              name: item.name,
+                              description: item.description,
+                              quantity: item.quantity,
+                              condition: item.condition,
+                              sentimentalValue: item.sentimental_value,
+                              tags: item.item_tags?.map(({ tags }) => tags.name) ?? [],
+                          }).catch(() => '')
+                        : '';
+                    return {
+                        id: `item-${item.id}`,
+                        name: item.name,
+                        isFragile: item.is_fragile,
+                        summary: summary || null,
+                        orientation: item.storage_orientation,
+                        qrDataUrl: await generateQrDataUrl(`${APP_URL}/i/${item.id}`),
+                    };
+                }),
             );
             const locationLabels = await Promise.all(
                 confirmedLocations.map(async location => {
-                    const counts = locationCounts?.[location.id];
-                    const childCount = (counts?.locations ?? 0) + (counts?.items ?? 0);
-                    const showSummary =
-                        !!location.ai_summary && childCount >= AI_SUMMARY_MIN_CHILDREN;
+                    const summary = aiEnabled
+                        ? await (async () => {
+                              const [childItems, childLocations] = await Promise.all([
+                                  itemsAtLocationQuery(location.id).queryFn(),
+                                  locationChildrenQuery({
+                                      workspaceId: move.workspace_id,
+                                      parentId: location.id,
+                                  }).queryFn(),
+                              ]);
+                              return generateContainerLabelDescription({
+                                  name: location.name,
+                                  type: location.type,
+                                  childItemNames: childItems.map(childItem => childItem.name),
+                                  childLocationNames: childLocations.map(
+                                      childLocation => childLocation.name,
+                                  ),
+                              });
+                          })().catch(() => '')
+                        : '';
                     return {
                         id: `location-${location.id}`,
                         name: location.name,
                         isFragile: location.is_fragile,
-                        summary: showSummary ? location.ai_summary : null,
+                        summary: summary || null,
                         orientation: location.storage_orientation,
                         qrDataUrl: await generateQrDataUrl(`${APP_URL}/l/${location.id}`),
                     };
