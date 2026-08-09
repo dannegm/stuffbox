@@ -138,7 +138,7 @@ export default function SearchPage() {
             of floating inset with dead space around it; the p-4 moves onto
             the inner content div so the actual content keeps the same visual
             margin as before — same pattern as location/[id]'s mobile view. */}
-            <ScrollArea nav className='-m-4 min-h-0 flex-1'>
+            <ScrollArea nav onScrollBottom={loadMore} className='-m-4 min-h-0 flex-1'>
                 <div
                     className='mx-auto flex w-full max-w-lg flex-col gap-4 p-4'
                     data-block='SearchPageContent'

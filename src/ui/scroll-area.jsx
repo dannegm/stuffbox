@@ -19,7 +19,18 @@ import { cn } from '@/helpers/utils';
 // (MutationObserver — e.g. RatedEntitiesDialog's list shrinking as the user
 // types into its search box, which can flip a still-overflowing list back to
 // fully-visible without the viewport itself ever firing a scroll event).
-function ScrollArea({ className, children, nav = false, ...props }) {
+// `onScrollBottom`/`bottomThreshold` mirror VirtualList's own (src/ui/virtual-
+// list.jsx) — same "fires on every tick within threshold px of the end, so
+// guard your own fetch-more call" contract, for callers that need infinite
+// scroll on a plain (non-virtualized) list living in a ScrollArea instead.
+function ScrollArea({
+    className,
+    children,
+    nav = false,
+    onScrollBottom,
+    bottomThreshold = 400,
+    ...props
+}) {
     const $viewport = React.useRef(null);
     const [canScrollUp, setCanScrollUp] = React.useState(false);
     const [canScrollDown, setCanScrollDown] = React.useState(false);
@@ -30,6 +41,15 @@ function ScrollArea({ className, children, nav = false, ...props }) {
         setCanScrollUp(viewport.scrollTop > 1);
         setCanScrollDown(viewport.scrollTop + viewport.clientHeight < viewport.scrollHeight - 1);
     }, []);
+
+    const handleScroll = React.useCallback(() => {
+        if (nav) updateNav();
+        if (!onScrollBottom) return;
+        const viewport = $viewport.current;
+        if (!viewport) return;
+        const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+        if (distanceToBottom < bottomThreshold) onScrollBottom();
+    }, [nav, updateNav, onScrollBottom, bottomThreshold]);
 
     React.useEffect(() => {
         if (!nav) return;
@@ -88,7 +108,7 @@ function ScrollArea({ className, children, nav = false, ...props }) {
             )}
             <ScrollAreaPrimitive.Viewport
                 ref={$viewport}
-                onScroll={nav ? updateNav : undefined}
+                onScroll={nav || onScrollBottom ? handleScroll : undefined}
                 data-slot='scroll-area-viewport'
                 className='min-h-0 w-full flex-1 rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1'
             >
