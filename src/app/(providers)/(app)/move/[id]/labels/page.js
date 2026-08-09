@@ -301,7 +301,7 @@ export default function MoveLabelsPage({ params }) {
             );
 
             const blob = await pdf(
-                <LabelDocument labels={[...locationLabels, ...itemLabels]} />,
+                <LabelDocument labels={[...locationLabels, ...itemLabels]} debug={false} />,
             ).toBlob();
             setPdfBlob(blob);
             setPdfUrl(URL.createObjectURL(blob));

@@ -91,7 +91,11 @@ export default function NewItemPage() {
         setPurchasePrice('');
         setSentimentalValue(null);
         setTagIds([]);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Firing scrollTo synchronously here races the layout shift from the
+        // state resets above (cleared photos/tags collapse the form's
+        // height) — browsers cancel an in-flight smooth scroll when that
+        // happens mid-animation, so defer to after React flushes the DOM.
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     };
 
     const { mutate: syncTags } = useMutation(syncItemTagsMutation());

@@ -342,10 +342,10 @@ export default function DeckPage() {
                 </div>
             </div>
 
-            <div className='sticky bottom-0 -mx-4 mb-2 border-t bg-background/80 px-4 py-3 backdrop-blur ios:mobile:-mb-4'>
+            <div className='sticky bottom-0 -mx-4 border-t bg-background/80 px-4 pt-3 -mb-4 backdrop-blur'>
                 <div className='mx-auto flex w-full max-w-sm items-center gap-3'>
                     <Button
-                        type='button'
+                    type='button'
                         variant='outline'
                         disabled={isExhausted}
                         onClick={() => handleButtonRate(false)}

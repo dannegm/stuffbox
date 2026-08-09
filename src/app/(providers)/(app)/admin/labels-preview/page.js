@@ -128,7 +128,7 @@ export default function AdminLabelsPreviewPage() {
             </div>
 
             <PDFViewer key={refreshKey} showToolbar className='h-[80vh] w-full rounded-lg border'>
-                <LabelDocument labels={labels} />
+                <LabelDocument labels={labels} debug={true} />
             </PDFViewer>
         </div>
     );
