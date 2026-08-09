@@ -32,6 +32,7 @@ import { optionListsQuery } from '@/queries/option-lists';
 import { itemTagsQuery, syncItemTagsMutation, tagsQuery } from '@/queries/tags';
 import { moveQuery } from '@/queries/moves';
 import { entityRatingsForEntityQuery } from '@/queries/entity-ratings';
+import { getInheritedPackedMoveId } from '@/helpers/moves';
 import { RatingAvatarStack } from '@/components/deck/rating-avatar-stack';
 import { RatingToggle } from '@/components/deck/rating-toggle';
 import { useItemPhotos } from '@/hooks/use-item-photos';
@@ -115,6 +116,11 @@ export default function ItemPage({ params }) {
         workspaceQuery(location?.workspace_id, { enabled: !!location }),
     );
     const { data: ancestors } = useQuery(locationAncestorsQuery(location?.parent_id));
+    // A box's own active_move_id is the only place a pack is actually
+    // recorded — an item nested inside a packed box never gets its own
+    // active_move_id, so "is this item packed" has to check ancestors too.
+    const packedMoveId = getInheritedPackedMoveId(itemActiveMoveId, ancestors);
+    const isItemPacked = !!packedMoveId;
     const { data: conditions } = useQuery(
         optionListsQuery(location?.workspace_id, 'condition', { enabled: !!location }),
     );
@@ -124,7 +130,7 @@ export default function ItemPage({ params }) {
     const { data: itemTags } = useQuery(itemTagsQuery(id, { enabled: !!item }));
     const { data: tags } = useQuery(tagsQuery(location?.workspace_id));
     const { data: packedMove } = useQuery(
-        moveQuery(itemActiveMoveId, { enabled: !!itemActiveMoveId }),
+        moveQuery(packedMoveId, { enabled: !!packedMoveId }),
     );
     const { data: ratings } = useQuery(entityRatingsForEntityQuery('item', id));
     const likes = (ratings ?? []).filter(rating => rating.liked);
@@ -318,9 +324,7 @@ export default function ItemPage({ params }) {
 
     return (
         <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='ItemPage'>
-            {item.active_move_id && (
-                <PackedTapeTop moveId={item.active_move_id} moveName={packedMove?.name} />
-            )}
+            {isItemPacked && <PackedTapeTop moveId={packedMoveId} moveName={packedMove?.name} />}
             <LocationBreadcrumb
                 workspace={workspace}
                 ancestors={[...(ancestors ?? []), location]}
@@ -349,7 +353,7 @@ export default function ItemPage({ params }) {
                     <div className='h-1 bg-muted/50' />
 
                     <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
-                        {item.active_move_id ? (
+                        {isItemPacked ? (
                             <Button
                                 type='button'
                                 size='sm'

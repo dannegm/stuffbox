@@ -58,6 +58,7 @@ import { moveQuery } from '@/queries/moves';
 import { entityRatingsQuery } from '@/queries/entity-ratings';
 import { RatingToggle } from '@/components/deck/rating-toggle';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
+import { getInheritedPackedMoveId } from '@/helpers/moves';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/hooks/use-settings';
 import { useMultiSelectKeyHeld } from '@/hooks/use-multi-select-key-held';
@@ -229,12 +230,7 @@ export default function LocationPage({ params }) {
     const { data: items, isPending: isItemsPending } = useQuery(
         itemsAtLocationQuery(id, { enabled: !!location }),
     );
-    // Boxed locations/items inherit their nearest packed ancestor's move —
-    // only the box that was actually packed has active_move_id set in the
-    // DB, so anything nested inside it (any depth) is "packed" only by
-    // walking up the ancestor chain, never by its own column.
-    const packedAncestor = (ancestors ?? []).find(ancestor => ancestor.active_move_id);
-    const packedMoveId = location?.active_move_id ?? packedAncestor?.active_move_id ?? null;
+    const packedMoveId = getInheritedPackedMoveId(location?.active_move_id, ancestors);
     const isLocationPacked = !!packedMoveId;
     const { data: packedMove } = useQuery(
         moveQuery(packedMoveId, { enabled: !!packedMoveId }),

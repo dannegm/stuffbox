@@ -3,20 +3,45 @@
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { WarningIcon, CardsThreeIcon } from '@phosphor-icons/react/ssr';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import {
+    WarningIcon,
+    CardsThreeIcon,
+    SparkleIcon,
+    ArrowsLeftRightIcon,
+    CaretLeftIcon,
+} from '@phosphor-icons/react/ssr';
+import {
+    PackageIcon as LucidePackageIcon,
+    PackageOpenIcon as LucidePackageOpenIcon,
+} from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { useSettings } from '@/hooks/use-settings';
+import { defaultSettings } from '@/constants/default-settings';
 import {
     locationQuery,
     locationAncestorsQuery,
     updateLocationMutation,
     deleteLocationMutation,
+    getLocationContents,
+    getLocationDescendantIds,
+    transferLocationMutation,
+    packLocationMutation,
+    unpackLocationMutation,
 } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
 import { optionListsQuery } from '@/queries/option-lists';
+import { moveQuery } from '@/queries/moves';
 import { useLocationPhotos } from '@/hooks/use-location-photos';
+import { generateLocationNameSuggestion } from '@/services/location-name-suggestions';
+import { getInheritedPackedMoveId } from '@/helpers/moves';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
+import { LocationPicker } from '@/components/locations/location-picker';
+import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
+import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { HeartRating } from '@/ui/heart-rating';
@@ -28,6 +53,7 @@ import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { Skeleton } from '@/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { IconPicker } from '@/ui/icon-picker';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
@@ -46,6 +72,33 @@ const Loading = () => (
             <Skeleton className='h-32 w-full rounded-xl' />
         </div>
     </div>
+);
+
+// Icon-only affordance next to the name field — suggests a name from the
+// container's actual (recursive) contents. Disabled + explained via tooltip
+// when the user hasn't set up an AI provider, same as the tag suggestions
+// button on /tag/new.
+const SuggestNameButton = ({ isAiConfigured, isLoading, onClick }) => (
+    <Tooltip>
+        <TooltipTrigger
+            render={
+                <button
+                    type='button'
+                    aria-label='Sugerir nombre con IA'
+                    disabled={!isAiConfigured || isLoading}
+                    onClick={onClick}
+                    className='flex size-9 shrink-0 items-center justify-center rounded-lg border border-input bg-transparent text-foreground shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4'
+                />
+            }
+        >
+            {isLoading ? <Spinner /> : <SparkleIcon />}
+        </TooltipTrigger>
+        <TooltipContent>
+            {isAiConfigured
+                ? 'Sugiere un nombre según el contenido real del contenedor.'
+                : 'Configura tu proveedor de IA en tu perfil primero.'}
+        </TooltipContent>
+    </Tooltip>
 );
 
 export default function LocationEditPage({ params }) {
@@ -69,6 +122,10 @@ export default function LocationEditPage({ params }) {
     const { data: orientations } = useQuery(
         optionListsQuery(location?.workspace_id, 'orientation', { enabled: !!location }),
     );
+    const packedMoveId = getInheritedPackedMoveId(location?.active_move_id, ancestors);
+    const isLocationPacked = !!packedMoveId;
+    const { data: packedMove } = useQuery(moveQuery(packedMoveId, { enabled: !!packedMoveId }));
+    const parentName = ancestors?.[ancestors.length - 1]?.name;
 
     const [name, setName] = useState('');
     const [type, setType] = useState('');
@@ -80,6 +137,12 @@ export default function LocationEditPage({ params }) {
     const [isItem, setIsItem] = useState(false);
     const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
+    const [isSuggestingName, setIsSuggestingName] = useState(false);
+    const [ai] = useSettings('ai', defaultSettings.ai);
+    const isAiConfigured = Boolean(ai.keys?.[ai.provider]);
+    const [transferOpen, setTransferOpen] = useState(false);
+    const [packDialogOpen, setPackDialogOpen] = useState(false);
+    const [unpackOpen, setUnpackOpen] = useState(false);
 
     useEffect(() => {
         if (!location) return;
@@ -128,6 +191,73 @@ export default function LocationEditPage({ params }) {
         }),
     );
 
+    const { mutate: transfer, isPending: isTransferring } = useMutation(
+        transferLocationMutation({
+            onSuccess: updated => {
+                const previousParentId = location?.parent_id;
+                queryClient.setQueryData(['location', id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, previousParentId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, updated.parent_id],
+                });
+            },
+        }),
+    );
+
+    const { mutate: pack } = useMutation(
+        packLocationMutation({
+            onSuccess: updated => queryClient.setQueryData(['location', id], updated),
+        }),
+    );
+
+    const { mutate: unpack } = useMutation(
+        unpackLocationMutation({
+            onSuccess: updated => {
+                queryClient.setQueryData(['location', id], updated);
+                queryClient.invalidateQueries({
+                    queryKey: ['locations', updated.workspace_id, updated.parent_id],
+                });
+            },
+        }),
+    );
+
+    // Same cycle guard as location/[id]/page.js — moving/unpacking a
+    // location into itself or one of its own descendants would create a
+    // parent_id loop (hangs ancestor walks and the price RPC's recursive CTE).
+    const isDestinationSafe = async destinationId => {
+        if (destinationId === id) return false;
+        const descendantIds = await getLocationDescendantIds(id);
+        return !descendantIds.includes(destinationId);
+    };
+
+    const handleTransfer = async newParentId => {
+        if (!(await isDestinationSafe(newParentId))) {
+            await confirm({
+                title: 'No puedes mover esta ubicación dentro de sí misma o de algo que contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
+            return;
+        }
+        transfer({ id, parentId: newParentId });
+    };
+
+    const handlePack = moveId => pack({ id, moveId });
+
+    const handleUnpack = async newParentId => {
+        if (!(await isDestinationSafe(newParentId))) {
+            await confirm({
+                title: 'No puedes desempacar esta caja dentro de sí misma o de algo que contiene.',
+                cancelLabel: null,
+                confirmLabel: 'Entendido',
+            });
+            return;
+        }
+        unpack({ id, parentId: newParentId });
+    };
+
     const isRoot = location?.parent_id == null;
 
     const handleSubmit = event => {
@@ -145,6 +275,20 @@ export default function LocationEditPage({ params }) {
             isItem,
             ...(isRoot && { lat: coords?.lat ?? null, lng: coords?.lng ?? null }),
         });
+    };
+
+    const handleSuggestName = async () => {
+        if (isSuggestingName) return;
+        setIsSuggestingName(true);
+        try {
+            const contents = await getLocationContents(id);
+            const suggestion = await generateLocationNameSuggestion(contents);
+            setName(suggestion);
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setIsSuggestingName(false);
+        }
     };
 
     const handleDelete = async () => {
@@ -171,12 +315,25 @@ export default function LocationEditPage({ params }) {
 
     return (
         <div className='relative flex flex-1 flex-col gap-4 p-4 pb-12' data-block='LocationEditPage'>
-            <LocationBreadcrumb
-                workspace={workspace}
-                ancestors={ancestors ?? []}
-                current={location}
-                currentIcon={previewIcon}
-            />
+            {isLocationPacked && (
+                <PackedTapeTop moveId={packedMoveId} moveName={packedMove?.name} />
+            )}
+            <div className='flex items-center gap-1'>
+                <Button
+                    size='icon-sm'
+                    variant='ghost'
+                    render={<Link href={`/location/${id}`} aria-label='Regresar' />}
+                >
+                    <CaretLeftIcon />
+                </Button>
+                <LocationBreadcrumb
+                    workspace={workspace}
+                    ancestors={ancestors ?? []}
+                    current={location}
+                    currentIcon={previewIcon}
+                    currentHref={`/location/${id}`}
+                />
+            </div>
 
             <div className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4'>
                 <div
@@ -196,7 +353,73 @@ export default function LocationEditPage({ params }) {
                             </h1>
                         </div>
                     </div>
+
+                    {!isRoot && (
+                        <>
+                            <div className='h-1 bg-muted/50' />
+                            <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                                <Button
+                                    type='button'
+                                    size='sm'
+                                    variant='outline'
+                                    disabled={isTransferring}
+                                    onClick={() => setTransferOpen(true)}
+                                >
+                                    {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
+                                    <span className='hidden sm:inline'>Transferir</span>
+                                </Button>
+
+                                {location.active_move_id ? (
+                                    <Button
+                                        type='button'
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setUnpackOpen(true)}
+                                    >
+                                        <LucidePackageOpenIcon className='stroke-1' />
+                                        <span className='hidden sm:inline'>Desempacar</span>
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type='button'
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={() => setPackDialogOpen(true)}
+                                    >
+                                        <LucidePackageIcon className='stroke-1' />
+                                        <span className='hidden sm:inline'>Empacar</span>
+                                    </Button>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
+
+                <LocationPicker
+                    open={transferOpen}
+                    onOpenChange={setTransferOpen}
+                    workspaceId={location.workspace_id}
+                    onSelect={handleTransfer}
+                />
+
+                <LocationPicker
+                    open={unpackOpen}
+                    onOpenChange={setUnpackOpen}
+                    workspaceId={location.workspace_id}
+                    onSelect={handleUnpack}
+                    quickDestination={
+                        location.parent_id
+                            ? { id: location.parent_id, name: parentName ?? 'nivel anterior' }
+                            : null
+                    }
+                />
+
+                <PackIntoMoveDialog
+                    workspaceId={location.workspace_id}
+                    open={packDialogOpen}
+                    onOpenChange={setPackDialogOpen}
+                    onSelect={handlePack}
+                />
 
                 <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
                     <div
@@ -221,6 +444,11 @@ export default function LocationEditPage({ params }) {
                                         required
                                         value={name}
                                         onChange={event => setName(event.target.value)}
+                                    />
+                                    <SuggestNameButton
+                                        isAiConfigured={isAiConfigured}
+                                        isLoading={isSuggestingName}
+                                        onClick={handleSuggestName}
                                     />
                                 </div>
                             </Field>
@@ -396,6 +624,11 @@ export default function LocationEditPage({ params }) {
                             onChange={event => setName(event.target.value)}
                             aria-label='Nombre'
                         />
+                        <SuggestNameButton
+                            isAiConfigured={isAiConfigured}
+                            isLoading={isSuggestingName}
+                            onClick={handleSuggestName}
+                        />
                     </div>
 
                     <div className='flex flex-col gap-2 border-t pt-4 sm:flex-row'>
@@ -411,6 +644,9 @@ export default function LocationEditPage({ params }) {
                                 Eliminar
                             </Button>
                         )}
+                        <Button type='button' variant='outline' render={<Link href={`/location/${id}`} />}>
+                            Cancelar
+                        </Button>
                         <Button type='submit' disabled={isSaving || isDeleting || !name.trim()}>
                             {isSaving && <Spinner data-icon='inline-start' />}
                             Guardar cambios

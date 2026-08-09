@@ -45,6 +45,11 @@ export const LocationBreadcrumb = ({
     ancestors = [],
     current,
     currentIcon,
+    // Set only by pages where `current` isn't the page you're already on
+    // (e.g. the location edit form, a detour from the split view) — turns
+    // the otherwise-inert current crumb into a real link back to it, both
+    // inline and in the mobile ellipsis dropdown.
+    currentHref,
     className,
 }) => {
     const firstAncestor = ancestors[0];
@@ -148,10 +153,20 @@ export const LocationBreadcrumb = ({
                                                 <div key={node.id} className='relative'>
                                                     <span className='absolute top-1/2 -left-[1.1875rem] size-1.5 -translate-y-1/2 rounded-full bg-border ring-2 ring-background' />
                                                     {isCurrent ? (
-                                                        <div className='flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2.5 text-left text-sm font-medium [&_svg]:size-4 [&_svg]:shrink-0'>
-                                                            <DynamicIcon icon={currentIcon} />
-                                                            {node.name}
-                                                        </div>
+                                                        currentHref ? (
+                                                            <ResponsiveDropdownMenuItem
+                                                                render={<Link href={currentHref} />}
+                                                                className='bg-muted font-medium'
+                                                            >
+                                                                <DynamicIcon icon={currentIcon} />
+                                                                {node.name}
+                                                            </ResponsiveDropdownMenuItem>
+                                                        ) : (
+                                                            <div className='flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2.5 text-left text-sm font-medium [&_svg]:size-4 [&_svg]:shrink-0'>
+                                                                <DynamicIcon icon={currentIcon} />
+                                                                {node.name}
+                                                            </div>
+                                                        )
                                                     ) : (
                                                         <ResponsiveDropdownMenuItem
                                                             render={<Link href={`/location/${node.id}`} />}
@@ -193,10 +208,20 @@ export const LocationBreadcrumb = ({
                 )}
 
                 <BreadcrumbItem className='hidden min-w-0 shrink sm:inline-flex'>
-                    <BreadcrumbPage className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium'>
-                        <DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />
-                        <span className='max-w-24 truncate sm:max-w-48'>{current.name}</span>
-                    </BreadcrumbPage>
+                    {currentHref ? (
+                        <BreadcrumbLink
+                            render={<Link href={currentHref} />}
+                            className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium hover:bg-muted/70'
+                        >
+                            <DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />
+                            <span className='max-w-24 truncate sm:max-w-48'>{current.name}</span>
+                        </BreadcrumbLink>
+                    ) : (
+                        <BreadcrumbPage className='flex min-w-0 items-center gap-1.5 rounded-md bg-muted px-1.5 py-0.5 font-medium'>
+                            <DynamicIcon icon={currentIcon} className='size-3.5 shrink-0' />
+                            <span className='max-w-24 truncate sm:max-w-48'>{current.name}</span>
+                        </BreadcrumbPage>
+                    )}
                 </BreadcrumbItem>
             </BreadcrumbList>
         </Breadcrumb>

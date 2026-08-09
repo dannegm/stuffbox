@@ -86,6 +86,31 @@ export const locationDescendantIdsQuery = (locationId, opts = {}) => ({
     ...opts,
 });
 
+// Same level-by-level walk as getLocationDescendantIds, extended to pull
+// names/tags instead of just ids — every descendant item (with tags) and
+// descendant location, used to suggest a container name from what's
+// actually inside it (src/services/location-name-suggestions.js).
+export const getLocationContents = async locationId => {
+    const items = [];
+    const locations = [];
+    let frontier = [locationId];
+    while (frontier.length > 0) {
+        const [locationsRes, itemsRes] = await Promise.all([
+            supabase().from('locations').select('id, name').in('parent_id', frontier),
+            supabase()
+                .from('items')
+                .select('name, item_tags(tags(name))')
+                .in('location_id', frontier),
+        ]);
+        if (locationsRes.error) throw locationsRes.error;
+        if (itemsRes.error) throw itemsRes.error;
+        locations.push(...locationsRes.data);
+        items.push(...itemsRes.data);
+        frontier = locationsRes.data.map(row => row.id);
+    }
+    return { items, locations };
+};
+
 // Walks parent_id up to the root, one round-trip per level — trees are
 // shallow in practice (house > room > shelf > box), so this beats adding a
 // recursive-CTE RPC just for a breadcrumb.
