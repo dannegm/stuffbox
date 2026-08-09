@@ -1,6 +1,6 @@
 'use client';
 
-import { buildLabelGrid, LETTER_WIDTH_MM, LETTER_HEIGHT_MM } from '@/helpers/label-layout';
+import { buildLabelGrid, PAGE_SIZES, DEFAULT_LABEL_LAYOUT } from '@/helpers/label-layout';
 import { cn } from '@/helpers/utils';
 
 // Scale target for the sheet's width — everything else (height, margins,
@@ -12,6 +12,7 @@ const PREVIEW_WIDTH_PX = 200;
 // (buildLabelGrid), rendered as plain flex boxes instead of react-pdf so it
 // updates instantly as the settings form's inputs change, no PDF re-render.
 export const LabelLayoutPreview = ({
+    pageSize = DEFAULT_LABEL_LAYOUT.pageSize,
     boxWidthMm,
     boxHeightMm,
     marginVerticalMm,
@@ -19,8 +20,11 @@ export const LabelLayoutPreview = ({
     tagsPerPage,
     className,
 }) => {
-    const scale = PREVIEW_WIDTH_PX / LETTER_WIDTH_MM;
+    const { widthMm: pageWidthMm, heightMm: pageHeightMm } =
+        PAGE_SIZES[pageSize] ?? PAGE_SIZES.LETTER;
+    const scale = PREVIEW_WIDTH_PX / pageWidthMm;
     const { columnGapMm, rowGapMm } = buildLabelGrid({
+        pageSize,
         boxWidthMm,
         boxHeightMm,
         marginVerticalMm,
@@ -35,8 +39,8 @@ export const LabelLayoutPreview = ({
                 className,
             )}
             style={{
-                '--sheet-w': `${LETTER_WIDTH_MM * scale}px`,
-                '--sheet-h': `${LETTER_HEIGHT_MM * scale}px`,
+                '--sheet-w': `${pageWidthMm * scale}px`,
+                '--sheet-h': `${pageHeightMm * scale}px`,
                 '--margin-v': `${marginVerticalMm * scale}px`,
                 '--margin-h': `${marginHorizontalMm * scale}px`,
                 '--gap-x': `${columnGapMm * scale}px`,

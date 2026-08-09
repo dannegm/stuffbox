@@ -187,6 +187,7 @@ const Label = ({ label, boxStyle, cellStyle }) => (
 // die cut is the boundary); LabelLayoutPreviewDialog turns it on.
 export const LabelDocument = ({
     labels,
+    pageSize = DEFAULT_LABEL_LAYOUT.pageSize,
     boxWidthMm = DEFAULT_LABEL_LAYOUT.boxWidthMm,
     boxHeightMm = DEFAULT_LABEL_LAYOUT.boxHeightMm,
     marginVerticalMm = DEFAULT_LABEL_LAYOUT.marginVerticalMm,
@@ -197,7 +198,7 @@ export const LabelDocument = ({
     if (!labels || labels.length === 0) {
         return (
             <Document>
-                <Page size='LETTER' style={styles.emptyPage}>
+                <Page size={pageSize} style={styles.emptyPage}>
                     <Text style={styles.emptyText}>No hay etiquetas para mostrar</Text>
                 </Page>
             </Document>
@@ -205,6 +206,7 @@ export const LabelDocument = ({
     }
 
     const { columnGapMm, rowGapMm } = buildLabelGrid({
+        pageSize,
         boxWidthMm,
         boxHeightMm,
         marginVerticalMm,
@@ -238,7 +240,7 @@ export const LabelDocument = ({
     return (
         <Document>
             {pages.map((pageLabels, pageIndex) => (
-                <Page key={pageIndex} size='LETTER' style={pageStyle}>
+                <Page key={pageIndex} size={pageSize} style={pageStyle}>
                     {pageLabels.map(label => (
                         <Label key={label.id} label={label} boxStyle={boxStyle} cellStyle={cellStyle} />
                     ))}

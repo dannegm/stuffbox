@@ -37,7 +37,7 @@ import { Spinner } from '@/ui/spinner';
 const EnvironmentInfoRow = ({ label, value }) => (
     <div className='flex min-w-0 items-start gap-2'>
         <span className='w-32 shrink-0 text-xs text-muted-foreground'>{label}</span>
-        <span className='min-w-0 flex-1 font-mono text-xs break-words text-foreground'>
+        <span className='min-w-0 flex-1 font-mono text-xs wrap-break-word text-foreground'>
             {value ?? '—'}
         </span>
     </div>

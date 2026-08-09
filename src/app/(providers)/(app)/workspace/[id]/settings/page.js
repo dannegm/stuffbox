@@ -22,13 +22,14 @@ import {
 import { workspaceSettingQuery, setWorkspaceSettingMutation } from '@/queries/workspace-settings';
 import { removeWorkspaceMemberMutation } from '@/queries/collaborators';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
-import { DEFAULT_LABEL_LAYOUT } from '@/helpers/label-layout';
+import { DEFAULT_LABEL_LAYOUT, PAGE_SIZES } from '@/helpers/label-layout';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
 import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
 import { LabelLayoutPreview } from '@/components/moves/label-layout-preview';
 import { LabelLayoutPreviewDialog } from '@/components/moves/label-layout-preview-dialog';
 import { ColorPicker } from '@/ui/color-picker';
 import { Field, FieldGroup, FieldContent, FieldLabel, FieldDescription } from '@/ui/field';
+import { SelectSearch } from '@/ui/select-search';
 import { Input } from '@/ui/input';
 import { NumberScrubber } from '@/ui/number-scrubber';
 import { Switch } from '@/ui/switch';
@@ -402,17 +403,31 @@ export default function WorkspaceSettingsPage({ params }) {
                             </Button>
                         </Field>
                         <FieldDescription>
-                            Tamaño de cada etiqueta y márgenes de la hoja Carta — el margen
-                            inferior siempre iguala al superior, y el derecho al izquierdo. Los
-                            espacios entre etiquetas se calculan solos.
+                            Tamaño de hoja, de cada etiqueta y sus márgenes — el margen inferior
+                            siempre iguala al superior, y el derecho al izquierdo. Los espacios
+                            entre etiquetas se calculan solos. Todas las medidas están en
+                            milímetros.
                         </FieldDescription>
                         <div
                             className={cn('grid grid-cols-2 gap-3', {
                                 'pointer-events-none opacity-60': !canEditGeneralSettings,
                             })}
                         >
+                            <Field className='col-span-2'>
+                                <FieldLabel>Tamaño de hoja</FieldLabel>
+                                <SelectSearch
+                                    triggerClassName='w-40'
+                                    options={Object.keys(PAGE_SIZES)}
+                                    value={labelLayout.pageSize}
+                                    onChange={pageSize =>
+                                        setLabelLayout(current => ({ ...current, pageSize }))
+                                    }
+                                    getKey={key => key}
+                                    getLabel={key => PAGE_SIZES[key].label}
+                                />
+                            </Field>
                             <Field>
-                                <FieldLabel htmlFor='label-box-width'>Ancho caja (mm)</FieldLabel>
+                                <FieldLabel htmlFor='label-box-width'>Ancho caja</FieldLabel>
                                 <NumberScrubber
                                     id='label-box-width'
                                     min={10}
@@ -428,7 +443,7 @@ export default function WorkspaceSettingsPage({ params }) {
                                 />
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor='label-box-height'>Alto caja (mm)</FieldLabel>
+                                <FieldLabel htmlFor='label-box-height'>Alto caja</FieldLabel>
                                 <NumberScrubber
                                     id='label-box-height'
                                     min={10}
@@ -445,7 +460,7 @@ export default function WorkspaceSettingsPage({ params }) {
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor='label-margin-vertical'>
-                                    Margen vertical (mm)
+                                    Margen vertical
                                 </FieldLabel>
                                 <NumberScrubber
                                     id='label-margin-vertical'
@@ -463,7 +478,7 @@ export default function WorkspaceSettingsPage({ params }) {
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor='label-margin-horizontal'>
-                                    Margen horizontal (mm)
+                                    Margen horizontal
                                 </FieldLabel>
                                 <NumberScrubber
                                     id='label-margin-horizontal'
