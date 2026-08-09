@@ -34,6 +34,8 @@ import {
     SortDescendingIcon,
     CheckIcon,
     StackIcon,
+    ArrowsOutLineHorizontalIcon,
+    ArrowsInLineHorizontalIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -283,6 +285,7 @@ export default function LocationPage({ params }) {
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
     const [selectionMode, setSelectionMode] = useState(false);
+    const [isStatsExpanded, setIsStatsExpanded] = useState(false);
     // Holding Alt/Option acts as a momentary selection mode (not Cmd/Ctrl —
     // that's the browser's own open-in-new-tab click gesture) — released
     // items stay selected (via the `selected` prop on each row/card, applied
@@ -732,6 +735,22 @@ export default function LocationPage({ params }) {
         }
     };
 
+    // Data-driven so the collapsed view's "max 4" cap (and any stat added
+    // later) both fall out of one array instead of four near-identical JSX
+    // blocks each needing their own visibility check.
+    const locationStats = [
+        { key: 'locations', icon: PackageIcon, value: children.length, label: 'ubicaciones' },
+        { key: 'items', icon: LeafIcon, value: items.length, label: 'artículos' },
+        { key: 'total-items', icon: StackIcon, value: totalItemCount, label: 'en total' },
+        {
+            key: 'price',
+            icon: CurrencyDollarIcon,
+            value: totalPrice,
+            label: 'valor total',
+            format: value => `$${Number(value).toLocaleString('es-MX')}`,
+        },
+    ].filter(stat => stat.value > 0);
+
     const mainContent = (
         <>
             <LocationBreadcrumb
@@ -883,54 +902,48 @@ export default function LocationPage({ params }) {
                     </>
                 ) : (
                     <>
-                        {(children.length > 0 ||
-                            items.length > 0 ||
-                            totalItemCount > 0 ||
-                            totalPrice > 0) && (
+                        {locationStats.length > 0 && (
                             <div className='flex h-8 shrink-0 items-center divide-x divide-border rounded-[min(var(--radius-md),10px)] border border-border bg-background shadow-xs dark:border-input dark:bg-input/30'>
-                                {children.length > 0 && (
-                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
-                                        <PackageIcon className='text-muted-foreground' />
-                                        <span className='font-medium tabular-nums'>
-                                            {children.length}
+                                {(isStatsExpanded ? locationStats : locationStats.slice(0, 4)).map(
+                                    stat => (
+                                        <span
+                                            key={stat.key}
+                                            className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'
+                                        >
+                                            <stat.icon className='text-muted-foreground' />
+                                            <span className='font-medium tabular-nums'>
+                                                {stat.format ? stat.format(stat.value) : stat.value}
+                                            </span>
+                                            {isStatsExpanded && (
+                                                <span className='text-muted-foreground'>
+                                                    {stat.label}
+                                                </span>
+                                            )}
                                         </span>
-                                        <span className='hidden text-muted-foreground sm:inline'>
-                                            ubicaciones
-                                        </span>
+                                    ),
+                                )}
+                                {!isStatsExpanded && locationStats.length > 4 && (
+                                    <span className='flex h-full items-center px-2.5 text-sm font-medium text-muted-foreground'>
+                                        +{locationStats.length - 4}
                                     </span>
                                 )}
-                                {items.length > 0 && (
-                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
-                                        <LeafIcon className='text-muted-foreground' />
-                                        <span className='font-medium tabular-nums'>
-                                            {items.length}
-                                        </span>
-                                        <span className='hidden text-muted-foreground sm:inline'>
-                                            artículos
-                                        </span>
-                                    </span>
-                                )}
-                                {totalItemCount > 0 && (
-                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
-                                        <StackIcon className='text-muted-foreground' />
-                                        <span className='font-medium tabular-nums'>
-                                            {totalItemCount}
-                                        </span>
-                                        <span className='hidden text-muted-foreground sm:inline'>
-                                            en total
-                                        </span>
-                                    </span>
-                                )}
-                                {totalPrice > 0 && (
-                                    <span className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'>
-                                        <CurrencyDollarIcon className='text-muted-foreground' />
-                                        <span className='font-medium tabular-nums'>
-                                            ${Number(totalPrice).toLocaleString('es-MX')}
-                                        </span>
-                                        <span className='hidden text-muted-foreground sm:inline'>
-                                            valor total
-                                        </span>
-                                    </span>
+                                {locationStats.length > 1 && (
+                                    <button
+                                        type='button'
+                                        aria-label={
+                                            isStatsExpanded
+                                                ? 'Contraer estadísticas'
+                                                : 'Expandir estadísticas'
+                                        }
+                                        onClick={() => setIsStatsExpanded(current => !current)}
+                                        className='flex h-full items-center px-2 text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-3.5'
+                                    >
+                                        {isStatsExpanded ? (
+                                            <ArrowsInLineHorizontalIcon />
+                                        ) : (
+                                            <ArrowsOutLineHorizontalIcon />
+                                        )}
+                                    </button>
                                 )}
                             </div>
                         )}

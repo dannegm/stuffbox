@@ -64,11 +64,26 @@ export const ScrollToolbar = ({ start, end, children, className, ...props }) => 
                     </button>
                 )}
 
-                <div
-                    ref={$scroll}
-                    className='flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth sm:gap-2 scrollbar-none [&::-webkit-scrollbar]:hidden'
-                >
-                    {children}
+                <div className='relative min-w-0 flex-1 overflow-hidden'>
+                    <div
+                        ref={$scroll}
+                        className='flex min-w-0 items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth sm:gap-2 scrollbar-none [&::-webkit-scrollbar]:hidden'
+                    >
+                        {children}
+                    </div>
+
+                    {/* Fade hint that more content sits off-screen in that
+                    direction — same overflow.left/right state driving the
+                    chevron buttons, just a passive cue instead of a click
+                    target. Assumes a `bg-background` ancestor (true for this
+                    component's only current usage); revisit with a
+                    `fadeColor` prop if a future caller sits on a card. */}
+                    {overflow.left && (
+                        <div className='pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent' />
+                    )}
+                    {overflow.right && (
+                        <div className='pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent' />
+                    )}
                 </div>
 
                 {overflow.right && (
