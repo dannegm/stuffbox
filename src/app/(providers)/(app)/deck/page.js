@@ -394,7 +394,7 @@ export default function DeckPage() {
                 </div>
             </div>
 
-            <div className='sticky bottom-0 -mx-4 border-t bg-background/80 px-4 pt-3 -mb-4 backdrop-blur'>
+            <div className='sticky bottom-0 -mx-4 border-t bg-background/80 px-4 pt-3 -mb-4 backdrop-blur ios:mobile:pb-2'>
                 <div className='mx-auto flex w-full max-w-sm items-center gap-3'>
                     <Button
                     type='button'
