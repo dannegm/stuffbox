@@ -79,10 +79,10 @@ export const ScrollToolbar = ({ start, end, children, className, ...props }) => 
                     component's only current usage); revisit with a
                     `fadeColor` prop if a future caller sits on a card. */}
                     {overflow.left && (
-                        <div className='pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent' />
+                        <div className='pointer-events-none absolute inset-y-0 left-0 w-6 bg-linear-to-r from-background to-transparent' />
                     )}
                     {overflow.right && (
-                        <div className='pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent' />
+                        <div className='pointer-events-none absolute inset-y-0 right-0 w-6 bg-linear-to-l from-background to-transparent' />
                     )}
                 </div>
 
