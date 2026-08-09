@@ -63,7 +63,7 @@ export const LabelLayoutPreviewDialog = ({ open, onOpenChange, layout }) => {
                         Datos de ejemplo — así se ven con esta configuración.
                     </ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
-                <div className='flex h-[70vh] items-center justify-center px-4 sm:px-0'>
+                <div className='flex h-[50vh] items-center justify-center px-4 sm:px-0'>
                     {labels ? (
                         <PDFViewer showToolbar className='h-full w-full rounded-lg border'>
                             <LabelDocument labels={labels} debug={true} {...layout} />

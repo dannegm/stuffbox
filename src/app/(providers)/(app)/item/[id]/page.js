@@ -56,6 +56,7 @@ import {
 } from '@/ui/responsive-dropdown-menu';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
+import { StepperInput } from '@/ui/stepper-input';
 import { Textarea } from '@/ui/textarea';
 import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
@@ -499,15 +500,8 @@ export default function ItemPage({ params }) {
 
                             <div className='grid grid-cols-2 gap-3'>
                                 <Field>
-                                    <FieldLabel htmlFor='item-quantity'>Cantidad</FieldLabel>
-                                    <Input
-                                        id='item-quantity'
-                                        type='number'
-                                        inputMode='numeric'
-                                        min={1}
-                                        value={quantity}
-                                        onChange={event => setQuantity(event.target.value)}
-                                    />
+                                    <FieldLabel>Cantidad</FieldLabel>
+                                    <StepperInput min={1} value={quantity} onChange={setQuantity} />
                                 </Field>
 
                                 <Field>

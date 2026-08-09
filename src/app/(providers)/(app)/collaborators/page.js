@@ -40,7 +40,7 @@ import {
     ResponsiveDialogTitle,
 } from '@/ui/responsive-dialog';
 import { Field, FieldGroup, FieldLabel } from '@/ui/field';
-import { Input } from '@/ui/input';
+import { StepperInput } from '@/ui/stepper-input';
 import { SelectSearch } from '@/ui/select-search';
 import { Separator } from '@/ui/separator';
 import { cn } from '@/helpers/utils';
@@ -72,12 +72,12 @@ const Loading = () => (
 // need to be, but keeping every dialog on this page the same shape.
 const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
     const queryClient = useQueryClient();
-    const [maxUses, setMaxUses] = useState('1');
+    const [maxUses, setMaxUses] = useState(10);
     const [expiryDays, setExpiryDays] = useState('7');
 
     useEffect(() => {
         if (!open) return;
-        setMaxUses('1');
+        setMaxUses(10);
         setExpiryDays('7');
     }, [open]);
 
@@ -107,14 +107,11 @@ const InviteDialog = ({ workspaceId, invitedBy, open, onOpenChange }) => {
                 <form id={INVITE_FORM_ID} onSubmit={handleSubmit} className='px-4 sm:px-0'>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor='invite-max-uses'>Usos máximos</FieldLabel>
-                            <Input
-                                id='invite-max-uses'
-                                type='number'
-                                inputMode='numeric'
+                            <StepperInput
                                 min={1}
+                                mask='Máximo {{value}} usos'
                                 value={maxUses}
-                                onChange={event => setMaxUses(event.target.value)}
+                                onChange={setMaxUses}
                             />
                         </Field>
                         <Field>

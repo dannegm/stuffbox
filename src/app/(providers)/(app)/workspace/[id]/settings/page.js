@@ -32,6 +32,7 @@ import { Field, FieldGroup, FieldContent, FieldLabel, FieldDescription } from '@
 import { SelectSearch } from '@/ui/select-search';
 import { Input } from '@/ui/input';
 import { NumberScrubber } from '@/ui/number-scrubber';
+import { StepperInput } from '@/ui/stepper-input';
 import { Switch } from '@/ui/switch';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -495,14 +496,11 @@ export default function WorkspaceSettingsPage({ params }) {
                                 />
                             </Field>
                             <Field className='col-span-2'>
-                                <FieldLabel htmlFor='label-tags-per-page'>
-                                    Etiquetas por página
-                                </FieldLabel>
-                                <NumberScrubber
-                                    id='label-tags-per-page'
+                                <StepperInput
                                     min={1}
                                     max={60}
                                     step={1}
+                                    mask='Mostrar {{value}} etiquetas por página'
                                     value={labelLayout.tagsPerPage}
                                     onChange={next =>
                                         setLabelLayout(current => ({
