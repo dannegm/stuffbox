@@ -537,6 +537,7 @@ export default function ItemPage({ params }) {
                                 <InputGroup>
                                     <InputGroupInput
                                         id='item-sku'
+                                        inputMode='numeric'
                                         value={sku}
                                         onChange={event => setSku(event.target.value)}
                                         placeholder='Opcional'

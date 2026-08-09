@@ -245,6 +245,7 @@ export default function EditTagPage({ params }) {
                             <FieldLabel htmlFor='tag-sku'>SKU</FieldLabel>
                             <Input
                                 id='tag-sku'
+                                inputMode='numeric'
                                 value={sku}
                                 onChange={event => setSku(event.target.value)}
                                 placeholder='Opcional'
