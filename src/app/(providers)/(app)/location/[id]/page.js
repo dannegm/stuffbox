@@ -30,6 +30,9 @@ import {
     ListIcon,
     SquaresFourIcon,
     EyeIcon,
+    SortAscendingIcon,
+    SortDescendingIcon,
+    CheckIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -49,6 +52,7 @@ import {
     packLocationMutation,
     unpackLocationMutation,
     locationTotalPriceQuery,
+    locationTotalPricesQuery,
     locationCountsQuery,
     getLocationDescendantIds,
 } from '@/queries/locations';
@@ -59,8 +63,10 @@ import { entityRatingsQuery } from '@/queries/entity-ratings';
 import { RatingToggle } from '@/components/deck/rating-toggle';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { getInheritedPackedMoveId } from '@/helpers/moves';
+import { SORT_FIELDS, sortEntities, getLikeRank } from '@/helpers/sort';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/hooks/use-settings';
+import { defaultSettings } from '@/constants/default-settings';
 import { useMultiSelectKeyHeld } from '@/hooks/use-multi-select-key-held';
 import { LocationListItem } from '@/components/locations/location-list-item';
 import { LocationCardItem } from '@/components/locations/location-card-item';
@@ -112,6 +118,7 @@ import {
     ResponsiveDropdownMenuContent,
     ResponsiveDropdownMenuItem,
     ResponsiveDropdownMenuTrigger,
+    ResponsiveDropdownMenuSeparator,
 } from '@/ui/responsive-dropdown-menu';
 
 // Same shortlist as SearchFilters (src/components/search/search-filters.jsx) —
@@ -177,6 +184,92 @@ const DragPreview = ({ data }) => {
     );
 };
 
+const SORT_DIRECTIONS = [
+    { value: 'asc', label: 'Ascendente', icon: SortAscendingIcon },
+    { value: 'desc', label: 'Descendente', icon: SortDescendingIcon },
+];
+
+const SORT_ROW_CLASS =
+    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-hidden select-none hover:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+// Plain button, not a ResponsiveDropdownMenuItem — that one always closes
+// the menu/drawer on click (DrawerClose on mobile has no opt-out), which is
+// wrong here: picking a field or direction should only stage it, not commit
+// it. Only the Aplicar button below actually calls `onSortChange` + closes.
+const SortRow = ({ selected, onClick, children }) => (
+    <button
+        type='button'
+        onClick={onClick}
+        className={cn(SORT_ROW_CLASS, selected && 'bg-muted font-medium')}
+    >
+        {children}
+    </button>
+);
+
+// Icon-only trigger (icon itself flips to reflect the current *applied*
+// direction) for the field+direction sort menu shared by the locations and
+// items lists — same `{ field, direction }` shape for both, just fed
+// different `sort`/`onSortChange` per list. Selection is staged in
+// `pendingSort` while the menu is open and only committed via Aplicar —
+// dismissing the menu/drawer any other way (outside click, escape) discards
+// it, since `onSortChange` is never called.
+const SortMenuButton = ({ sort, onSortChange }) => {
+    const [open, setOpen] = useState(false);
+    const [pendingSort, setPendingSort] = useState(sort);
+
+    const handleOpenChange = nextOpen => {
+        if (nextOpen) setPendingSort(sort);
+        setOpen(nextOpen);
+    };
+
+    const handleApply = () => {
+        onSortChange(pendingSort);
+        setOpen(false);
+    };
+
+    return (
+        <ResponsiveDropdownMenu open={open} onOpenChange={handleOpenChange}>
+            <ResponsiveDropdownMenuTrigger
+                render={<Button size='icon-sm' variant='outline' aria-label='Ordenar' />}
+            >
+                {sort.direction === 'asc' ? <SortAscendingIcon /> : <SortDescendingIcon />}
+            </ResponsiveDropdownMenuTrigger>
+            <ResponsiveDropdownMenuContent align='end' className='flex flex-col gap-1'>
+                {SORT_FIELDS.map(option => (
+                    <SortRow
+                        key={option.value}
+                        selected={option.value === pendingSort.field}
+                        onClick={() =>
+                            setPendingSort(current => ({ ...current, field: option.value }))
+                        }
+                    >
+                        <span className='flex-1'>{option.label}</span>
+                        {option.value === pendingSort.field && <CheckIcon />}
+                    </SortRow>
+                ))}
+                <ResponsiveDropdownMenuSeparator />
+                {SORT_DIRECTIONS.map(direction => (
+                    <SortRow
+                        key={direction.value}
+                        selected={direction.value === pendingSort.direction}
+                        onClick={() =>
+                            setPendingSort(current => ({ ...current, direction: direction.value }))
+                        }
+                    >
+                        <direction.icon />
+                        <span className='flex-1'>{direction.label}</span>
+                        {direction.value === pendingSort.direction && <CheckIcon />}
+                    </SortRow>
+                ))}
+                <ResponsiveDropdownMenuSeparator />
+                <Button size='sm' onClick={handleApply}>
+                    Aplicar
+                </Button>
+            </ResponsiveDropdownMenuContent>
+        </ResponsiveDropdownMenu>
+    );
+};
+
 export default function LocationPage({ params }) {
     const { id } = use(params);
     const router = useRouter();
@@ -205,6 +298,8 @@ export default function LocationPage({ params }) {
     const [itemSearch, setItemSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState([]);
     const [tagFilter, setTagFilter] = useState([]);
+    const [locationSort, setLocationSort] = useSettings('locationSort', defaultSettings.locationSort);
+    const [itemSort, setItemSort] = useSettings('itemSort', defaultSettings.itemSort);
     const [mobileViewSetting, setMobileView] = useSettings('locationMobileTab', null);
     const [activeDrag, setActiveDrag] = useState(null); // { type, ids, label } — for DragOverlay
     const isDesktop = !useIsMobile();
@@ -243,6 +338,11 @@ export default function LocationPage({ params }) {
     const { data: childCounts } = useQuery(
         locationCountsQuery(children?.map(child => child.id) ?? [], {
             enabled: !!children?.length,
+        }),
+    );
+    const { data: childPrices } = useQuery(
+        locationTotalPricesQuery(children?.map(child => child.id) ?? [], {
+            enabled: locationSort.field === 'price' && !!children?.length,
         }),
     );
     const { data: ratings } = useQuery(entityRatingsQuery(location?.workspace_id));
@@ -543,12 +643,64 @@ export default function LocationPage({ params }) {
         keys: ['name', 'item_tags.tags.name'],
         threshold: 0.3,
     });
-    const searchedChildren = locationSearch.trim()
+    const matchedChildren = locationSearch.trim()
         ? locationFuse.search(locationSearch.trim()).map(result => result.item)
         : filteredChildren;
-    const searchedItems = itemSearch.trim()
+    const matchedItems = itemSearch.trim()
         ? itemFuse.search(itemSearch.trim()).map(result => result.item)
         : filteredItems;
+
+    const getLocationSortValue = child => {
+        switch (locationSort.field) {
+            case 'created_at':
+                return new Date(child.created_at).getTime();
+            case 'count': {
+                const counts = childCounts?.[child.id];
+                return (counts?.locations ?? 0) + (counts?.items ?? 0);
+            }
+            case 'price':
+                return childPrices?.[child.id] ?? 0;
+            case 'likes': {
+                const key = getEntityRatingKey('location', child.id);
+                return getLikeRank(
+                    ratingsByEntity[key]?.likes.length ?? 0,
+                    ratingsByEntity[key]?.dislikes.length ?? 0,
+                );
+            }
+            default:
+                return child.name;
+        }
+    };
+    // Items are leaves — 'count' has nothing to measure, so it's a no-op tie
+    // (order unchanged) rather than a crash.
+    const getItemSortValue = item => {
+        switch (itemSort.field) {
+            case 'created_at':
+                return new Date(item.created_at).getTime();
+            case 'count':
+                return 0;
+            case 'price':
+                return item.purchase_price ?? 0;
+            case 'likes': {
+                const { likeCount, dislikeCount } = getItemRatingCounts(item.id);
+                return getLikeRank(likeCount, dislikeCount);
+            }
+            default:
+                return item.name;
+        }
+    };
+    const searchedChildren = sortEntities(
+        matchedChildren,
+        locationSort.field,
+        locationSort.direction,
+        getLocationSortValue,
+    );
+    const searchedItems = sortEntities(
+        matchedItems,
+        itemSort.field,
+        itemSort.direction,
+        getItemSortValue,
+    );
     const parentName = ancestors?.[ancestors.length - 1]?.name;
 
     // "Select all" targets whatever's currently visible (post search/filter),
@@ -986,6 +1138,7 @@ export default function LocationPage({ params }) {
                                                 </>
                                             )}
                                         />
+                                        <SortMenuButton sort={locationSort} onSortChange={setLocationSort} />
                                     </div>
                                     <ScrollArea nav className='min-h-0 flex-1'>
                                     <div className='flex min-h-full flex-col gap-2'>
@@ -1087,6 +1240,7 @@ export default function LocationPage({ params }) {
                                             value={tagFilter}
                                             onChange={setTagFilter}
                                         />
+                                        <SortMenuButton sort={itemSort} onSortChange={setItemSort} />
                                     </div>
                                     <ScrollArea nav className='min-h-0 flex-1'>
                                     <div className='flex min-h-full flex-col gap-2'>
@@ -1205,6 +1359,7 @@ export default function LocationPage({ params }) {
                                                 </>
                                             )}
                                         />
+                                        <SortMenuButton sort={locationSort} onSortChange={setLocationSort} />
                                     </div>
 
                                     {searchedChildren.length > 0 ? (
@@ -1292,6 +1447,7 @@ export default function LocationPage({ params }) {
                                             value={tagFilter}
                                             onChange={setTagFilter}
                                         />
+                                        <SortMenuButton sort={itemSort} onSortChange={setItemSort} />
                                     </div>
 
                                     {searchedItems.length > 0 ? (

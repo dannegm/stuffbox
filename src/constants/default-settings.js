@@ -11,6 +11,10 @@ export const defaultSettings = {
     // defaulting to whichever has content until the user taps a tab, at which
     // point that choice sticks everywhere.
     locationMobileTab: null, // 'locations' | 'items' | null
+    // location/[id] sort menus (SortMenuButton) — global, not per-location,
+    // same "sticks until changed" behavior as locationViewType above.
+    locationSort: { field: 'name', direction: 'asc' },
+    itemSort: { field: 'name', direction: 'asc' },
     // Where LocationMapPicker (src/components/locations/location-map-picker.jsx)
     // centers on first open, before the user clicks/drags/locates — CDMX.
     mapDefaultViewport: { center: [-99.1332, 19.4326], zoom: 14 },

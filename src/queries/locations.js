@@ -225,6 +225,29 @@ export const locationTotalPriceQuery = (locationId, opts = {}) => ({
     ...opts,
 });
 
+// Batched version for sorting a list of children by monetary value — the
+// `location_total_price` RPC only takes one id at a time, so this is N
+// round-trips (same shape as locationCountsQuery's two-table batch), kept
+// lazy (caller enables it only while that sort is actually selected) since
+// it's pricier than the other sort fields, which need no extra fetch.
+export const locationTotalPricesQuery = (locationIds = [], opts = {}) => ({
+    queryKey: ['location-total-prices', locationIds],
+    queryFn: async () => {
+        const entries = await Promise.all(
+            locationIds.map(async childId => {
+                const { data, error } = await supabase().rpc('location_total_price', {
+                    p_location_id: childId,
+                });
+                if (error) throw error;
+                return [childId, data];
+            }),
+        );
+        return Object.fromEntries(entries);
+    },
+    enabled: locationIds.length > 0,
+    ...opts,
+});
+
 // One of the three pack/unpack/transfer operations from the plan (§6) —
 // transfer = set parent_id, leave active_move_id untouched. Available on any
 // location (not just containers) — a room can move to a different house too.
