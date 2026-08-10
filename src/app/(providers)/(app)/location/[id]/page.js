@@ -86,6 +86,7 @@ import { SearchTagFilter } from '@/components/search/search-tag-filter';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
+import { VirtualList } from '@/ui/virtual-list';
 import {
     getLocationIcon,
     getFirstLocationPhoto,
@@ -751,6 +752,66 @@ export default function LocationPage({ params }) {
         },
     ].filter(stat => stat.value > 0);
 
+    // Shared between the desktop split view's cards-grid branch and its
+    // virtualized list branch (VirtualList's `footer`) — same empty state
+    // either way, just two different render sites since each viewType now
+    // has its own wrapper (grid+ScrollArea vs VirtualList).
+    const locationsEmptyState = (
+        <Empty className='flex-1 -mt-16' data-block='SplitLocationsEmpty'>
+            <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                    <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
+                </EmptyMedia>
+                <EmptyTitle>{locationSearch.trim() ? 'Sin resultados' : 'Sin ubicaciones'}</EmptyTitle>
+                <EmptyDescription>
+                    {locationSearch.trim()
+                        ? 'Nada coincide con tu búsqueda.'
+                        : 'Agrega una ubicación para organizar lo que guardes aquí.'}
+                </EmptyDescription>
+            </EmptyHeader>
+            {!locationSearch.trim() && (
+                <EmptyContent>
+                    <CreateLocationDialog
+                        workspaceId={location.workspace_id}
+                        parentId={id}
+                        title='Agregar ubicación'
+                    >
+                        <Button size='sm' variant='outline'>
+                            <PlusIcon />
+                            <PackageIcon />
+                            Ubicación
+                        </Button>
+                    </CreateLocationDialog>
+                </EmptyContent>
+            )}
+        </Empty>
+    );
+
+    const itemsEmptyState = (
+        <Empty className='flex-1 -mt-16' data-block='SplitItemsEmpty'>
+            <EmptyHeader>
+                <EmptyMedia variant='icon'>
+                    <DynamicIcon icon={FALLBACK_ITEM_ICON} />
+                </EmptyMedia>
+                <EmptyTitle>{itemSearch.trim() ? 'Sin resultados' : 'Sin artículos'}</EmptyTitle>
+                <EmptyDescription>
+                    {itemSearch.trim()
+                        ? 'Nada coincide con tu búsqueda.'
+                        : 'Agrega un artículo para empezar a guardar cosas aquí.'}
+                </EmptyDescription>
+            </EmptyHeader>
+            {!itemSearch.trim() && (
+                <EmptyContent>
+                    <Button size='sm' variant='outline' render={<Link href={`/item/new?location=${id}`} />}>
+                        <PlusIcon />
+                        <LeafIcon />
+                        Item
+                    </Button>
+                </EmptyContent>
+            )}
+        </Empty>
+    );
+
     const mainContent = (
         <>
             <LocationBreadcrumb
@@ -1175,34 +1236,57 @@ export default function LocationPage({ params }) {
                                         />
                                         <SortMenuButton sort={locationSort} onSortChange={setLocationSort} />
                                     </div>
-                                    <ScrollArea nav className='min-h-0 flex-1'>
-                                    <div className='flex min-h-full flex-col gap-2'>
-                                        {location.parent_id && (
-                                            <MoveOutDropZone parentName={parentName} />
-                                        )}
-                                        {searchedChildren.length > 0 ? (
-                                            viewType === 'cards' ? (
-                                                <div className='grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2'>
-                                                    {searchedChildren.map(child => (
-                                                        <LocationCardItem
-                                                            key={child.id}
-                                                            location={child}
-                                                            counts={childCounts?.[child.id]}
-                                                            selectable={isSelecting}
-                                                            selected={selectedLocationIds.has(
-                                                                child.id,
-                                                            )}
-                                                            onToggle={toggleLocationSelection}
-                                                            draggable
-                                                            dragData={getLocationDragData(child)}
-                                                            droppable
-                                                        />
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                searchedChildren.map(child => (
+                                    {viewType === 'cards' ? (
+                                        <ScrollArea nav className='min-h-0 flex-1'>
+                                            <div className='flex min-h-full flex-col gap-2'>
+                                                {location.parent_id && (
+                                                    <MoveOutDropZone parentName={parentName} />
+                                                )}
+                                                {searchedChildren.length > 0 ? (
+                                                    <div className='grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2'>
+                                                        {searchedChildren.map(child => (
+                                                            <LocationCardItem
+                                                                key={child.id}
+                                                                location={child}
+                                                                counts={childCounts?.[child.id]}
+                                                                selectable={isSelecting}
+                                                                selected={selectedLocationIds.has(
+                                                                    child.id,
+                                                                )}
+                                                                onToggle={toggleLocationSelection}
+                                                                draggable
+                                                                dragData={getLocationDragData(child)}
+                                                                droppable
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    locationsEmptyState
+                                                )}
+                                            </div>
+                                        </ScrollArea>
+                                    ) : searchedChildren.length > 0 ? (
+                                        // Only visible rows are ever mounted (see VirtualList's
+                                        // own doc comment) — with an unbounded number of
+                                        // locations here, a plain .map() was mounting every row
+                                        // (photo decode included) at once, which is what made
+                                        // selecting across many rows overload the page on iOS.
+                                        <VirtualList
+                                            nav
+                                            className='min-h-0 flex-1'
+                                            items={searchedChildren}
+                                            estimateSize={() => 72}
+                                            getItemKey={child => child.id}
+                                            header={
+                                                location.parent_id && (
+                                                    <div className='pb-2'>
+                                                        <MoveOutDropZone parentName={parentName} />
+                                                    </div>
+                                                )
+                                            }
+                                            renderItem={child => (
+                                                <div className='pb-2'>
                                                     <LocationListItem
-                                                        key={child.id}
                                                         location={child}
                                                         counts={childCounts?.[child.id]}
                                                         selectable={isSelecting}
@@ -1212,47 +1296,23 @@ export default function LocationPage({ params }) {
                                                         dragData={getLocationDragData(child)}
                                                         droppable
                                                     />
-                                                ))
-                                            )
-                                        ) : (
-                                            <Empty
-                                                className='flex-1 -mt-16'
-                                                data-block='SplitLocationsEmpty'
-                                            >
-                                                <EmptyHeader>
-                                                    <EmptyMedia variant='icon'>
-                                                        <DynamicIcon icon={FALLBACK_LOCATION_ICON} />
-                                                    </EmptyMedia>
-                                                    <EmptyTitle>
-                                                        {locationSearch.trim()
-                                                            ? 'Sin resultados'
-                                                            : 'Sin ubicaciones'}
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        {locationSearch.trim()
-                                                            ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Agrega una ubicación para organizar lo que guardes aquí.'}
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                                {!locationSearch.trim() && (
-                                                    <EmptyContent>
-                                                        <CreateLocationDialog
-                                                            workspaceId={location.workspace_id}
-                                                            parentId={id}
-                                                            title='Agregar ubicación'
-                                                        >
-                                                            <Button size='sm' variant='outline'>
-                                                                <PlusIcon />
-                                                                <PackageIcon />
-                                                                Ubicación
-                                                            </Button>
-                                                        </CreateLocationDialog>
-                                                    </EmptyContent>
-                                                )}
-                                            </Empty>
-                                        )}
-                                    </div>
-                                    </ScrollArea>
+                                                </div>
+                                            )}
+                                        />
+                                    ) : (
+                                        // Empty's own flex-1/justify-center need a flex-col
+                                        // ancestor to fill and center against — VirtualList's
+                                        // footer slot isn't one (it sits inside the plain
+                                        // overflow-y-auto scroll div), so the empty state gets
+                                        // its own dedicated flex container instead of going
+                                        // through VirtualList at all.
+                                        <div className='flex min-h-0 flex-1 flex-col gap-2'>
+                                            {location.parent_id && (
+                                                <MoveOutDropZone parentName={parentName} />
+                                            )}
+                                            {locationsEmptyState}
+                                        </div>
+                                    )}
                                 </div>
                                 <Separator orientation='vertical' />
                                 <div className='flex min-h-0 min-w-0 flex-3 flex-col gap-2'>
@@ -1277,28 +1337,41 @@ export default function LocationPage({ params }) {
                                         />
                                         <SortMenuButton sort={itemSort} onSortChange={setItemSort} />
                                     </div>
-                                    <ScrollArea nav className='min-h-0 flex-1'>
-                                    <div className='flex min-h-full flex-col gap-2'>
-                                        {searchedItems.length > 0 ? (
-                                            viewType === 'cards' ? (
-                                                <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
-                                                    {searchedItems.map(item => (
-                                                        <ItemCardItem
-                                                            key={item.id}
-                                                            item={item}
-                                                            selectable={isSelecting}
-                                                            selected={selectedItemIds.has(item.id)}
-                                                            onToggle={toggleItemSelection}
-                                                            draggable
-                                                            dragData={getItemDragData(item)}
-                                                            {...getItemRatingCounts(item.id)}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                searchedItems.map(item => (
+                                    {viewType === 'cards' ? (
+                                        <ScrollArea nav className='min-h-0 flex-1'>
+                                            <div className='flex min-h-full flex-col gap-2'>
+                                                {searchedItems.length > 0 ? (
+                                                    <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2'>
+                                                        {searchedItems.map(item => (
+                                                            <ItemCardItem
+                                                                key={item.id}
+                                                                item={item}
+                                                                selectable={isSelecting}
+                                                                selected={selectedItemIds.has(item.id)}
+                                                                onToggle={toggleItemSelection}
+                                                                draggable
+                                                                dragData={getItemDragData(item)}
+                                                                {...getItemRatingCounts(item.id)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    itemsEmptyState
+                                                )}
+                                            </div>
+                                        </ScrollArea>
+                                    ) : searchedItems.length > 0 ? (
+                                        // Same virtualization as the locations pane above — avoids
+                                        // mounting (and decoding the photo of) every item at once.
+                                        <VirtualList
+                                            nav
+                                            className='min-h-0 flex-1'
+                                            items={searchedItems}
+                                            estimateSize={() => 64}
+                                            getItemKey={item => item.id}
+                                            renderItem={item => (
+                                                <div className='pb-2'>
                                                     <ItemListRow
-                                                        key={item.id}
                                                         item={item}
                                                         selectable={isSelecting}
                                                         selected={selectedItemIds.has(item.id)}
@@ -1307,45 +1380,16 @@ export default function LocationPage({ params }) {
                                                         dragData={getItemDragData(item)}
                                                         {...getItemRatingCounts(item.id)}
                                                     />
-                                                ))
-                                            )
-                                        ) : (
-                                            <Empty
-                                                className='flex-1 -mt-16'
-                                                data-block='SplitItemsEmpty'
-                                            >
-                                                <EmptyHeader>
-                                                    <EmptyMedia variant='icon'>
-                                                        <DynamicIcon icon={FALLBACK_ITEM_ICON} />
-                                                    </EmptyMedia>
-                                                    <EmptyTitle>
-                                                        {itemSearch.trim()
-                                                            ? 'Sin resultados'
-                                                            : 'Sin artículos'}
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        {itemSearch.trim()
-                                                            ? 'Nada coincide con tu búsqueda.'
-                                                            : 'Agrega un artículo para empezar a guardar cosas aquí.'}
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                                {!itemSearch.trim() && (
-                                                    <EmptyContent>
-                                                        <Button
-                                                            size='sm'
-                                                            variant='outline'
-                                                            render={<Link href={`/item/new?location=${id}`} />}
-                                                        >
-                                                            <PlusIcon />
-                                                            <LeafIcon />
-                                                            Item
-                                                        </Button>
-                                                    </EmptyContent>
-                                                )}
-                                            </Empty>
-                                        )}
-                                    </div>
-                                    </ScrollArea>
+                                                </div>
+                                            )}
+                                        />
+                                    ) : (
+                                        // Same reasoning as the locations pane above — Empty
+                                        // needs a flex-col ancestor, not VirtualList's footer slot.
+                                        <div className='flex min-h-0 flex-1 flex-col gap-2'>
+                                            {itemsEmptyState}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <DragOverlay>
