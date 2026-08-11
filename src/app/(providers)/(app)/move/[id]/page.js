@@ -188,273 +188,282 @@ export default function MovePage({ params }) {
         : filteredItems;
 
     return (
-        <div
-            className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 p-4 pb-16'
-            data-block='MovePage'
-        >
-            <div
-                className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
-                data-block='MoveHero'
-            >
-                <div className='flex items-center justify-between gap-2'>
-                    <div className='flex min-w-0 items-center gap-3'>
-                        <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
-                            {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
-                        </span>
-                        <div className='min-w-0 flex-1'>
-                            <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
-                                {move.name}
-                            </h1>
-                            <p className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
-                                <span className='truncate'>{move.origin?.name}</span>
-                                <ArrowRightIcon className='size-3 shrink-0' />
-                                <span className='truncate'>{move.destination?.name}</span>
-                            </p>
+        <div className='absolute inset-0 flex flex-col overflow-hidden p-4' data-block='MovePage'>
+            {/* `-m-4` cancels this page's own p-4 so the ScrollArea's Root
+            (nav bars, scrollbar thumb) reaches the true screen edges instead
+            of floating inset with dead space around it; the p-4 moves onto
+            the inner content div so the actual content keeps the same visual
+            margin as before — same pattern as /search and /tags. */}
+            <ScrollArea nav className='-m-4 min-h-0 flex-1'>
+                <div
+                    className='mx-auto flex w-full max-w-lg flex-col gap-4 p-4 pb-16'
+                    data-block='MovePageContent'
+                >
+                    <div
+                        className='relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-hero-mesh p-4 ring-1 ring-foreground/10'
+                        data-block='MoveHero'
+                    >
+                        <div className='flex items-center justify-between gap-2'>
+                            <div className='flex min-w-0 items-center gap-3'>
+                                <span className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-card text-flourish shadow-sm shadow-black/10 ring-1 ring-foreground/10 [&_svg]:size-5'>
+                                    {move.route_type === 'air' ? <AirplaneIcon /> : <TruckIcon />}
+                                </span>
+                                <div className='min-w-0 flex-1'>
+                                    <h1 className='truncate font-heading text-xl leading-tight font-semibold tracking-tight'>
+                                        {move.name}
+                                    </h1>
+                                    <p className='flex items-center gap-1.5 truncate text-xs text-muted-foreground'>
+                                        <span className='truncate'>{move.origin?.name}</span>
+                                        <ArrowRightIcon className='size-3 shrink-0' />
+                                        <span className='truncate'>{move.destination?.name}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className='h-1 bg-muted/50' />
+
+                        <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
+                            {!isEmpty && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    render={<Link href={`/move/${id}/labels`} />}
+                                >
+                                    <PrinterIcon data-icon='inline-start' />
+                                    Etiquetas
+                                </Button>
+                            )}
+                            <SelectSearch
+                                options={MOVE_STATUSES}
+                                value={move.status}
+                                onChange={handleStatusChange}
+                                getKey={option => option.value}
+                                getLabel={option => option.label}
+                                triggerClassName='w-auto'
+                            />
+
+                            <div className='flex flex-1' />
+
+                            <ResponsiveDropdownMenu>
+                                <ResponsiveDropdownMenuTrigger
+                                    render={<Button size='icon-sm' variant='outline' />}
+                                >
+                                    <DotsThreeVerticalIcon />
+                                </ResponsiveDropdownMenuTrigger>
+                                <ResponsiveDropdownMenuContent align='end'>
+                                    <ResponsiveDropdownMenuItem onClick={() => setEditOpen(true)}>
+                                        <PencilSimpleIcon />
+                                        Editar
+                                    </ResponsiveDropdownMenuItem>
+                                    <ResponsiveDropdownMenuItem
+                                        variant='destructive'
+                                        disabled={isDeleting}
+                                        onClick={handleDelete}
+                                    >
+                                        <TrashIcon />
+                                        Eliminar
+                                    </ResponsiveDropdownMenuItem>
+                                </ResponsiveDropdownMenuContent>
+                            </ResponsiveDropdownMenu>
                         </div>
                     </div>
-                </div>
 
-                <div className='h-1 bg-muted/50' />
-
-                <div className='flex flex-wrap items-center justify-start gap-1 sm:gap-2'>
-                    {!isEmpty && (
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            render={<Link href={`/move/${id}/labels`} />}
-                        >
-                            <PrinterIcon data-icon='inline-start' />
-                            Etiquetas
-                        </Button>
-                    )}
-                    <SelectSearch
-                        options={MOVE_STATUSES}
-                        value={move.status}
-                        onChange={handleStatusChange}
-                        getKey={option => option.value}
-                        getLabel={option => option.label}
-                        triggerClassName='w-auto'
+                    <MoveSummary
+                        move={move}
+                        packed={packed}
+                        totalValue={totalValue}
+                        isTotalValuePending={isTotalValuePending}
                     />
 
-                    <div className='flex flex-1' />
+                    <MoveEditDialog
+                        move={move}
+                        workspaceId={move.workspace_id}
+                        open={editOpen}
+                        onOpenChange={setEditOpen}
+                    />
 
-                    <ResponsiveDropdownMenu>
-                        <ResponsiveDropdownMenuTrigger
-                            render={<Button size='icon-sm' variant='outline' />}
-                        >
-                            <DotsThreeVerticalIcon />
-                        </ResponsiveDropdownMenuTrigger>
-                        <ResponsiveDropdownMenuContent align='end'>
-                            <ResponsiveDropdownMenuItem onClick={() => setEditOpen(true)}>
-                                <PencilSimpleIcon />
-                                Editar
-                            </ResponsiveDropdownMenuItem>
-                            <ResponsiveDropdownMenuItem
-                                variant='destructive'
-                                disabled={isDeleting}
-                                onClick={handleDelete}
-                            >
-                                <TrashIcon />
-                                Eliminar
-                            </ResponsiveDropdownMenuItem>
-                        </ResponsiveDropdownMenuContent>
-                    </ResponsiveDropdownMenu>
-                </div>
-            </div>
+                    <MoveDatesDialog move={move} open={datesOpen} onOpenChange={setDatesOpen} />
 
-            <MoveSummary
-                move={move}
-                packed={packed}
-                totalValue={totalValue}
-                isTotalValuePending={isTotalValuePending}
-            />
+                    {hasRoute ? (
+                        <MoveRouteMap
+                            origin={move.origin}
+                            destination={move.destination}
+                            routeType={move.route_type}
+                            status={move.status}
+                        />
+                    ) : (
+                        <p className='rounded-lg border p-3 text-sm text-muted-foreground'>
+                            Ponle ubicación (lat/lng) a{' '}
+                            {move.origin?.lat == null ? move.origin?.name : move.destination?.name}{' '}
+                            para ver la ruta en el mapa.
+                        </p>
+                    )}
 
-            <MoveEditDialog
-                move={move}
-                workspaceId={move.workspace_id}
-                open={editOpen}
-                onOpenChange={setEditOpen}
-            />
+                    <LocationPicker
+                        open={!!unpackTarget}
+                        onOpenChange={next => !next && setUnpackTarget(null)}
+                        workspaceId={move.workspace_id}
+                        onSelect={handleUnpack}
+                    />
 
-            <MoveDatesDialog move={move} open={datesOpen} onOpenChange={setDatesOpen} />
-
-            {hasRoute ? (
-                <MoveRouteMap
-                    origin={move.origin}
-                    destination={move.destination}
-                    routeType={move.route_type}
-                    status={move.status}
-                />
-            ) : (
-                <p className='rounded-lg border p-3 text-sm text-muted-foreground'>
-                    Ponle ubicación (lat/lng) a{' '}
-                    {move.origin?.lat == null ? move.origin?.name : move.destination?.name} para ver
-                    la ruta en el mapa.
-                </p>
-            )}
-
-            <LocationPicker
-                open={!!unpackTarget}
-                onOpenChange={next => !next && setUnpackTarget(null)}
-                workspaceId={move.workspace_id}
-                onSelect={handleUnpack}
-            />
-
-            {isEmpty ? (
-                <Empty className='flex-1' data-block='MovePackedEmpty'>
-                    <EmptyHeader>
-                        <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
-                            <PackageIcon />
-                        </EmptyMedia>
-                        <EmptyTitle>Nada empacado todavía</EmptyTitle>
-                        <EmptyDescription>
-                            Abre un item o una caja y usa "Empacar" para agregarlo aquí.
-                        </EmptyDescription>
-                    </EmptyHeader>
-                </Empty>
-            ) : (
-                <div className='flex flex-col gap-4'>
-                    {packed.locations.length > 0 && (
-                        <div className='flex flex-col gap-2'>
-                            <div className='flex items-center gap-2'>
-                                <InputGroup className='flex-1'>
-                                    <InputGroupAddon>
-                                        <MagnifyingGlassIcon />
-                                    </InputGroupAddon>
-                                    <InputGroupInput
-                                        value={locationSearch}
-                                        onChange={event => setLocationSearch(event.target.value)}
-                                        placeholder='Filtrar cajas…'
-                                    />
-                                </InputGroup>
-                                <MultiSelectFilter
-                                    className='w-36 shrink-0'
-                                    icon={FunnelIcon}
-                                    options={TYPE_OPTIONS}
-                                    value={typeFilter}
-                                    onChange={setTypeFilter}
-                                    placeholder='Todos los tipos'
-                                    searchPlaceholder='Buscar tipo'
-                                    countLabel={count => `${count} tipos`}
-                                    renderOption={option => (
-                                        <>
-                                            <DynamicIcon icon={option.icon} />
-                                            <span className='truncate'>{option.label}</span>
-                                        </>
+                    {isEmpty ? (
+                        <Empty className='flex-1' data-block='MovePackedEmpty'>
+                            <EmptyHeader>
+                                <EmptyMedia variant='icon' className='bg-flourish/15 text-flourish'>
+                                    <PackageIcon />
+                                </EmptyMedia>
+                                <EmptyTitle>Nada empacado todavía</EmptyTitle>
+                                <EmptyDescription>
+                                    Abre un item o una caja y usa "Empacar" para agregarlo aquí.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    ) : (
+                        <div className='flex flex-col gap-4'>
+                            {packed.locations.length > 0 && (
+                                <div className='flex flex-col gap-2'>
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={locationSearch}
+                                                onChange={event =>
+                                                    setLocationSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar cajas…'
+                                            />
+                                        </InputGroup>
+                                        <MultiSelectFilter
+                                            className='w-36 shrink-0'
+                                            icon={FunnelIcon}
+                                            options={TYPE_OPTIONS}
+                                            value={typeFilter}
+                                            onChange={setTypeFilter}
+                                            placeholder='Todos los tipos'
+                                            searchPlaceholder='Buscar tipo'
+                                            countLabel={count => `${count} tipos`}
+                                            renderOption={option => (
+                                                <>
+                                                    <DynamicIcon icon={option.icon} />
+                                                    <span className='truncate'>{option.label}</span>
+                                                </>
+                                            )}
+                                        />
+                                    </div>
+                                    {searchedLocations.length > 0 ? (
+                                        <div className='flex flex-col gap-2'>
+                                            {searchedLocations.map(location => (
+                                                <div
+                                                    key={location.id}
+                                                    className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                                >
+                                                    <Link
+                                                        href={`/location/${location.id}`}
+                                                        className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                                    >
+                                                        <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                            <DynamicIcon
+                                                                icon={getLocationIcon(location)}
+                                                            />
+                                                        </span>
+                                                        <span className='min-w-0 flex-1 truncate font-medium'>
+                                                            {location.name}
+                                                        </span>
+                                                    </Link>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='outline'
+                                                        onClick={() =>
+                                                            setUnpackTarget({
+                                                                type: 'location',
+                                                                id: location.id,
+                                                            })
+                                                        }
+                                                    >
+                                                        <ArrowsLeftRightIcon data-icon='inline-start' />
+                                                        Desempacar
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                            Sin resultados.
+                                        </p>
                                     )}
-                                />
-                            </div>
-                            {searchedLocations.length > 0 ? (
-                                <ScrollArea nav className='max-h-96'>
-                                    <div className='flex flex-col gap-2'>
-                                        {searchedLocations.map(location => (
-                                            <div
-                                                key={location.id}
-                                                className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                                            >
-                                                <Link
-                                                    href={`/location/${location.id}`}
-                                                    className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                                                >
-                                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                                        <DynamicIcon
-                                                            icon={getLocationIcon(location)}
-                                                        />
-                                                    </span>
-                                                    <span className='min-w-0 flex-1 truncate font-medium'>
-                                                        {location.name}
-                                                    </span>
-                                                </Link>
-                                                <Button
-                                                    size='sm'
-                                                    variant='outline'
-                                                    onClick={() =>
-                                                        setUnpackTarget({
-                                                            type: 'location',
-                                                            id: location.id,
-                                                        })
-                                                    }
-                                                >
-                                                    <ArrowsLeftRightIcon data-icon='inline-start' />
-                                                    Desempacar
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            ) : (
-                                <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
-                                    Sin resultados.
-                                </p>
+                                </div>
                             )}
-                        </div>
-                    )}
 
-                    {packed.items.length > 0 && (
-                        <div className='flex flex-col gap-2'>
-                            <div className='flex items-center gap-2'>
-                                <InputGroup className='flex-1'>
-                                    <InputGroupAddon>
-                                        <MagnifyingGlassIcon />
-                                    </InputGroupAddon>
-                                    <InputGroupInput
-                                        value={itemSearch}
-                                        onChange={event => setItemSearch(event.target.value)}
-                                        placeholder='Filtrar muebles…'
-                                    />
-                                </InputGroup>
-                                <SearchTagFilter
-                                    className='w-36 shrink-0'
-                                    workspaceId={move.workspace_id}
-                                    value={tagFilter}
-                                    onChange={setTagFilter}
-                                />
-                            </div>
-                            {searchedItems.length > 0 ? (
-                                <ScrollArea nav className='max-h-96'>
-                                    <div className='flex flex-col gap-2'>
-                                        {searchedItems.map(item => (
-                                            <div
-                                                key={item.id}
-                                                className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
-                                            >
-                                                <Link
-                                                    href={`/item/${item.id}`}
-                                                    className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
-                                                >
-                                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
-                                                        <DynamicIcon icon={getItemIcon(item)} />
-                                                    </span>
-                                                    <span className='min-w-0 flex-1 truncate font-medium'>
-                                                        {item.name}
-                                                    </span>
-                                                </Link>
-                                                <Button
-                                                    size='sm'
-                                                    variant='outline'
-                                                    onClick={() =>
-                                                        setUnpackTarget({
-                                                            type: 'item',
-                                                            id: item.id,
-                                                        })
-                                                    }
-                                                >
-                                                    <ArrowsLeftRightIcon data-icon='inline-start' />
-                                                    Desempacar
-                                                </Button>
-                                            </div>
-                                        ))}
+                            {packed.items.length > 0 && (
+                                <div className='flex flex-col gap-2'>
+                                    <div className='flex items-center gap-2'>
+                                        <InputGroup className='flex-1'>
+                                            <InputGroupAddon>
+                                                <MagnifyingGlassIcon />
+                                            </InputGroupAddon>
+                                            <InputGroupInput
+                                                value={itemSearch}
+                                                onChange={event =>
+                                                    setItemSearch(event.target.value)
+                                                }
+                                                placeholder='Filtrar muebles…'
+                                            />
+                                        </InputGroup>
+                                        <SearchTagFilter
+                                            className='w-36 shrink-0'
+                                            workspaceId={move.workspace_id}
+                                            value={tagFilter}
+                                            onChange={setTagFilter}
+                                        />
                                     </div>
-                                </ScrollArea>
-                            ) : (
-                                <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
-                                    Sin resultados.
-                                </p>
+                                    {searchedItems.length > 0 ? (
+                                        <div className='flex flex-col gap-2'>
+                                            {searchedItems.map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    className='flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40'
+                                                >
+                                                    <Link
+                                                        href={`/item/${item.id}`}
+                                                        className='flex min-w-0 flex-1 items-center gap-3 hover:underline'
+                                                    >
+                                                        <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-4'>
+                                                            <DynamicIcon icon={getItemIcon(item)} />
+                                                        </span>
+                                                        <span className='min-w-0 flex-1 truncate font-medium'>
+                                                            {item.name}
+                                                        </span>
+                                                    </Link>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='outline'
+                                                        onClick={() =>
+                                                            setUnpackTarget({
+                                                                type: 'item',
+                                                                id: item.id,
+                                                            })
+                                                        }
+                                                    >
+                                                        <ArrowsLeftRightIcon data-icon='inline-start' />
+                                                        Desempacar
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                            Sin resultados.
+                                        </p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}
                 </div>
-            )}
+            </ScrollArea>
         </div>
     );
 }
