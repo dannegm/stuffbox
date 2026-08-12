@@ -53,10 +53,25 @@ const fetchSearchPage = async ({ workspaceId, q, tagIds, typeIds, packed, houseI
     // between the two calls (deleted mid-search) instead of rendering a
     // blank row for it.
     const rows = safeMatches
-        .map(match => ({
-            kind: match.kind,
-            data: match.kind === 'item' ? itemsById[match.id] : locationsById[match.id],
-        }))
+        .map(match => {
+            const data = match.kind === 'item' ? itemsById[match.id] : locationsById[match.id];
+            return {
+                kind: match.kind,
+                // `effective_move_id` already resolves the same inheritance
+                // rule as getInheritedPackedMoveId (own value wins, else
+                // nearest packed ancestor) — the RPC's own recursive tree
+                // walk computes it, so overriding here instead of doing a
+                // second per-row ancestor walk client-side. `packedVia`
+                // ('item' | 'location' | null) says whether the packed
+                // state is the row's own or inherited from a containing
+                // box, for any future "packed via X" affordance.
+                data: data && {
+                    ...data,
+                    active_move_id: match.effective_move_id,
+                    packedVia: match.move_owner_kind,
+                },
+            };
+        })
         .filter(row => row.data);
 
     return { rows, total };
