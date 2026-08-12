@@ -93,6 +93,7 @@ import {
     getLocationPhotoUrl,
     getLocationPhotos,
 } from '@/helpers/location';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import {
     DEFAULT_LOCATION_ICONS,
     FALLBACK_LOCATION_ICON,
@@ -608,8 +609,8 @@ export default function LocationPage({ params }) {
     }
 
     const locationPhoto = getFirstLocationPhoto(location);
-    const locationPhotoUrl = getLocationPhotoUrl(location);
-    const locationPhotos = getLocationPhotos(location);
+    const locationPhotoUrl = getLocationPhotoUrl(location, PHOTO_SIZE.LIST);
+    const locationPhotos = getLocationPhotos(location, PHOTO_SIZE.LIGHTBOX);
     const isEmpty = children.length === 0 && items.length === 0;
     // Default to the locations tab, unless there are none — then default to
     // items. Once the user taps a tab, that choice is saved to settings and

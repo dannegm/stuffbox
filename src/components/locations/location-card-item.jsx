@@ -16,6 +16,7 @@ import {
     getFirstLocationPhoto,
     getLocationPhotos,
 } from '@/helpers/location';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { cn } from '@/helpers/utils';
 
 // Card-grid counterpart to LocationListItem — same selection/drag/drop/
@@ -32,9 +33,9 @@ export const LocationCardItem = ({
     droppable = false,
 }) => {
     const [lightboxIndex, setLightboxIndex] = useState(null);
-    const photoUrl = getLocationPhotoUrl(location);
+    const photoUrl = getLocationPhotoUrl(location, PHOTO_SIZE.CARD);
     const photo = getFirstLocationPhoto(location);
-    const photos = getLocationPhotos(location);
+    const photos = getLocationPhotos(location, PHOTO_SIZE.LIGHTBOX);
 
     const {
         attributes,

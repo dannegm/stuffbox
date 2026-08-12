@@ -6,6 +6,7 @@ import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PackedTape } from '@/components/moves/packed-tape';
 import { getLocationIcon, getLocationPhotoUrl, getFirstLocationPhoto } from '@/helpers/location';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { cn } from '@/helpers/utils';
 
 // `counts` = { locations, items } — direct/root-level only, not recursive.
@@ -26,7 +27,7 @@ export const LocationListItem = ({
     dragData,
     droppable = false,
 }) => {
-    const photoUrl = getLocationPhotoUrl(location);
+    const photoUrl = getLocationPhotoUrl(location, PHOTO_SIZE.LIST);
     const photo = getFirstLocationPhoto(location);
 
     const {

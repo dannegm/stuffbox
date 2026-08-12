@@ -33,13 +33,14 @@ import {
     ResponsiveDropdownMenuTrigger,
 } from '@/ui/responsive-dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { photoUrl, PHOTO_SIZE } from '@/helpers/photos';
 
 const ADD_TRIGGER_CLASS =
     'flex size-24 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground';
 
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
-
-const photoSrc = photo => photo.previewUrl ?? `${R2_PUBLIC_URL}/${photo.r2_key}`;
+// A pending (just-uploaded, not-yet-persisted) photo has no r2_key row yet to
+// resolve through the proxy — its own local blob previewUrl wins instead.
+const photoSrc = (photo, sizeId) => photo.previewUrl ?? photoUrl(photo.r2_key, sizeId);
 
 // Same identity rule used for the React `key` below and for dnd-kit's
 // draggable/droppable ids — a pending photo has no `.id` yet.
@@ -122,7 +123,7 @@ const PhotoThumb = ({ photo, photoKey, isCover, isGhost, isWiggling, onView, onE
                 onClick={onView}
                 className='relative block size-full overflow-hidden'
             >
-                <CroppedPhoto src={photoSrc(photo)} photo={photo} />
+                <CroppedPhoto src={photoSrc(photo, PHOTO_SIZE.CARD)} photo={photo} />
             </button>
 
             <button
@@ -329,7 +330,10 @@ export const PhotoGallery = ({
                 <DragOverlay>
                     {activePhoto && (
                         <div className='relative size-16 overflow-hidden rounded-lg border shadow-lg'>
-                            <CroppedPhoto src={photoSrc(activePhoto)} photo={activePhoto} />
+                            <CroppedPhoto
+                                src={photoSrc(activePhoto, PHOTO_SIZE.CARD)}
+                                photo={activePhoto}
+                            />
                         </div>
                     )}
                 </DragOverlay>
@@ -434,7 +438,10 @@ export const PhotoGallery = ({
             )}
 
             <PhotoLightbox
-                photos={all.map(photo => ({ src: photoSrc(photo), photo }))}
+                photos={all.map(photo => ({
+                    src: photoSrc(photo, PHOTO_SIZE.LIGHTBOX),
+                    photo,
+                }))}
                 index={openIndex}
                 onIndexChange={setOpenIndex}
                 onClose={() => setOpenIndex(null)}
@@ -444,7 +451,7 @@ export const PhotoGallery = ({
             <PhotoCropDialog
                 open={!!editingPhoto}
                 photo={editingPhoto}
-                src={editingPhoto ? photoSrc(editingPhoto) : null}
+                src={editingPhoto ? photoSrc(editingPhoto, PHOTO_SIZE.LIGHTBOX) : null}
                 onOpenChange={open => !open && setEditingPhoto(null)}
                 onSave={cropValues => onUpdateCrop(editingPhoto, cropValues)}
             />

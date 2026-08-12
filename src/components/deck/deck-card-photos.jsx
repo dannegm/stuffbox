@@ -5,10 +5,8 @@ import { CroppedPhoto } from '@/ui/cropped-photo';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { pickBySeed } from '@/helpers/seed';
+import { photoUrl, PHOTO_SIZE } from '@/helpers/photos';
 import { cn } from '@/helpers/utils';
-
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
-const photoUrl = photo => `${R2_PUBLIC_URL}/${photo.r2_key}`;
 
 // CroppedPhoto's pan/zoom (crop_x/crop_y/zoom) is captured against a *square*
 // crop tool (src/helpers/photo-crop.js) and only computes correctly against a
@@ -42,7 +40,7 @@ const Cell = ({ photo, index, className, onOpen }) => (
         className={cn('relative block size-full overflow-hidden', className)}
     >
         <SquareCoverStage>
-            <CroppedPhoto src={photoUrl(photo)} photo={photo} />
+            <CroppedPhoto src={photoUrl(photo.r2_key, PHOTO_SIZE.DECK)} photo={photo} />
         </SquareCoverStage>
     </button>
 );
@@ -134,7 +132,10 @@ export const DeckCardPhotos = ({ photos, icon, seed }) => {
                 onOpen={setOpenIndex}
             />
             <PhotoLightbox
-                photos={sorted.map(photo => ({ src: photoUrl(photo), photo }))}
+                photos={sorted.map(photo => ({
+                    src: photoUrl(photo.r2_key, PHOTO_SIZE.LIGHTBOX),
+                    photo,
+                }))}
                 index={openIndex}
                 onIndexChange={setOpenIndex}
                 onClose={() => setOpenIndex(null)}

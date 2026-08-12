@@ -11,6 +11,7 @@ import { PhotoLightbox } from '@/ui/photo-lightbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { PackedTapeCard } from '@/components/moves/packed-tape';
 import { getItemIcon, getItemPhotoUrl, getFirstItemPhoto, getItemPhotos } from '@/helpers/item';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { cn } from '@/helpers/utils';
 
 // Card-grid counterpart to ItemListRow — same selection/drag/packed/rating
@@ -29,9 +30,9 @@ export const ItemCardItem = ({
     dislikeCount = 0,
 }) => {
     const [lightboxIndex, setLightboxIndex] = useState(null);
-    const photoUrl = getItemPhotoUrl(item);
+    const photoUrl = getItemPhotoUrl(item, PHOTO_SIZE.CARD);
     const photo = getFirstItemPhoto(item);
-    const photos = getItemPhotos(item);
+    const photos = getItemPhotos(item, PHOTO_SIZE.LIGHTBOX);
 
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: item.id,

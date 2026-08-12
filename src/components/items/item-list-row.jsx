@@ -6,6 +6,7 @@ import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PackedTape } from '@/components/moves/packed-tape';
 import { getItemIcon, getItemPhotoUrl, getFirstItemPhoto } from '@/helpers/item';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { cn } from '@/helpers/utils';
 
 // `selectable` swaps the row from a navigating Link to a toggle button —
@@ -24,7 +25,7 @@ export const ItemListRow = ({
     likeCount = 0,
     dislikeCount = 0,
 }) => {
-    const photoUrl = getItemPhotoUrl(item);
+    const photoUrl = getItemPhotoUrl(item, PHOTO_SIZE.LIST);
     const photo = getFirstItemPhoto(item);
 
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({

@@ -1,6 +1,5 @@
 import { FALLBACK_ITEM_ICON } from '@/constants/location-icons';
-
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+import { photoUrl } from '@/helpers/photos';
 
 // icon → first tag's icon → generic fallback (no-photo tier of the priority
 // chain below).
@@ -18,16 +17,18 @@ export const getFirstItemPhoto = item => {
 };
 
 // photo → item.icon → first tag icon → fallback (stuffbox-plan.md §4).
-export const getItemPhotoUrl = item => {
+// `sizeId` (PHOTO_SIZE, src/helpers/photos.js) is required — callers pick it
+// based on where the url is actually rendered.
+export const getItemPhotoUrl = (item, sizeId) => {
     const photo = getFirstItemPhoto(item);
-    return photo ? `${R2_PUBLIC_URL}/${photo.r2_key}` : null;
+    return photo ? photoUrl(photo.r2_key, sizeId) : null;
 };
 
 // All photos sorted by order, pre-resolved to `{ src, photo }` — feeds
 // PhotoLightbox when it needs every photo, not just the cover.
-export const getItemPhotos = item => {
+export const getItemPhotos = (item, sizeId) => {
     const photos = item?.item_photos ?? [];
     return [...photos]
         .sort((a, b) => a.order - b.order)
-        .map(photo => ({ src: `${R2_PUBLIC_URL}/${photo.r2_key}`, photo }));
+        .map(photo => ({ src: photoUrl(photo.r2_key, sizeId), photo }));
 };

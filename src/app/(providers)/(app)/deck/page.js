@@ -30,6 +30,7 @@ import {
     getLocationPhotoUrl,
     getLocationPhotos,
 } from '@/helpers/location';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { Deck, DeckCards, DeckEmpty, swipeExitSpec } from '@/ui/deck';
 import { DeckEntityCard } from '@/components/deck/deck-entity-card';
 import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
@@ -383,8 +384,12 @@ export default function DeckPage() {
                     name: entity.name,
                     icon: isItem ? getItemIcon(entity) : getLocationIcon(entity),
                     photo: isItem ? getFirstItemPhoto(entity) : getFirstLocationPhoto(entity),
-                    photoUrl: isItem ? getItemPhotoUrl(entity) : getLocationPhotoUrl(entity),
-                    photos: isItem ? getItemPhotos(entity) : getLocationPhotos(entity),
+                    photoUrl: isItem
+                        ? getItemPhotoUrl(entity, PHOTO_SIZE.LIST)
+                        : getLocationPhotoUrl(entity, PHOTO_SIZE.LIST),
+                    photos: isItem
+                        ? getItemPhotos(entity, PHOTO_SIZE.LIGHTBOX)
+                        : getLocationPhotos(entity, PHOTO_SIZE.LIGHTBOX),
                     containerId: entity.containerId,
                     active_move_id: entity.active_move_id,
                 },
