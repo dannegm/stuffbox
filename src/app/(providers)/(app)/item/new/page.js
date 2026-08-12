@@ -18,7 +18,6 @@ import { TagPicker } from '@/components/items/tag-picker';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { SkuBarcodeDisplay } from '@/components/items/sku-barcode-display';
 import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
-import { getLocationIcon } from '@/helpers/location';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { HeartRating } from '@/ui/heart-rating';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
@@ -191,9 +190,9 @@ export default function NewItemPage() {
         <div className='flex flex-1 flex-col gap-4 p-4 pb-12' data-block='NewItemPage'>
             <LocationBreadcrumb
                 workspace={workspace}
-                ancestors={ancestors ?? []}
-                current={location}
-                currentIcon={getLocationIcon(location)}
+                ancestors={[...(ancestors ?? []), location]}
+                current={{ id: 'new-item', name: 'Crear artículo' }}
+                currentIcon={{ library: 'phosphor', name: 'PlusIcon' }}
             />
 
             <div className='mx-auto flex w-full max-w-lg flex-1 flex-col gap-4'>

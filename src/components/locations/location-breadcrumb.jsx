@@ -134,24 +134,50 @@ export const LocationBreadcrumb = ({
                                 <ResponsiveDropdownMenuContent align='start' className='w-64'>
                                     {/* Root sits flush, unindented — everything
                                     below it is "inside" it, so it gets its own
-                                    left-margined column with a connecting
-                                    border-l standing in for the timeline line;
-                                    each row's dot is offset to sit centered on
-                                    that line (-1rem for the padding back to
-                                    the border, minus half the dot's own
-                                    width). */}
+                                    left-margined column with a per-row
+                                    connecting line standing in for the
+                                    timeline line (drawn per-row, not as one
+                                    border-l on the container, so it can stop
+                                    at the last row's dot instead of running
+                                    past it); each row's dot is offset to sit
+                                    centered on that line (-1rem for the
+                                    padding back to the line, minus half the
+                                    dot's own width). */}
                                     <ResponsiveDropdownMenuItem
                                         render={<Link href={`/location/${firstAncestor.id}`} />}
                                     >
                                         <DynamicIcon icon={getLocationIcon(firstAncestor)} />
                                         {firstAncestor.name}
                                     </ResponsiveDropdownMenuItem>
-                                    <div className='ml-4.5 flex flex-col border-l pl-4'>
+                                    <div className='ml-4.5 flex flex-col pl-4'>
                                         {descendantPath.map((node, nodeIndex) => {
-                                            const isCurrent = nodeIndex === descendantPath.length - 1;
+                                            const isCurrent =
+                                                nodeIndex === descendantPath.length - 1;
                                             return (
                                                 <div key={node.id} className='relative'>
-                                                    <span className='absolute top-1/2 -left-[1.1875rem] size-1.5 -translate-y-1/2 rounded-full bg-border ring-2 ring-background' />
+                                                    <div className='absolute -left-4.5 w-2 top-0 flex h-full flex-col items-center'>
+                                                        <span className='relative z-1 flex-1 w-0.5 bg-muted-foreground/30' />
+
+                                                        <span
+                                                            className={cn(
+                                                                'relative z-2 size-2 rounded-full ring-4 ring-background',
+                                                                isCurrent
+                                                                    ? 'bg-primary'
+                                                                    : 'bg-muted-foreground',
+                                                            )}
+                                                        />
+
+                                                        <span
+                                                            className={cn(
+                                                                'relative z-1 flex-1 w-0.5',
+                                                                {
+                                                                    'bg-muted-foreground/30 ':
+                                                                        !isCurrent,
+                                                                },
+                                                            )}
+                                                        />
+                                                    </div>
+
                                                     {isCurrent ? (
                                                         currentHref ? (
                                                             <ResponsiveDropdownMenuItem
@@ -169,9 +195,15 @@ export const LocationBreadcrumb = ({
                                                         )
                                                     ) : (
                                                         <ResponsiveDropdownMenuItem
-                                                            render={<Link href={`/location/${node.id}`} />}
+                                                            render={
+                                                                <Link
+                                                                    href={`/location/${node.id}`}
+                                                                />
+                                                            }
                                                         >
-                                                            <DynamicIcon icon={getLocationIcon(node)} />
+                                                            <DynamicIcon
+                                                                icon={getLocationIcon(node)}
+                                                            />
                                                             {node.name}
                                                         </ResponsiveDropdownMenuItem>
                                                     )}

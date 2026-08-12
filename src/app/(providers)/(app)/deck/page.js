@@ -8,11 +8,17 @@ import {
     ThumbsUpIcon,
     ThumbsDownIcon,
     ShuffleIcon,
+    ArrowUUpLeftIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useSettings } from '@/hooks/use-settings';
 import { workspacesQuery } from '@/queries/workspaces';
-import { deckQueueQuery, entityRatingsQuery, rateEntityMutation } from '@/queries/entity-ratings';
+import {
+    deckQueueQuery,
+    entityRatingsQuery,
+    rateEntityMutation,
+    deleteEntityRatingMutation,
+} from '@/queries/entity-ratings';
 import { locationDescendantIdsQuery } from '@/queries/locations';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
@@ -24,12 +30,13 @@ import {
     getLocationPhotoUrl,
     getLocationPhotos,
 } from '@/helpers/location';
-import { Deck, DeckCards, DeckEmpty } from '@/ui/deck';
+import { Deck, DeckCards, DeckEmpty, swipeExitSpec } from '@/ui/deck';
 import { DeckEntityCard } from '@/components/deck/deck-entity-card';
 import { DeckLocationFilter } from '@/components/deck/deck-location-filter';
 import { RatedEntitiesDialog } from '@/components/deck/rated-entities-dialog';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 
 // How many cards of the already-shuffled queue get handed to <DeckCards> at
@@ -37,6 +44,15 @@ import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/
 // mount that many DeckEntityCard elements up front when the stack only ever
 // shows `stackSize` of them.
 const PAGE_SIZE = 10;
+
+// A skip slides straight down, tilting randomly left or right each time —
+// distinct from a like/dislike's fixed, direction-matched tilt (swipeExitSpec)
+// so it reads as "set aside for later" rather than a judgment.
+const skipExitSpec = () => ({
+    axis: 'y',
+    sign: 1,
+    rotate: (Math.random() < 0.5 ? -1 : 1) * 25,
+});
 
 const Loading = () => (
     <div className='flex flex-1 flex-col gap-4 p-4' data-block='DeckLoading'>
@@ -81,8 +97,21 @@ export default function DeckPage() {
     // once. Reset alongside queue itself (see the queue-build effect below).
     const [loadedCount, setLoadedCount] = useState(PAGE_SIZE);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [indexChangeDirection, setIndexChangeDirection] = useState('left');
+    // {axis, sign, rotate} — how the next programmatic exit/entrance should
+    // look; see swipeExitSpec/skipExitSpec below.
+    const [deckExitSpec, setDeckExitSpec] = useState(() => swipeExitSpec('left'));
+    // Bumped whenever the deck resets wholesale (reshuffle/filter/clear-all)
+    // instead of stepping one card at a time — tells <DeckCards> to snap
+    // straight to index 0 with no exit/entrance animation, since that jump
+    // would otherwise look indistinguishable from a one-step undo.
+    const [deckResetToken, setDeckResetToken] = useState(0);
     const [ratedDialogOpen, setRatedDialogOpen] = useState(false);
+    // Every rate/skip from this session, oldest first — {index, ratingId,
+    // exitSpec}, ratingId null for a skip (nothing written to undo). Undo
+    // pops from the end, so the whole session can be walked back one step
+    // at a time. Reset alongside the queue itself (reshuffle/filter/clear),
+    // since recorded indices only make sense against the queue they came from.
+    const [actionHistory, setActionHistory] = useState([]);
     // null = "todas las ubicaciones" (no filtering) — the fallback if the
     // workspace has no deckDefaultLocationId set either.
     const [filterLocationId, setFilterLocationId] = useState(null);
@@ -191,6 +220,8 @@ export default function DeckPage() {
         setQueue(null);
         setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
+        setActionHistory([]);
+        setDeckResetToken(token => token + 1);
     };
 
     const { mutate: rate } = useMutation(
@@ -200,30 +231,51 @@ export default function DeckPage() {
         }),
     );
 
-    const rateEntity = (entity, liked) => {
+    const { mutate: deleteRating } = useMutation(
+        deleteEntityRatingMutation({
+            onSuccess: () =>
+                queryClient.invalidateQueries({ queryKey: ['entity-ratings', workspace?.id] }),
+        }),
+    );
+
+    const rateEntity = (entity, liked, index, exitSpec) => {
         // Debug mode is for poking at the swipe/animation behavior without
         // polluting entity_ratings with throwaway votes — the card still
-        // advances, nothing gets written.
-        if (debug) return;
-        rate({
-            workspaceId: workspace.id,
-            entityType: entity.entityType,
-            entityId: entity.entityId,
-            profileId: user.id,
-            liked,
-        });
+        // advances, nothing gets written. Undo still just walks the index
+        // back in that case, since there's no rating to delete.
+        if (debug) {
+            setActionHistory(history => [...history, { index, ratingId: null, exitSpec }]);
+            return;
+        }
+        rate(
+            {
+                workspaceId: workspace.id,
+                entityType: entity.entityType,
+                entityId: entity.entityId,
+                profileId: user.id,
+                liked,
+            },
+            {
+                onSuccess: data =>
+                    setActionHistory(history => [
+                        ...history,
+                        { index, ratingId: data.id, exitSpec },
+                    ]),
+            },
+        );
     };
 
     const handleSwipe = (index, direction) => {
         const entity = queue?.[index];
-        if (entity) rateEntity(entity, direction === 'right');
+        if (entity) rateEntity(entity, direction === 'right', index, swipeExitSpec(direction));
     };
 
     const handleButtonRate = liked => {
         const entity = queue?.[currentIndex];
         if (!entity) return;
-        rateEntity(entity, liked);
-        setIndexChangeDirection(liked ? 'right' : 'left');
+        const exitSpec = swipeExitSpec(liked ? 'right' : 'left');
+        rateEntity(entity, liked, currentIndex, exitSpec);
+        setDeckExitSpec(exitSpec);
         setCurrentIndex(index => index + 1);
     };
 
@@ -234,8 +286,30 @@ export default function DeckPage() {
     const handleSkip = () => {
         const entity = queue?.[currentIndex];
         if (!entity) return;
-        setIndexChangeDirection('left');
+        const exitSpec = skipExitSpec();
+        setActionHistory(history => [
+            ...history,
+            { index: currentIndex, ratingId: null, exitSpec },
+        ]);
+        setDeckExitSpec(exitSpec);
         setCurrentIndex(index => index + 1);
+    };
+
+    // Takes back the most recent not-yet-undone rate/skip: deletes the
+    // rating it wrote (if any) and walks currentIndex back to that card's
+    // position — queue itself is a static array, so rewinding the pointer is
+    // exactly "put it back on top of the deck", no reordering needed. Since
+    // every action always advances currentIndex by exactly one, the history
+    // is just a stack of consecutive positions — popping it one at a time
+    // walks all the way back through the current session. Reuses each
+    // action's own exit spec so <DeckCards> can mirror it on the way back in.
+    const handleUndo = () => {
+        if (actionHistory.length === 0) return;
+        const last = actionHistory[actionHistory.length - 1];
+        if (last.ratingId) deleteRating(last.ratingId);
+        setDeckExitSpec(last.exitSpec);
+        setCurrentIndex(last.index);
+        setActionHistory(history => history.slice(0, -1));
     };
 
     const handleReshuffle = () => {
@@ -243,6 +317,8 @@ export default function DeckPage() {
         setQueue(buildDeckQueue(filteredEntities, ratedKeys));
         setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
+        setActionHistory([]);
+        setDeckResetToken(token => token + 1);
     };
 
     // After the danger-zone "clear all" action, ratedKeys is still stale
@@ -253,7 +329,36 @@ export default function DeckPage() {
         setQueue(null);
         setLoadedCount(PAGE_SIZE);
         setCurrentIndex(0);
+        setActionHistory([]);
+        setDeckResetToken(token => token + 1);
     };
+
+    // Space to skip, Cmd/Ctrl+Z to undo — ignored while the ratings dialog is
+    // open (it has its own search input) or while any other field has focus,
+    // so typing a space or hitting Cmd+Z elsewhere doesn't hijack the deck.
+    useEffect(() => {
+        if (ratedDialogOpen) return;
+
+        const handleKeyDown = event => {
+            const target = event.target;
+            const isEditable =
+                target?.tagName === 'INPUT' ||
+                target?.tagName === 'TEXTAREA' ||
+                target?.isContentEditable;
+            if (isEditable) return;
+
+            if (event.code === 'Space') {
+                event.preventDefault();
+                handleSkip();
+            } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                handleUndo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [ratedDialogOpen, handleSkip, handleUndo]);
 
     const ratingsByEntity = useMemo(() => groupRatingsByEntity(ratings ?? []), [ratings]);
 
@@ -319,7 +424,26 @@ export default function DeckPage() {
             data-block='DeckPage'
         >
             <div className='flex items-center justify-between gap-2'>
-                <h1 className='font-heading text-lg font-semibold tracking-tight'>Cards</h1>
+                <div className='flex items-center gap-1.5'>
+                    <h1 className='font-heading text-lg font-semibold tracking-tight'>Cards</h1>
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type='button'
+                                    variant='ghost'
+                                    size='icon-sm'
+                                    disabled={actionHistory.length === 0}
+                                    onClick={handleUndo}
+                                />
+                            }
+                        >
+                            <ArrowUUpLeftIcon />
+                            <span className='sr-only'>Deshacer</span>
+                        </TooltipTrigger>
+                        <TooltipContent side='bottom'>Deshacer (⌘Z)</TooltipContent>
+                    </Tooltip>
+                </div>
                 <div className='flex min-w-0 flex-wrap items-center justify-end gap-2'>
                     <DeckLocationFilter
                         workspaceId={workspace.id}
@@ -356,7 +480,8 @@ export default function DeckPage() {
                             currentIndex={currentIndex}
                             onCurrentIndexChange={setCurrentIndex}
                             onSwipe={handleSwipe}
-                            indexChangeDirection={indexChangeDirection}
+                            exitSpec={deckExitSpec}
+                            resetToken={deckResetToken}
                             stackSize={4}
                             scale={0.06}
                             className='size-full'
