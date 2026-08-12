@@ -717,9 +717,17 @@ export default function LocationPage({ params }) {
 
     // "Select all" targets whatever's currently visible (post search/filter),
     // matching what the user actually sees — not every child/item at this
-    // location regardless of filters.
-    const visibleLocationIds = searchedChildren.map(child => child.id);
-    const visibleItemIds = searchedItems.map(item => item.id);
+    // location regardless of filters. Desktop shows both panes at once but
+    // should still only select all items, not locations (locations keep
+    // manual per-row selection there); mobile shows one tab at a time
+    // (`mobileView`), so it should only select all of whichever tab is
+    // active, not both collections at once.
+    const includesLocationsInSelectAll = !isDesktop && mobileView === 'locations';
+    const includesItemsInSelectAll = isDesktop || mobileView === 'items';
+    const visibleLocationIds = includesLocationsInSelectAll
+        ? searchedChildren.map(child => child.id)
+        : [];
+    const visibleItemIds = includesItemsInSelectAll ? searchedItems.map(item => item.id) : [];
     const visibleSelectableCount = visibleLocationIds.length + visibleItemIds.length;
     const isAllSelected =
         visibleSelectableCount > 0 &&
@@ -728,11 +736,11 @@ export default function LocationPage({ params }) {
 
     const toggleSelectAll = () => {
         if (isAllSelected) {
-            setSelectedLocationIds(new Set());
-            setSelectedItemIds(new Set());
+            if (includesLocationsInSelectAll) setSelectedLocationIds(new Set());
+            if (includesItemsInSelectAll) setSelectedItemIds(new Set());
         } else {
-            setSelectedLocationIds(new Set(visibleLocationIds));
-            setSelectedItemIds(new Set(visibleItemIds));
+            if (includesLocationsInSelectAll) setSelectedLocationIds(new Set(visibleLocationIds));
+            if (includesItemsInSelectAll) setSelectedItemIds(new Set(visibleItemIds));
         }
     };
 
