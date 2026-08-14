@@ -19,7 +19,6 @@ import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { LOCATION_TYPE_PRESETS, DEFAULT_LOCATION_ICONS } from '@/constants/location-icons';
-import { isContainerType } from '@/helpers/location';
 import { convertItemToLocationMutation } from '@/queries/items';
 
 const FORM_ID = 'convert-to-location-form';
@@ -81,7 +80,6 @@ export const ConvertToLocationDialog = ({
             itemId: item.id,
             locationId: nanoid(8),
             type,
-            isContainer: isContainerType(type),
         });
     };
 
@@ -119,8 +117,8 @@ export const ConvertToLocationDialog = ({
                                 )}
                             />
                             <FieldDescription>
-                                El tipo que elijas define si el nuevo lugar podrá contener otras
-                                cosas dentro — por ejemplo, una caja o repisa sí pueden.
+                                El nuevo lugar siempre podrá contener otras cosas dentro, sin
+                                importar el tipo que elijas.
                             </FieldDescription>
                             <FieldError>{error}</FieldError>
                         </Field>

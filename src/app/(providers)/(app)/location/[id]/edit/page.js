@@ -8,6 +8,7 @@ import Link from 'next/link';
 import {
     WarningIcon,
     CardsThreeIcon,
+    PackageIcon,
     SparkleIcon,
     ArrowsLeftRightIcon,
     CaretLeftIcon,
@@ -134,6 +135,7 @@ export default function LocationEditPage({ params }) {
     const [isFragile, setIsFragile] = useState(false);
     const [storageOrientation, setStorageOrientation] = useState('');
     const [sentimentalValue, setSentimentalValue] = useState(null);
+    const [isContainer, setIsContainer] = useState(false);
     const [isItem, setIsItem] = useState(false);
     const [coords, setCoords] = useState(null);
     const [error, setError] = useState(null);
@@ -153,6 +155,7 @@ export default function LocationEditPage({ params }) {
         setIsFragile(location.is_fragile ?? false);
         setStorageOrientation(location.storage_orientation ?? '');
         setSentimentalValue(location.sentimental_value ?? null);
+        setIsContainer(location.is_container ?? false);
         setIsItem(location.is_item ?? false);
         setCoords(location.lat != null ? { lat: location.lat, lng: location.lng } : null);
     }, [location]);
@@ -260,6 +263,14 @@ export default function LocationEditPage({ params }) {
 
     const isRoot = location?.parent_id == null;
 
+    // is_item implies is_container (a rateable location always shows its
+    // metadata too) — enforced here since turning is_item on has to force
+    // is_container on right along with it, not just at submit time.
+    const handleIsItemChange = value => {
+        setIsItem(value);
+        if (value) setIsContainer(true);
+    };
+
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
@@ -272,6 +283,7 @@ export default function LocationEditPage({ params }) {
             isFragile,
             storageOrientation: storageOrientation || null,
             sentimentalValue,
+            isContainer,
             isItem,
             ...(isRoot && { lat: coords?.lat ?? null, lng: coords?.lng ?? null }),
         });
@@ -497,6 +509,22 @@ export default function LocationEditPage({ params }) {
                                 orientation='horizontal'
                                 className='rounded-lg border bg-muted/30 px-3 py-2.5'
                             >
+                                <FieldLabel htmlFor='location-is-container' className='flex-1'>
+                                    <PackageIcon className='text-muted-foreground' />
+                                    Es un contenedor
+                                </FieldLabel>
+                                <Switch
+                                    id='location-is-container'
+                                    checked={isContainer}
+                                    disabled={isItem}
+                                    onCheckedChange={setIsContainer}
+                                />
+                            </Field>
+
+                            <Field
+                                orientation='horizontal'
+                                className='rounded-lg border bg-muted/30 px-3 py-2.5'
+                            >
                                 <FieldLabel htmlFor='location-is-item' className='flex-1'>
                                     <CardsThreeIcon className='text-muted-foreground' />
                                     Aparece en el deck de calificar
@@ -504,13 +532,13 @@ export default function LocationEditPage({ params }) {
                                 <Switch
                                     id='location-is-item'
                                     checked={isItem}
-                                    onCheckedChange={setIsItem}
+                                    onCheckedChange={handleIsItemChange}
                                 />
                             </Field>
                         </FieldGroup>
                     </div>
 
-                    {isItem && (
+                    {isContainer && (
                         <>
                             <div
                                 className='rounded-xl border bg-card p-4 shadow-xs ring-1 ring-foreground/5'

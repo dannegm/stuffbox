@@ -13,7 +13,7 @@ import {
     ResponsiveDialogTitle,
     ResponsiveDialogTrigger,
 } from '@/ui/responsive-dialog';
-import { CardsThreeIcon } from '@phosphor-icons/react/ssr';
+import { CardsThreeIcon, PackageIcon } from '@phosphor-icons/react/ssr';
 import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -35,22 +35,34 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
     const [type, setType] = useState(LOCATION_TYPE_PRESETS[0]);
-    const [isItem, setIsItem] = useState(isContainerType(LOCATION_TYPE_PRESETS[0]));
-    const [isItemTouched, setIsItemTouched] = useState(false);
+    const [isContainer, setIsContainer] = useState(isContainerType(LOCATION_TYPE_PRESETS[0]));
+    const [isContainerTouched, setIsContainerTouched] = useState(false);
+    const [isItem, setIsItem] = useState(false);
     const [error, setError] = useState(null);
 
-    // Mirrors the old is_container-by-type default (box/shelf/toolbox/baggage
-    // start as items automatically) without a dedicated UI for it — but once
+    // box/shelf/toolbox/baggage start as containers automatically — but once
     // the user manually flips the switch, their choice wins over further type
-    // changes.
+    // changes. is_item has no type-based default — it's always an explicit
+    // opt-in, independent of type.
     const handleTypeChange = newType => {
         setType(newType);
-        if (!isItemTouched) setIsItem(isContainerType(newType));
+        if (!isContainerTouched) setIsContainer(isContainerType(newType));
     };
 
+    const handleIsContainerChange = value => {
+        setIsContainer(value);
+        setIsContainerTouched(true);
+    };
+
+    // is_item implies is_container (a rateable location always shows its
+    // metadata too) — enforced here since turning is_item on has to force
+    // is_container on right along with it, not just at submit time.
     const handleIsItemChange = value => {
         setIsItem(value);
-        setIsItemTouched(true);
+        if (value) {
+            setIsContainer(true);
+            setIsContainerTouched(true);
+        }
     };
 
     const { mutate, isPending } = useMutation(
@@ -59,8 +71,9 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                 queryClient.invalidateQueries({ queryKey: ['locations', workspaceId, parentId] });
                 setName('');
                 setType(LOCATION_TYPE_PRESETS[0]);
-                setIsItem(isContainerType(LOCATION_TYPE_PRESETS[0]));
-                setIsItemTouched(false);
+                setIsContainer(isContainerType(LOCATION_TYPE_PRESETS[0]));
+                setIsContainerTouched(false);
+                setIsItem(false);
                 setError(null);
                 setOpen(false);
                 // Stays put (this dialog is opened from wherever it already
@@ -81,7 +94,7 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
     const handleSubmit = event => {
         event.preventDefault();
         if (!name.trim()) return;
-        mutate({ workspaceId, parentId, name: name.trim(), type, isItem });
+        mutate({ workspaceId, parentId, name: name.trim(), type, isContainer, isItem });
     };
 
     return (
@@ -128,6 +141,22 @@ export const CreateLocationDialog = ({ workspaceId, parentId = null, title, chil
                                 )}
                             />
                             <FieldError>{error}</FieldError>
+                        </Field>
+
+                        <Field
+                            orientation='horizontal'
+                            className='rounded-lg border bg-muted/30 px-3 py-2.5'
+                        >
+                            <FieldLabel htmlFor='location-is-container' className='flex-1'>
+                                <PackageIcon className='text-muted-foreground' />
+                                Es un contenedor
+                            </FieldLabel>
+                            <Switch
+                                id='location-is-container'
+                                checked={isContainer}
+                                disabled={isItem}
+                                onCheckedChange={handleIsContainerChange}
+                            />
                         </Field>
 
                         <Field

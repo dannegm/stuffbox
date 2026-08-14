@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { CaretRightIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, PackageIcon, LeafIcon, StackIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { PackedTape } from '@/components/moves/packed-tape';
 import { getLocationIcon, getLocationPhotoUrl, getFirstLocationPhoto } from '@/helpers/location';
 import { PHOTO_SIZE } from '@/helpers/photos';
@@ -90,6 +91,31 @@ export const LocationListItem = ({
                     {location.type}
                 </span>
             </span>
+            {location.is_item ? (
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <span className='z-1 flex shrink-0 items-center justify-center rounded-full bg-primary/10 p-1 text-primary [&_svg]:size-3' />
+                        }
+                    >
+                        <LeafIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>Item</TooltipContent>
+                </Tooltip>
+            ) : (
+                location.is_container && (
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <span className='z-1 flex shrink-0 items-center justify-center rounded-full bg-flourish/15 p-1 text-flourish [&_svg]:size-3' />
+                            }
+                        >
+                            <StackIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>Contenedor</TooltipContent>
+                    </Tooltip>
+                )
+            )}
             {(counts?.locations > 0 || counts?.items > 0) && (
                 <span className='z-1 flex shrink-0 items-center gap-2.5 text-xs text-muted-foreground'>
                     {counts.locations > 0 && (

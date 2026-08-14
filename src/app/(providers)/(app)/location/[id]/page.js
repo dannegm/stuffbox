@@ -878,6 +878,12 @@ export default function LocationPage({ params }) {
                                 Item
                             </span>
                         )}
+                        {location.is_container && !location.is_item && (
+                            <span className='flex shrink-0 items-center gap-1 rounded-full bg-flourish/15 px-1.5 py-0.5 text-xs font-medium text-flourish [&_svg]:size-3'>
+                                <StackIcon />
+                                Contenedor
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

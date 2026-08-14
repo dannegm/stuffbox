@@ -53,13 +53,14 @@ export const LOCATION_TYPE_PRESETS = Object.keys(DEFAULT_LOCATION_ICONS).filter(
 // tree root, so they're excluded from the house-creation type picker.
 export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse'];
 
-// `is_item` is the single flag the app reads for "this location behaves like
-// an item" — descriptive fields (location/[id]/edit/page.js) and the
-// rate-deck toggle (location/[id]/page.js) key off it now; pack/unpack is
-// available on any non-root location regardless of this flag. These types
-// only feed CreateLocationDialog's smart default (box/shelf/toolbox/baggage start with
-// is_item on, until the user manually flips the switch) — they no longer
-// gate anything directly. `locations.is_container` still exists and is still
-// written on create/update (also computed from this list), but nothing reads
-// it anymore.
-export const CONTAINER_TYPES = ['box', 'shelf', 'toolbox', 'baggage'];
+// Two independent flags gate a location's behavior: `is_container` shows
+// descriptive fields (photo/description/orientation/valor sentimental) in
+// the UI (location/[id]/edit/page.js) without needing to be rateable;
+// `is_item` additionally puts it in the swipe/rate deck (location/[id]/
+// page.js's rating toggle) and implies `is_container` true (app-enforced,
+// not the reverse). Pack/unpack is available on any non-root location
+// regardless of either flag. These types only feed CreateLocationDialog's
+// smart default for `is_container` (box/shelf/toolbox/baggage/closet/drawer
+// start as containers, until the user manually flips the switch) — `is_item`
+// has no type-based default, it's always an explicit opt-in.
+export const CONTAINER_TYPES = ['box', 'shelf', 'toolbox', 'baggage', 'closet', 'drawer'];

@@ -1,6 +1,5 @@
 import { nanoid } from 'nanoid';
 import { supabase } from '@/services/supabase';
-import { isContainerType } from '@/helpers/location';
 
 export const locationQuery = (id, opts = {}) => ({
     queryKey: ['location', id],
@@ -147,6 +146,7 @@ export const createLocationMutation = (opts = {}) => ({
         icon = null,
         lat = null,
         lng = null,
+        isContainer = false,
         isItem = false,
     }) => {
         const { data, error } = await supabase()
@@ -160,7 +160,7 @@ export const createLocationMutation = (opts = {}) => ({
                 icon,
                 lat,
                 lng,
-                is_container: isContainerType(type),
+                is_container: isContainer,
                 is_item: isItem,
             })
             .select()
@@ -181,6 +181,7 @@ export const updateLocationMutation = (opts = {}) => ({
         isFragile = false,
         storageOrientation = null,
         sentimentalValue = null,
+        isContainer = false,
         isItem = false,
         lat,
         lng,
@@ -191,7 +192,7 @@ export const updateLocationMutation = (opts = {}) => ({
                 name,
                 type,
                 icon,
-                is_container: isContainerType(type),
+                is_container: isContainer,
                 description,
                 is_fragile: isFragile,
                 storage_orientation: storageOrientation,

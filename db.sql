@@ -107,8 +107,8 @@ create table stuffbox.locations (
   lng             double precision,
   active_move_id  text,                                   -- set when packed; FK added below
   ai_summary      text,                                   -- cached, regenerable
-  is_container    boolean not null default false,          -- defaults true for box/shelf/toolbox/baggage (app-derived from type, not DB-enforced)
-  is_item         boolean not null default false,          -- lets this location also appear in the swipe/rate deck, like an item
+  is_container    boolean not null default false,          -- shows container metadata (photos/description/orientation/sentimental_value) without needing to be rateable; defaults true for box/shelf/toolbox/baggage (app-derived from type, not DB-enforced)
+  is_item         boolean not null default false,          -- lets this location also appear in the swipe/rate deck, like an item; implies is_container true (app-enforced, not a DB constraint)
   description     text,
   is_fragile      boolean not null default false,
   storage_orientation text,                                -- ref option_lists(field='orientation'), no hard FK
@@ -1042,17 +1042,17 @@ grant execute on function stuffbox.search_workspace(text, text, uuid[], text[], 
 -- photos over, then delete it. Plain invoker rights (no security definer),
 -- same reasoning as location_total_price/search_workspace above — RLS on
 -- items/locations/location_photos already scopes every statement here to
--- what the calling user can see/write. is_container is passed in (computed
--- client-side via isContainerType, same as createLocationMutation/
--- updateLocationMutation) rather than re-derived from p_type in SQL.
--- is_item is always forced true so the promoted location keeps showing up
--- in the swipe/rate deck, same as the item did. Tags don't carry over —
--- there's no location_tags equivalent; item_tags cascades away with the item.
+-- what the calling user can see/write. is_item is always forced true so the
+-- promoted location keeps showing up in the swipe/rate deck, same as the
+-- item did — and since is_item implies is_container, is_container is forced
+-- true too (hardcoded, not derived from p_type — a promoted item stays a
+-- container even if promoted to a non-container type like 'room'). Tags
+-- don't carry over — there's no location_tags equivalent; item_tags cascades
+-- away with the item.
 create or replace function stuffbox.convert_item_to_location(
-  p_item_id      text,
-  p_location_id  text,
-  p_type         text,
-  p_is_container boolean
+  p_item_id     text,
+  p_location_id text,
+  p_type        text
 )
 returns stuffbox.locations
 language plpgsql
@@ -1072,7 +1072,7 @@ begin
     sentimental_value
   ) values (
     p_location_id, v_item.workspace_id, v_item.location_id, v_item.name, p_type,
-    v_item.icon, v_item.active_move_id, p_is_container, true, v_item.description,
+    v_item.icon, v_item.active_move_id, true, true, v_item.description,
     v_item.is_fragile, v_item.storage_orientation, v_item.sentimental_value
   )
   returning * into v_location;
@@ -1090,7 +1090,7 @@ begin
 end;
 $$;
 
-grant execute on function stuffbox.convert_item_to_location(text, text, text, boolean) to authenticated;
+grant execute on function stuffbox.convert_item_to_location(text, text, text) to authenticated;
 
 
 -- -----------------------------------------------------------------------------

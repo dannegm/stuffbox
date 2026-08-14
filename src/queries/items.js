@@ -174,12 +174,11 @@ export const duplicateItemMutation = (opts = {}) => ({
 // in db.sql) rather than three separate client round-trips, so the item is
 // never lost between an insert failing and the delete that would follow it.
 export const convertItemToLocationMutation = (opts = {}) => ({
-    mutationFn: async ({ itemId, locationId, type, isContainer }) => {
+    mutationFn: async ({ itemId, locationId, type }) => {
         const { data, error } = await supabase().rpc('convert_item_to_location', {
             p_item_id: itemId,
             p_location_id: locationId,
             p_type: type,
-            p_is_container: isContainer,
         });
         if (error) throw error;
         return data;
