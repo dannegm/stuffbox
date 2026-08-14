@@ -29,6 +29,7 @@ function ScrollArea({
     nav = false,
     onScrollBottom,
     bottomThreshold = 400,
+    onScroll,
     ...props
 }) {
     const $viewport = React.useRef(null);
@@ -44,12 +45,12 @@ function ScrollArea({
 
     const handleScroll = React.useCallback(() => {
         if (nav) updateNav();
-        if (!onScrollBottom) return;
         const viewport = $viewport.current;
-        if (!viewport) return;
+        if (viewport) onScroll?.(viewport.scrollTop);
+        if (!onScrollBottom || !viewport) return;
         const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
         if (distanceToBottom < bottomThreshold) onScrollBottom();
-    }, [nav, updateNav, onScrollBottom, bottomThreshold]);
+    }, [nav, updateNav, onScroll, onScrollBottom, bottomThreshold]);
 
     React.useEffect(() => {
         if (!nav) return;
@@ -108,7 +109,7 @@ function ScrollArea({
             )}
             <ScrollAreaPrimitive.Viewport
                 ref={$viewport}
-                onScroll={nav || onScrollBottom ? handleScroll : undefined}
+                onScroll={nav || onScrollBottom || onScroll ? handleScroll : undefined}
                 data-slot='scroll-area-viewport'
                 className='min-h-0 w-full flex-1 rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1'
             >

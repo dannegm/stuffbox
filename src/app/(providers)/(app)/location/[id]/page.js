@@ -206,6 +206,15 @@ export default function LocationPage({ params }) {
     const [shareOpen, setShareOpen] = useState(false);
     const [selectionMode, setSelectionMode] = useState(false);
     const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+    // Mobile only: real `position: sticky` on the toolbar itself fights Base
+    // UI ScrollArea's internal overflow-hidden Root/Viewport split, so
+    // instead we track the ScrollArea's own scrollTop (via its `onScroll`
+    // prop) and render a second, floating copy of the toolbar (see
+    // `locationToolbar`) outside the ScrollArea once scrolled far enough,
+    // where plain absolute positioning just works.
+    const [scrollTop, setScrollTop] = useState(0);
+    const TOOLBAR_STUCK_THRESHOLD = 146; // px
+    const isToolbarStuck = scrollTop > TOOLBAR_STUCK_THRESHOLD;
     // Holding Alt/Option acts as a momentary selection mode (not Cmd/Ctrl —
     // that's the browser's own open-in-new-tab click gesture) — released
     // items stay selected (via the `selected` prop on each row/card, applied
@@ -745,6 +754,192 @@ export default function LocationPage({ params }) {
         </Empty>
     );
 
+    // Shared between its normal in-flow spot inside `mainContent` and the
+    // floating copy rendered outside the mobile ScrollArea once
+    // `isToolbarStuck` (see above) — same element, same bindings, twice.
+    const locationToolbar = (
+        <ScrollToolbar
+            data-block='LocationToolbar'
+            start={
+                isSelecting ? (
+                    <Button size='icon-sm' variant='outline' onClick={exitSelectionMode}>
+                        <XIcon />
+                    </Button>
+                ) : (
+                    !isEmpty && (
+                        <Button size='icon-sm' variant='outline' onClick={() => setSelectionMode(true)}>
+                            <Checkbox checked={true} tabIndex={-1} className='pointer-events-none' />
+                        </Button>
+                    )
+                )
+            }
+            end={
+                !isSelecting &&
+                canDeleteLocation && (
+                    <ResponsiveDropdownMenu>
+                        <ResponsiveDropdownMenuTrigger render={<Button size='icon-sm' variant='outline' />}>
+                            <DotsThreeVerticalIcon />
+                        </ResponsiveDropdownMenuTrigger>
+                        <ResponsiveDropdownMenuContent align='end'>
+                            <ResponsiveDropdownMenuItem variant='destructive' onClick={handleDelete}>
+                                <TrashIcon />
+                                Eliminar
+                            </ResponsiveDropdownMenuItem>
+                        </ResponsiveDropdownMenuContent>
+                    </ResponsiveDropdownMenu>
+                )
+            }
+        >
+            {isSelecting ? (
+                <>
+                    <span className='shrink-0 px-1 text-sm text-muted-foreground'>{selectedCount} sel.</span>
+
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        disabled={visibleSelectableCount === 0}
+                        onClick={toggleSelectAll}
+                    >
+                        <Checkbox checked={isAllSelected} tabIndex={-1} className='pointer-events-none' />
+                        <span className='hidden sm:inline'>
+                            {isAllSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                        </span>
+                    </Button>
+
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        disabled={selectedCount === 0}
+                        onClick={() => setBulkPickerMode('transfer')}
+                    >
+                        <ArrowsLeftRightIcon />
+                        Transferir
+                    </Button>
+
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        disabled={selectedCount === 0}
+                        onClick={() => setBulkPackOpen(true)}
+                    >
+                        <LucidePackageIcon className='stroke-1' />
+                        <span className='hidden sm:inline'>Empacar</span>
+                    </Button>
+                    <Button
+                        size='sm'
+                        variant='outline'
+                        disabled={selectedCount === 0}
+                        onClick={() => setBulkPickerMode('unpack')}
+                    >
+                        <LucidePackageOpenIcon className='stroke-1' />
+                        <span className='hidden sm:inline'>Desempacar</span>
+                    </Button>
+                </>
+            ) : (
+                <>
+                    {locationStats.length > 0 && (
+                        <div className='flex h-8 shrink-0 items-center divide-x divide-border rounded-[min(var(--radius-md),10px)] border border-border bg-background shadow-xs dark:border-input dark:bg-input/30'>
+                            {(isStatsExpanded ? locationStats : locationStats.slice(0, 4)).map(stat => (
+                                <span
+                                    key={stat.key}
+                                    className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'
+                                >
+                                    <stat.icon className='text-muted-foreground' />
+                                    <span className='font-medium tabular-nums'>
+                                        {stat.format ? stat.format(stat.value) : stat.value}
+                                    </span>
+                                    {isStatsExpanded && (
+                                        <span className='text-muted-foreground'>{stat.label}</span>
+                                    )}
+                                </span>
+                            ))}
+                            {!isStatsExpanded && locationStats.length > 4 && (
+                                <span className='flex h-full items-center px-2.5 text-sm font-medium text-muted-foreground'>
+                                    +{locationStats.length - 4}
+                                </span>
+                            )}
+                            {locationStats.length > 1 && (
+                                <button
+                                    type='button'
+                                    aria-label={
+                                        isStatsExpanded ? 'Contraer estadísticas' : 'Expandir estadísticas'
+                                    }
+                                    onClick={() => setIsStatsExpanded(current => !current)}
+                                    className='flex h-full items-center px-2 text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-3.5'
+                                >
+                                    {isStatsExpanded ? (
+                                        <ArrowsInLineHorizontalIcon />
+                                    ) : (
+                                        <ArrowsOutLineHorizontalIcon />
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    <div className='flex-1' />
+
+                    {location.parent_id && (
+                        <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={isTransferring}
+                            onClick={() => setTransferOpen(true)}
+                        >
+                            {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
+                            <span className='hidden sm:inline'>Transferir</span>
+                        </Button>
+                    )}
+
+                    {location.parent_id &&
+                        (location.active_move_id ? (
+                            <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
+                                <LucidePackageOpenIcon className='stroke-1' />
+                                <span className='hidden sm:inline'>Desempacar</span>
+                            </Button>
+                        ) : (
+                            <Button size='sm' variant='outline' onClick={() => setPackDialogOpen(true)}>
+                                <LucidePackageIcon className='stroke-1' />
+                                <span className='hidden sm:inline'>Empacar</span>
+                            </Button>
+                        ))}
+
+                    <Button size='sm' variant='outline' render={<Link href={`/item/new?location=${id}`} />}>
+                        <PlusIcon />
+                        <LeafIcon />
+                        <span className='hidden sm:inline'>Item</span>
+                    </Button>
+
+                    <CreateLocationDialog
+                        workspaceId={location.workspace_id}
+                        parentId={id}
+                        title='Agregar ubicación'
+                    >
+                        <Button size='sm' variant='outline'>
+                            <PlusIcon />
+                            <PackageIcon />
+                            <span className='hidden sm:inline'>Location</span>
+                        </Button>
+                    </CreateLocationDialog>
+
+                    {location.is_item && (
+                        <RatingToggle
+                            workspaceId={location.workspace_id}
+                            entityType='location'
+                            entityId={id}
+                            ratings={locationRatings}
+                        />
+                    )}
+
+                    <Button size='sm' variant='outline' render={<Link href={`/location/${id}/edit`} />}>
+                        <PencilSimpleIcon />
+                        <span className='hidden sm:inline'>Editar</span>
+                    </Button>
+                </>
+            )}
+        </ScrollToolbar>
+    );
+
     const mainContent = (
         <>
             <LocationBreadcrumb
@@ -822,207 +1017,7 @@ export default function LocationPage({ params }) {
                 </Button>
             </div>
 
-            <ScrollToolbar
-                data-block='LocationToolbar'
-                start={
-                    isSelecting ? (
-                        <Button size='icon-sm' variant='outline' onClick={exitSelectionMode}>
-                            <XIcon />
-                        </Button>
-                    ) : (
-                        !isEmpty && (
-                            <Button size='icon-sm' variant='outline' onClick={() => setSelectionMode(true)}>
-                                <Checkbox checked={true} tabIndex={-1} className='pointer-events-none' />
-                            </Button>
-                        )
-                    )
-                }
-                end={
-                    !isSelecting &&
-                    canDeleteLocation && (
-                        <ResponsiveDropdownMenu>
-                            <ResponsiveDropdownMenuTrigger
-                                render={<Button size='icon-sm' variant='outline' />}
-                            >
-                                <DotsThreeVerticalIcon />
-                            </ResponsiveDropdownMenuTrigger>
-                            <ResponsiveDropdownMenuContent align='end'>
-                                <ResponsiveDropdownMenuItem
-                                    variant='destructive'
-                                    onClick={handleDelete}
-                                >
-                                    <TrashIcon />
-                                    Eliminar
-                                </ResponsiveDropdownMenuItem>
-                            </ResponsiveDropdownMenuContent>
-                        </ResponsiveDropdownMenu>
-                    )
-                }
-            >
-                {isSelecting ? (
-                    <>
-                        <span className='shrink-0 px-1 text-sm text-muted-foreground'>
-                            {selectedCount} sel.
-                        </span>
-
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={visibleSelectableCount === 0}
-                            onClick={toggleSelectAll}
-                        >
-                            <Checkbox
-                                checked={isAllSelected}
-                                tabIndex={-1}
-                                className='pointer-events-none'
-                            />
-                            <span className='hidden sm:inline'>
-                                {isAllSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
-                            </span>
-                        </Button>
-
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPickerMode('transfer')}
-                        >
-                            <ArrowsLeftRightIcon />
-                            Transferir
-                        </Button>
-
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPackOpen(true)}
-                        >
-                            <LucidePackageIcon className='stroke-1' />
-                            <span className='hidden sm:inline'>Empacar</span>
-                        </Button>
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            disabled={selectedCount === 0}
-                            onClick={() => setBulkPickerMode('unpack')}
-                        >
-                            <LucidePackageOpenIcon className='stroke-1' />
-                            <span className='hidden sm:inline'>Desempacar</span>
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        {locationStats.length > 0 && (
-                            <div className='flex h-8 shrink-0 items-center divide-x divide-border rounded-[min(var(--radius-md),10px)] border border-border bg-background shadow-xs dark:border-input dark:bg-input/30'>
-                                {(isStatsExpanded ? locationStats : locationStats.slice(0, 4)).map(
-                                    stat => (
-                                        <span
-                                            key={stat.key}
-                                            className='flex h-full items-center gap-1.5 px-2.5 text-sm [&_svg]:size-3.5'
-                                        >
-                                            <stat.icon className='text-muted-foreground' />
-                                            <span className='font-medium tabular-nums'>
-                                                {stat.format ? stat.format(stat.value) : stat.value}
-                                            </span>
-                                            {isStatsExpanded && (
-                                                <span className='text-muted-foreground'>
-                                                    {stat.label}
-                                                </span>
-                                            )}
-                                        </span>
-                                    ),
-                                )}
-                                {!isStatsExpanded && locationStats.length > 4 && (
-                                    <span className='flex h-full items-center px-2.5 text-sm font-medium text-muted-foreground'>
-                                        +{locationStats.length - 4}
-                                    </span>
-                                )}
-                                {locationStats.length > 1 && (
-                                    <button
-                                        type='button'
-                                        aria-label={
-                                            isStatsExpanded
-                                                ? 'Contraer estadísticas'
-                                                : 'Expandir estadísticas'
-                                        }
-                                        onClick={() => setIsStatsExpanded(current => !current)}
-                                        className='flex h-full items-center px-2 text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-3.5'
-                                    >
-                                        {isStatsExpanded ? (
-                                            <ArrowsInLineHorizontalIcon />
-                                        ) : (
-                                            <ArrowsOutLineHorizontalIcon />
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <div className='flex-1' />
-
-                        {location.parent_id && (
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                disabled={isTransferring}
-                                onClick={() => setTransferOpen(true)}
-                            >
-                                {isTransferring ? <Spinner /> : <ArrowsLeftRightIcon />}
-                                <span className='hidden sm:inline'>Transferir</span>
-                            </Button>
-                        )}
-
-                        {location.parent_id &&
-                            (location.active_move_id ? (
-                                <Button size='sm' variant='outline' onClick={() => setUnpackOpen(true)}>
-                                    <LucidePackageOpenIcon className='stroke-1' />
-                                    <span className='hidden sm:inline'>Desempacar</span>
-                                </Button>
-                            ) : (
-                                <Button size='sm' variant='outline' onClick={() => setPackDialogOpen(true)}>
-                                    <LucidePackageIcon className='stroke-1' />
-                                    <span className='hidden sm:inline'>Empacar</span>
-                                </Button>
-                            ))}
-
-                        <Button
-                            size='sm'
-                            variant='outline'
-                            render={<Link href={`/item/new?location=${id}`} />}
-                        >
-                            <PlusIcon />
-                            <LeafIcon />
-                            <span className='hidden sm:inline'>Item</span>
-                        </Button>
-
-                        <CreateLocationDialog
-                            workspaceId={location.workspace_id}
-                            parentId={id}
-                            title='Agregar ubicación'
-                        >
-                            <Button size='sm' variant='outline'>
-                                <PlusIcon />
-                                <PackageIcon />
-                                <span className='hidden sm:inline'>Location</span>
-                            </Button>
-                        </CreateLocationDialog>
-
-                        {location.is_item && (
-                            <RatingToggle
-                                workspaceId={location.workspace_id}
-                                entityType='location'
-                                entityId={id}
-                                ratings={locationRatings}
-                            />
-                        )}
-
-                        <Button size='sm' variant='outline' render={<Link href={`/location/${id}/edit`} />}>
-                            <PencilSimpleIcon />
-                            <span className='hidden sm:inline'>Editar</span>
-                        </Button>
-                    </>
-                )}
-            </ScrollToolbar>
+            {locationToolbar}
 
             <LocationPicker
                 open={transferOpen}
@@ -1584,9 +1579,28 @@ export default function LocationPage({ params }) {
                 // instead of floating inset with dead space around it; the
                 // p-4 moves onto the inner content div so the actual content
                 // keeps the same visual margin as before.
-                <ScrollArea nav className='-m-4 min-h-0 flex-1'>
+                <ScrollArea nav className='-m-4 min-h-0 flex-1' onScroll={setScrollTop}>
                     <div className='flex flex-col gap-4 p-4'>{mainContent}</div>
                 </ScrollArea>
+            )}
+
+            {/* Floating copy of `locationToolbar` — same element, same
+            bindings, rendered a second time here, outside the ScrollArea.
+            Real `position: sticky` on the in-flow toolbar doesn't work
+            because Base UI's ScrollArea splits Root (overflow-hidden) from
+            Viewport (the actual scroller), so instead this absolutely
+            positioned copy — outside that split entirely, positioned
+            against this page's own padding box like PackedTapeTop above —
+            only mounts once `isToolbarStuck` (scrollTop past
+            TOOLBAR_STUCK_THRESHOLD, see above). Edge-to-edge (`inset-x-0`,
+            no rounded corners) and offset from the top by the same height
+            as ScrollArea's own "scroll to top" arrow bar (py-1 + a size-3.5
+            icon = 1.375rem), so it docks right below that arrow instead of
+            covering it. */}
+            {!isDesktop && isToolbarStuck && (
+                <div className='absolute inset-x-0 top-[1.375rem] z-20 bg-background px-4 py-2 shadow-sm shadow-black/5'>
+                    {locationToolbar}
+                </div>
             )}
         </div>
     );
