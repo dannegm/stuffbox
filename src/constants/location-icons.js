@@ -23,6 +23,12 @@ export const DEFAULT_LOCATION_ICONS = {
     office: { library: 'phosphor', name: 'BriefcaseIcon' },
     // Music/nail/art studio, workshop, general "make stuff" space.
     studio: { library: 'phosphor', name: 'PaletteIcon' },
+    // A whole separate premises, root-level like house/warehouse — a store,
+    // shop, or small business location, not a room inside a house.
+    business: { library: 'phosphor', name: 'StorefrontIcon' },
+    // Root-level equivalent of a mechanic's/carpenter's shop — distinct from
+    // `studio`'s room-scale "make stuff" space above.
+    workshop: { library: 'phosphor', name: 'WrenchIcon' },
     garage: { library: 'phosphor', name: 'GarageIcon' },
     outdoor: { library: 'phosphor', name: 'ParkIcon' },
     // Transition zone, hallway, entryway, corridor.
@@ -49,9 +55,9 @@ export const LOCATION_TYPE_PRESETS = Object.keys(DEFAULT_LOCATION_ICONS).filter(
     type => type !== 'library',
 );
 
-// Root-level locations only offer these two — a room/box/etc. can't be a
-// tree root, so they're excluded from the house-creation type picker.
-export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse'];
+// Root-level locations only offer these — a room/box/etc. can't be a tree
+// root, so they're excluded from the house-creation type picker.
+export const ROOT_LOCATION_TYPE_PRESETS = ['house', 'warehouse', 'office', 'business', 'workshop'];
 
 // Two independent flags gate a location's behavior: `is_container` shows
 // descriptive fields (photo/description/orientation/valor sentimental) in
