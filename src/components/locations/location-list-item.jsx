@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { CaretRightIcon, PackageIcon, LeafIcon, StackIcon } from '@phosphor-icons/react/ssr';
+import { CaretRightIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
+import { MarqueeText } from '@/ui/marquee-text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { PackedTape } from '@/components/moves/packed-tape';
 import { getLocationIcon, getLocationPhotoUrl, getFirstLocationPhoto } from '@/helpers/location';
@@ -18,6 +19,10 @@ import { cn } from '@/helpers/utils';
 // a location row is both a drag source (move it into another location) and a
 // drop target (items or other locations dropped onto it transfer here); the
 // two dnd-kit hooks are independent, so either can be opted into alone.
+// `ancestorPath`/`parentLocationId` (search results only, src/queries/
+// search.js) render a second "where is this" line linking to the direct
+// parent location — see ItemListRow's identical stretched-link doc comment
+// for why this needs a sibling anchor rather than a nested one.
 export const LocationListItem = ({
     location,
     counts,
@@ -27,9 +32,12 @@ export const LocationListItem = ({
     draggable = false,
     dragData,
     droppable = false,
+    ancestorPath = [],
+    parentLocationId,
 }) => {
     const photoUrl = getLocationPhotoUrl(location, PHOTO_SIZE.LIST);
     const photo = getFirstLocationPhoto(location);
+    const showPath = !selectable && ancestorPath.length > 0 && !!parentLocationId;
 
     const {
         attributes,
@@ -87,15 +95,38 @@ export const LocationListItem = ({
             </span>
             <span className='min-w-0 flex-1'>
                 <span className='block truncate font-medium'>{location.name}</span>
-                <span className='block truncate text-xs text-muted-foreground capitalize'>
-                    {location.type}
-                </span>
+                {!showPath && (
+                    <span className='block truncate text-xs text-muted-foreground capitalize'>
+                        {location.type}
+                    </span>
+                )}
+                {showPath && (
+                    <Link
+                        href={`/location/${parentLocationId}`}
+                        className='relative z-20 block w-fit max-w-full text-xs text-muted-foreground hover:text-foreground hover:underline'
+                    >
+                        <MarqueeText>
+                            {ancestorPath.map((name, index) => (
+                                <span key={index} className='inline-flex items-center align-middle'>
+                                    {index > 0 && (
+                                        <CaretRightIcon className='mx-1 size-3 shrink-0 text-muted-foreground/50' />
+                                    )}
+                                    {name}
+                                </span>
+                            ))}
+                        </MarqueeText>
+                    </Link>
+                )}
             </span>
             {location.is_item ? (
                 <Tooltip>
                     <TooltipTrigger
                         render={
-                            <span className='z-1 flex shrink-0 items-center justify-center rounded-full bg-primary/10 p-1 text-primary [&_svg]:size-3' />
+                            // relative + z-20 (not the inert static z-1 elsewhere in
+                            // this file) so this stays hoverable above the search
+                            // row's stretched link (showPath branch, z-10) instead
+                            // of the hover landing on the invisible link behind it.
+                            <span className='relative z-20 flex shrink-0 items-center justify-center rounded-full bg-primary/10 p-1 text-primary [&_svg]:size-3' />
                         }
                     >
                         <LeafIcon />
@@ -107,10 +138,10 @@ export const LocationListItem = ({
                     <Tooltip>
                         <TooltipTrigger
                             render={
-                                <span className='z-1 flex shrink-0 items-center justify-center rounded-full bg-flourish/15 p-1 text-flourish [&_svg]:size-3' />
+                                <span className='relative z-20 flex shrink-0 items-center justify-center rounded-full bg-flourish/15 p-1 text-flourish [&_svg]:size-3' />
                             }
                         >
-                            <StackIcon />
+                            <PackageIcon />
                         </TooltipTrigger>
                         <TooltipContent>Contenedor</TooltipContent>
                     </Tooltip>
@@ -148,6 +179,19 @@ export const LocationListItem = ({
             >
                 {content}
             </button>
+        );
+    }
+
+    if (showPath) {
+        return (
+            <div ref={setRefs} data-block='LocationListItem' className={className} {...dragProps}>
+                <Link
+                    href={`/location/${location.id}`}
+                    aria-label={location.name}
+                    className='absolute inset-0 z-10'
+                />
+                {content}
+            </div>
         );
     }
 

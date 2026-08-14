@@ -940,6 +940,7 @@ returns table (
   id               text,
   effective_move_id text,
   move_owner_kind  text,
+  ancestor_names   text[],
   total_count      bigint
 )
 language sql
@@ -950,12 +951,20 @@ as $$
   -- as src/helpers/moves.js getInheritedPackedMoveId — boxed items/locations
   -- don't carry their own active_move_id, only the box that was actually
   -- packed does.
+  --
+  -- Also carries `ancestor_names` top-down: an ordered root-to-immediate
+  -- text[] of the *ancestors'* own names, not including the current node —
+  -- each recursion step appends the parent's name (lr.name), so a row's
+  -- own ancestor_names never includes itself. Used to render a breadcrumb
+  -- second line in search results (src/queries/search.js).
   with recursive location_roots as (
-    select l.id, l.id as root_id, l.active_move_id as effective_move_id
+    select l.id, l.id as root_id, l.active_move_id as effective_move_id,
+           l.name, array[]::text[] as ancestor_names
     from stuffbox.locations l
     where l.parent_id is null and l.workspace_id = p_workspace_id
     union all
-    select l.id, lr.root_id, coalesce(l.active_move_id, lr.effective_move_id)
+    select l.id, lr.root_id, coalesce(l.active_move_id, lr.effective_move_id),
+           l.name, lr.ancestor_names || lr.name
     from stuffbox.locations l
     join location_roots lr on l.parent_id = lr.id
     where l.workspace_id = p_workspace_id
@@ -968,7 +977,10 @@ as $$
       lr.effective_move_id,
       -- Always 'location' when packed — a location's own active_move_id and
       -- every one of its ancestors are locations too.
-      (case when lr.effective_move_id is not null then 'location' end)::text as move_owner_kind
+      (case when lr.effective_move_id is not null then 'location' end)::text as move_owner_kind,
+      -- Location's own name is already the row title, so its path only
+      -- lists what's above it — empty for a root/house location.
+      lr.ancestor_names
     from stuffbox.locations l
     join location_roots lr on lr.id = l.id
     where l.workspace_id = p_workspace_id
@@ -993,7 +1005,11 @@ as $$
       (case
          when i.active_move_id is not null then 'item'
          when lr.effective_move_id is not null then 'location'
-       end)::text as move_owner_kind
+       end)::text as move_owner_kind,
+      -- Append the item's direct containing location's own name — that
+      -- location is the last/direct segment of an item's path, unlike a
+      -- location result where the row's own name already covers that.
+      lr.ancestor_names || lr.name as ancestor_names
     from stuffbox.items i
     join location_roots lr on lr.id = i.location_id
     where i.workspace_id = p_workspace_id
@@ -1022,7 +1038,7 @@ as $$
     union all
     select * from matched_items
   )
-  select c.kind, c.id, c.effective_move_id, c.move_owner_kind, count(*) over() as total_count
+  select c.kind, c.id, c.effective_move_id, c.move_owner_kind, c.ancestor_names, count(*) over() as total_count
   from combined c
   order by
     case when p_query is not null then word_similarity(p_query, c.name) end desc nulls last,

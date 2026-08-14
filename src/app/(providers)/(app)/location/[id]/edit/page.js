@@ -12,6 +12,7 @@ import {
     SparkleIcon,
     ArrowsLeftRightIcon,
     CaretLeftIcon,
+    QrCodeIcon,
 } from '@phosphor-icons/react/ssr';
 import {
     PackageIcon as LucidePackageIcon,
@@ -43,6 +44,7 @@ import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { LocationMapPicker } from '@/components/locations/location-map-picker';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
+import { ShareQrDialog } from '@/components/system/share-qr-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { OptionDropdown } from '@/components/items/option-dropdown';
 import { PhotoGallery } from '@/ui/photo-gallery';
@@ -152,6 +154,7 @@ export default function LocationEditPage({ params }) {
     const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
 
     useEffect(() => {
         if (!location) return;
@@ -371,6 +374,16 @@ export default function LocationEditPage({ params }) {
                                 {name}
                             </h1>
                         </div>
+
+                        <Button
+                            size='icon-sm'
+                            variant='outline'
+                            aria-label='Compartir con QR'
+                            className='ml-auto shrink-0 bg-card/70'
+                            onClick={() => setShareOpen(true)}
+                        >
+                            <QrCodeIcon />
+                        </Button>
                     </div>
 
                     {!isRoot && (
@@ -438,6 +451,13 @@ export default function LocationEditPage({ params }) {
                     open={packDialogOpen}
                     onOpenChange={setPackDialogOpen}
                     onSelect={handlePack}
+                />
+
+                <ShareQrDialog
+                    open={shareOpen}
+                    onOpenChange={setShareOpen}
+                    path={`/l/${id}`}
+                    name={location.name}
                 />
 
                 <form onSubmit={handleSubmit} className='flex flex-col gap-4'>

@@ -33,6 +33,7 @@ import {
     StackIcon,
     ArrowsOutLineHorizontalIcon,
     ArrowsInLineHorizontalIcon,
+    QrCodeIcon,
 } from '@phosphor-icons/react/ssr';
 
 import {
@@ -76,6 +77,7 @@ import { LocationBreadcrumb } from '@/components/locations/location-breadcrumb';
 import { CreateLocationDialog } from '@/components/locations/create-location-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
+import { ShareQrDialog } from '@/components/system/share-qr-dialog';
 import { PackedTapeTop } from '@/components/moves/packed-tape';
 import { ItemListRow } from '@/components/items/item-list-row';
 import { ItemCardItem } from '@/components/items/item-card-item';
@@ -198,6 +200,7 @@ export default function LocationPage({ params }) {
     const [transferOpen, setTransferOpen] = useState(false);
     const [packDialogOpen, setPackDialogOpen] = useState(false);
     const [unpackOpen, setUnpackOpen] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
     const [selectionMode, setSelectionMode] = useState(false);
     const [isStatsExpanded, setIsStatsExpanded] = useState(false);
     // Holding Alt/Option acts as a momentary selection mode (not Cmd/Ctrl —
@@ -798,12 +801,22 @@ export default function LocationPage({ params }) {
                         )}
                         {location.is_container && !location.is_item && (
                             <span className='flex shrink-0 items-center gap-1 rounded-full bg-flourish/15 px-1.5 py-0.5 text-xs font-medium text-flourish [&_svg]:size-3'>
-                                <StackIcon />
+                                <PackageIcon />
                                 Contenedor
                             </span>
                         )}
                     </div>
                 </div>
+
+                <Button
+                    size='icon-sm'
+                    variant='outline'
+                    aria-label='Compartir con QR'
+                    className='ml-auto shrink-0 bg-card/70'
+                    onClick={() => setShareOpen(true)}
+                >
+                    <QrCodeIcon />
+                </Button>
             </div>
 
             <ScrollToolbar
@@ -1032,6 +1045,13 @@ export default function LocationPage({ params }) {
                 open={packDialogOpen}
                 onOpenChange={setPackDialogOpen}
                 onSelect={handlePack}
+            />
+
+            <ShareQrDialog
+                open={shareOpen}
+                onOpenChange={setShareOpen}
+                path={`/l/${id}`}
+                name={location.name}
             />
 
             <PhotoLightbox

@@ -20,7 +20,10 @@ import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { DynamicIcon } from '@/ui/dynamic-icon';
-import { getLocationIcon } from '@/helpers/location';
+import { CroppedPhoto } from '@/ui/cropped-photo';
+import { MarqueeText } from '@/ui/marquee-text';
+import { getLocationIcon, getLocationPhotoUrl, getFirstLocationPhoto } from '@/helpers/location';
+import { PHOTO_SIZE } from '@/helpers/photos';
 import { FALLBACK_LOCATION_ICON } from '@/constants/location-icons';
 import { locationChildrenQuery } from '@/queries/locations';
 import { cn } from '@/helpers/utils';
@@ -119,9 +122,9 @@ export const LocationPicker = ({
                                 <span className='block truncate font-medium'>
                                     Desempacar aquí mismo
                                 </span>
-                                <span className='block truncate text-xs text-muted-foreground'>
+                                <MarqueeText className='text-xs text-muted-foreground'>
                                     {quickDestination.name}
-                                </span>
+                                </MarqueeText>
                             </span>
                             <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground' />
                         </button>
@@ -159,8 +162,8 @@ export const LocationPicker = ({
                                             className='size-3.5 shrink-0'
                                         />
                                     )}
-                                    <span className='max-w-24 truncate sm:max-w-36'>
-                                        {level.name}
+                                    <span className='min-w-0 max-w-24 sm:max-w-36'>
+                                        <MarqueeText>{level.name}</MarqueeText>
                                     </span>
                                 </button>
                             </span>
@@ -186,27 +189,36 @@ export const LocationPicker = ({
                         <RowsSkeleton />
                     ) : (
                         <div className='flex flex-col gap-1 pb-2'>
-                            {children?.map(location => (
-                                <button
-                                    key={location.id}
-                                    type='button'
-                                    onClick={() => handleDrillIn(location)}
-                                    className='group flex items-center gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted'
-                                >
-                                    <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4'>
-                                        <DynamicIcon icon={getLocationIcon(location)} />
-                                    </span>
-                                    <span className='min-w-0 flex-1'>
-                                        <span className='block truncate font-medium'>
-                                            {location.name}
+                            {children?.map(location => {
+                                const photoUrl = getLocationPhotoUrl(location, PHOTO_SIZE.LIST);
+                                const photo = getFirstLocationPhoto(location);
+
+                                return (
+                                    <button
+                                        key={location.id}
+                                        type='button'
+                                        onClick={() => handleDrillIn(location)}
+                                        className='group flex items-center gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted'
+                                    >
+                                        <span className='relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary [&_svg]:size-4'>
+                                            {photoUrl ? (
+                                                <CroppedPhoto src={photoUrl} photo={photo} />
+                                            ) : (
+                                                <DynamicIcon icon={getLocationIcon(location)} />
+                                            )}
                                         </span>
-                                        <span className='block truncate text-xs text-muted-foreground capitalize'>
-                                            {location.type}
+                                        <span className='min-w-0 flex-1'>
+                                            <MarqueeText className='font-medium'>
+                                                {location.name}
+                                            </MarqueeText>
+                                            <span className='block truncate text-xs text-muted-foreground capitalize'>
+                                                {location.type}
+                                            </span>
                                         </span>
-                                    </span>
-                                    <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground' />
-                                </button>
-                            ))}
+                                        <CaretRightIcon className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground' />
+                                    </button>
+                                );
+                            })}
                             {children?.length === 0 && (
                                 <div
                                     className='flex flex-col items-center gap-2 px-4 py-10 text-center'

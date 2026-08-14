@@ -6,7 +6,7 @@ export const SEARCH_PAGE_SIZE = 25;
 // results carry the exact same fields (photos, tags, quantity, type, etc.)
 // as their native list views, not a stripped-down shape.
 const ITEM_SELECT =
-    'id, name, quantity, icon, active_move_id, item_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y), item_tags(tags(icon))';
+    'id, name, quantity, icon, active_move_id, location_id, item_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y), item_tags(tags(icon))';
 const LOCATION_SELECT =
     '*, location_photos(r2_key, order, crop_x, crop_y, zoom, rotation, flip_x, flip_y)';
 
@@ -69,6 +69,13 @@ const fetchSearchPage = async ({ workspaceId, q, tagIds, typeIds, packed, houseI
                     ...data,
                     active_move_id: match.effective_move_id,
                     packedVia: match.move_owner_kind,
+                    // Ancestor names above the row's own name (locations) or
+                    // including its direct container (items) — see the RPC's
+                    // own comment in db.sql for why the two kinds differ.
+                    // The path's *last* segment is always the same location
+                    // that `parentLocationId` points to, for both kinds.
+                    ancestorPath: match.ancestor_names ?? [],
+                    parentLocationId: match.kind === 'item' ? data.location_id : data.parent_id,
                 },
             };
         })

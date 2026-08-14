@@ -14,6 +14,7 @@ import {
     TreeStructureIcon,
     CopySimpleIcon,
     DotsThreeVerticalIcon,
+    QrCodeIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -43,6 +44,7 @@ import { TagPicker } from '@/components/items/tag-picker';
 import { ScanSkuDialog } from '@/components/items/scan-sku-dialog';
 import { SkuBarcodeDisplay } from '@/components/items/sku-barcode-display';
 import { ConvertToLocationDialog } from '@/components/items/convert-to-location-dialog';
+import { ShareQrDialog } from '@/components/system/share-qr-dialog';
 import { PhotoGallery } from '@/ui/photo-gallery';
 import { HeartRating } from '@/ui/heart-rating';
 import { PackIntoMoveDialog } from '@/components/moves/pack-into-move-dialog';
@@ -157,6 +159,7 @@ export default function ItemPage({ params }) {
     const [unpackOpen, setUnpackOpen] = useState(false);
     const [isScanOpen, setIsScanOpen] = useState(false);
     const [convertOpen, setConvertOpen] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
 
     useEffect(() => {
         if (!item) return;
@@ -353,6 +356,16 @@ export default function ItemPage({ params }) {
                                 {name}
                             </h1>
                         </div>
+
+                        <Button
+                            size='icon-sm'
+                            variant='outline'
+                            aria-label='Compartir con QR'
+                            className='ml-auto shrink-0 bg-card/70'
+                            onClick={() => setShareOpen(true)}
+                        >
+                            <QrCodeIcon />
+                        </Button>
                     </div>
                     <div className='h-1 bg-muted/50' />
 
@@ -448,6 +461,13 @@ export default function ItemPage({ params }) {
                     parentLocationId={location.id}
                     open={convertOpen}
                     onOpenChange={setConvertOpen}
+                />
+
+                <ShareQrDialog
+                    open={shareOpen}
+                    onOpenChange={setShareOpen}
+                    path={`/i/${id}`}
+                    name={item.name}
                 />
 
                 <form onSubmit={handleSubmit} className='flex flex-col gap-4'>

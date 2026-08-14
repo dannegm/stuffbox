@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { EyeIcon, PackageIcon, LeafIcon, StackIcon } from '@phosphor-icons/react/ssr';
+import { EyeIcon, PackageIcon, LeafIcon } from '@phosphor-icons/react/ssr';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { Checkbox } from '@/ui/checkbox';
 import { CroppedPhoto } from '@/ui/cropped-photo';
@@ -138,7 +138,7 @@ export const LocationCardItem = ({
                                         <span className='flex shrink-0 items-center justify-center rounded-full bg-flourish/15 p-1 text-flourish [&_svg]:size-3' />
                                     }
                                 >
-                                    <StackIcon />
+                                    <PackageIcon />
                                 </TooltipTrigger>
                                 <TooltipContent>Contenedor</TooltipContent>
                             </Tooltip>

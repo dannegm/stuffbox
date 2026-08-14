@@ -6,7 +6,15 @@ import { LocationListItem } from '@/components/locations/location-list-item';
 // quantity) instead of a separate reduced-data row shape.
 export const SearchResultRow = ({ result }) =>
     result.kind === 'item' ? (
-        <ItemListRow item={result.data} />
+        <ItemListRow
+            item={result.data}
+            ancestorPath={result.data.ancestorPath}
+            parentLocationId={result.data.parentLocationId}
+        />
     ) : (
-        <LocationListItem location={result.data} />
+        <LocationListItem
+            location={result.data}
+            ancestorPath={result.data.ancestorPath}
+            parentLocationId={result.data.parentLocationId}
+        />
     );
