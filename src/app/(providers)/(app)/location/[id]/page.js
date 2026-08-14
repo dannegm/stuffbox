@@ -45,6 +45,7 @@ import {
 
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspaceQuery } from '@/queries/workspaces';
 import {
     locationQuery,
@@ -323,6 +324,12 @@ export default function LocationPage({ params }) {
         workspaceQuery(location?.workspace_id, { enabled: !!location }),
     );
     const { data: ancestors } = useQuery(locationAncestorsQuery(location?.parent_id));
+    const rootLocation = ancestors?.length ? ancestors[0] : location;
+    usePageTitle([
+        location?.name,
+        rootLocation?.id !== location?.id ? rootLocation?.name : null,
+        workspace?.name,
+    ]);
     const { data: children, isPending: isChildrenPending } = useQuery(
         locationChildrenQuery(
             { workspaceId: location?.workspace_id, parentId: id },

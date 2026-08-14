@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { PlusIcon, TruckIcon, AirplaneIcon, CaretRightIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { movesQuery } from '@/queries/moves';
 import { MoveDialog } from '@/components/moves/move-dialog';
@@ -39,6 +40,7 @@ export default function MovesPage() {
     );
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(w => w.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Mudanzas', workspace?.name]);
 
     const { data: moves, isPending: isMovesPending } = useQuery(
         movesQuery(workspace?.id, { enabled: !!workspace }),

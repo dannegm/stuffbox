@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SparkleIcon } from '@phosphor-icons/react/ssr';
 import { appSettingQuery, setAppSettingMutation, SUGGESTED_ICONS_KEY } from '@/queries/app-settings';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { IconMultiSelect } from '@/ui/icon-multi-select';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
 import { FieldDescription } from '@/ui/field';
 
 export default function AdminSuggestedIconsPage() {
+    usePageTitle(['Íconos sugeridos', 'Admin']);
     const queryClient = useQueryClient();
     const [icons, setIcons] = useState([]);
 

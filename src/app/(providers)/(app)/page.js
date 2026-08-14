@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { WorkspacesOverview } from '@/components/workspaces/workspaces-overview';
 import { Skeleton } from '@/ui/skeleton';
@@ -18,6 +19,7 @@ const Loading = () => (
 export default function Home() {
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useAuth();
+    usePageTitle('Inicio');
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');

@@ -8,7 +8,9 @@ import { toast } from 'sonner';
 import { XIcon, CaretDownIcon, SparkleIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { tagQuery, updateTagMutation, deleteTagMutation } from '@/queries/tags';
+import { workspaceQuery } from '@/queries/workspaces';
 import { generateTagSuggestions } from '@/services/tag-suggestions';
 import { useSettings } from '@/hooks/use-settings';
 import { defaultSettings } from '@/constants/default-settings';
@@ -51,6 +53,10 @@ export default function EditTagPage({ params }) {
     const confirm = useConfirm();
 
     const { data: tag, isPending: isTagPending } = useQuery(tagQuery(id, { enabled: !!user }));
+    const { data: workspace } = useQuery(
+        workspaceQuery(tag?.workspace_id, { enabled: !!tag }),
+    );
+    usePageTitle([tag?.name, workspace?.name]);
 
     const [name, setName] = useState('');
     const [color, setColor] = useState(DEFAULT_COLOR);

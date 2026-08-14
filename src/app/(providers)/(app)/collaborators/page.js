@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import {
@@ -259,6 +260,7 @@ export default function CollaboratorsPage() {
     );
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(w => w.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Colaboradores', workspace?.name]);
 
     const { data: members, isPending: isMembersPending } = useQuery(
         workspaceMembersQuery(workspace?.id, { enabled: !!workspace }),

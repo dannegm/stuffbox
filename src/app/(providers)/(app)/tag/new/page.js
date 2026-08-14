@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { XIcon, CaretDownIcon, SparkleIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { createTagMutation } from '@/queries/tags';
 import { generateTagSuggestions } from '@/services/tag-suggestions';
@@ -54,6 +55,7 @@ export default function NewTagPage() {
     );
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(w => w.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Nuevo tag', workspace?.name]);
 
     const [name, setName] = useState('');
     const [color, setColor] = useState(DEFAULT_COLOR);

@@ -13,6 +13,7 @@ import {
 import { TagIcon, TagsIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { tagsQuery, deleteTagMutation } from '@/queries/tags';
 import { fuzzySearch } from '@/helpers/fuzzy-search';
@@ -54,6 +55,7 @@ export default function TagsPage() {
     );
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(w => w.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Tags', workspace?.name]);
 
     const { data: tags, isPending: isTagsPending } = useQuery(
         tagsQuery(workspace?.id, { enabled: !!workspace }),

@@ -15,6 +15,7 @@ import {
     WarningCircleIcon,
 } from '@phosphor-icons/react/ssr';
 import { supabase } from '@/services/supabase';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { deleteWorkspaceMutation } from '@/queries/workspaces';
 import { useConfirm } from '@/hooks/use-confirm';
 import { resolveWorkspaceColor } from '@/helpers/workspace-color';
@@ -104,6 +105,7 @@ const TableSkeletonRows = ({ rows = 6 }) => (
 );
 
 export default function AdminWorkspacesPage() {
+    usePageTitle(['Workspaces', 'Admin']);
     const queryClient = useQueryClient();
     const confirm = useConfirm();
     const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''));

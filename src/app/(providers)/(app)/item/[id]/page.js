@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import {
     itemQuery,
     updateItemMutation,
@@ -117,6 +118,8 @@ export default function ItemPage({ params }) {
         workspaceQuery(location?.workspace_id, { enabled: !!location }),
     );
     const { data: ancestors } = useQuery(locationAncestorsQuery(location?.parent_id));
+    const rootLocation = ancestors?.length ? ancestors[0] : location;
+    usePageTitle([itemName, rootLocation?.name, workspace?.name]);
     // A box's own active_move_id is the only place a pack is actually
     // recorded — an item nested inside a packed box never gets its own
     // active_move_id, so "is this item packed" has to check ancestors too.

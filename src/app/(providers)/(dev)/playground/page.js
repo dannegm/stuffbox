@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { RobotIcon, ArrowSquareOutIcon } from '@phosphor-icons/react/ssr';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import { Field, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -25,6 +26,7 @@ const buildSrc = (path, forceBot) => {
 };
 
 export default function PlaygroundPage() {
+    usePageTitle('Playground');
     const [presetKey, setPresetKey] = useState('vercel-screen');
     const [customWidth, setCustomWidth] = useState(1024);
     const [customHeight, setCustomHeight] = useState(768);

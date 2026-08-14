@@ -13,6 +13,7 @@ import {
     WarningCircleIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { supabase } from '@/services/supabase';
 import { setSuperAdminMutation } from '@/queries/profiles';
 import { useConfirm } from '@/hooks/use-confirm';
@@ -103,6 +104,7 @@ const TableSkeletonRows = ({ rows = 6 }) => (
 );
 
 export default function AdminUsersPage() {
+    usePageTitle(['Usuarios', 'Admin']);
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const confirm = useConfirm();

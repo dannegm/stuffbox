@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { SquaresFourIcon, PlusIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { WorkspacesOverview } from '@/components/workspaces/workspaces-overview';
 import { Button } from '@/ui/button';
@@ -29,6 +30,7 @@ const Loading = () => (
 export default function WorkspacesPage() {
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useAuth();
+    usePageTitle('Espacios de trabajo');
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');

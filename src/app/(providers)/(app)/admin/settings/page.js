@@ -11,6 +11,7 @@ import {
     MonitorIcon,
 } from '@phosphor-icons/react/ssr';
 import { useSettings } from '@/hooks/use-settings';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { optimizeStorage } from '@/services/uploads';
 import { parseUA } from '@/helpers/ua-parser';
 import {
@@ -44,6 +45,7 @@ const EnvironmentInfoRow = ({ label, value }) => (
 );
 
 export default function AdminSettingsPage() {
+    usePageTitle(['Ajustes', 'Admin']);
     const [debug, setDebug] = useSettings('debug', false);
     const [breakpointIndicatorEnabled, setBreakpointIndicatorEnabled] = useSettings(
         'debugTools.breakpointIndicator.enabled',

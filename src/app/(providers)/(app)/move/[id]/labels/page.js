@@ -14,7 +14,9 @@ import {
     PackageIcon,
 } from '@phosphor-icons/react/ssr';
 import { pdf } from '@react-pdf/renderer';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { moveQuery, packedInMoveQuery } from '@/queries/moves';
+import { workspaceQuery } from '@/queries/workspaces';
 import { locationChildrenQuery } from '@/queries/locations';
 import { itemsAtLocationQuery } from '@/queries/items';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
@@ -210,6 +212,10 @@ export default function MoveLabelsPage({ params }) {
 
     const { data: move, isPending: isMovePending } = useQuery(moveQuery(id));
     const { data: packed, isPending: isPackedPending } = useQuery(packedInMoveQuery(id));
+    const { data: workspace } = useQuery(
+        workspaceQuery(move?.workspace_id, { enabled: !!move }),
+    );
+    usePageTitle(['Etiquetas', move?.name, workspace?.name]);
     const { data: labelLayoutSettings } = useQuery(
         workspaceSettingQuery(move?.workspace_id, 'labelLayoutSettings', { enabled: !!move }),
     );

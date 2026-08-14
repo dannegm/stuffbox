@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HouseIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { createWorkspaceMutation } from '@/queries/workspaces';
 import { Field, FieldGroup, FieldLabel } from '@/ui/field';
 import { Input } from '@/ui/input';
@@ -20,6 +21,7 @@ export default function NewWorkspacePage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading } = useAuth();
+    usePageTitle('Nuevo espacio de trabajo');
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');

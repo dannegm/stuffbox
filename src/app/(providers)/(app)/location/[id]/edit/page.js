@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { useSettings } from '@/hooks/use-settings';
 import { defaultSettings } from '@/constants/default-settings';
 import {
@@ -127,6 +128,12 @@ export default function LocationEditPage({ params }) {
     const isLocationPacked = !!packedMoveId;
     const { data: packedMove } = useQuery(moveQuery(packedMoveId, { enabled: !!packedMoveId }));
     const parentName = ancestors?.[ancestors.length - 1]?.name;
+    const rootLocation = ancestors?.length ? ancestors[0] : location;
+    usePageTitle([
+        location?.name ? `Editar ${location.name}` : null,
+        rootLocation?.id !== location?.id ? rootLocation?.name : null,
+        workspace?.name,
+    ]);
 
     const [name, setName] = useState('');
     const [type, setType] = useState('');

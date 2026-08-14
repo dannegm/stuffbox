@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { EmailCodeCard } from '@/components/auth/email-code-card';
 
 export default function LoginPage() {
     const router = useRouter();
+    usePageTitle('Iniciar sesión');
 
     return (
         <div

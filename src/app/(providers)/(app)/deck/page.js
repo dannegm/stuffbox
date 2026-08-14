@@ -12,6 +12,7 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useSettings } from '@/hooks/use-settings';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import {
     deckQueueQuery,
@@ -83,6 +84,7 @@ export default function DeckPage() {
     // workspace regardless of whatever's active in the switcher.
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(item => item.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Cards', workspace?.name]);
 
     const { data: entities, isPending: isEntitiesPending } = useQuery(
         deckQueueQuery(workspace?.id),

@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { LinkBreakIcon, UsersIcon } from '@phosphor-icons/react/ssr';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/ui/card';
 import { Button } from '@/ui/button';
 import { Spinner } from '@/ui/spinner';
@@ -90,6 +91,7 @@ export default function InvitePage({ params }) {
     const { token } = use(params);
     const router = useRouter();
     const { user, isLoading: isAuthLoading } = useAuth();
+    usePageTitle('Invitación');
 
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState(null);

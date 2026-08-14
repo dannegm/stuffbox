@@ -18,6 +18,7 @@ import {
     MagnifyingGlassIcon,
     FunnelIcon,
 } from '@phosphor-icons/react/ssr';
+import { usePageTitle } from '@/hooks/use-page-title';
 import {
     moveQuery,
     moveTotalValueQuery,
@@ -25,6 +26,7 @@ import {
     deleteMoveMutation,
     packedInMoveQuery,
 } from '@/queries/moves';
+import { workspaceQuery } from '@/queries/workspaces';
 import { unpackItemMutation } from '@/queries/items';
 import { unpackLocationMutation } from '@/queries/locations';
 import { MoveRouteMap } from '@/components/moves/move-route-map';
@@ -97,6 +99,10 @@ export default function MovePage({ params }) {
     const { data: totalValue, isPending: isTotalValuePending } = useQuery(
         moveTotalValueQuery(id, { enabled: !!move }),
     );
+    const { data: workspace } = useQuery(
+        workspaceQuery(move?.workspace_id, { enabled: !!move }),
+    );
+    usePageTitle([move?.name, workspace?.name]);
 
     const invalidatePacked = () => queryClient.invalidateQueries({ queryKey: ['move-packed', id] });
 

@@ -6,6 +6,7 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useQueryState, parseAsString, parseAsArrayOf, parseAsBoolean } from 'nuqs';
 import { MagnifyingGlassIcon, WarningCircleIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspacesQuery } from '@/queries/workspaces';
 import { searchQuery } from '@/queries/search';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -99,6 +100,7 @@ export default function SearchPage() {
     );
     const activeWorkspaceId = pathname.match(/^\/workspace\/([^/]+)/)?.[1];
     const workspace = workspaces?.find(w => w.id === activeWorkspaceId) ?? workspaces?.[0];
+    usePageTitle(['Buscar', workspace?.name]);
 
     const {
         data,

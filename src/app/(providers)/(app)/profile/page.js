@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
 import { SignOutIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { profileQuery, updateProfileMutation } from '@/queries/profiles';
 import { generateName } from '@/helpers/identity';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
@@ -52,6 +53,7 @@ export default function ProfilePage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { user, isLoading: isAuthLoading, signOut } = useAuth();
+    usePageTitle('Perfil');
 
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');

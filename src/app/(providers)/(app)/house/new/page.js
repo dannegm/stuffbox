@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { createLocationMutation } from '@/queries/locations';
+import { workspaceQuery } from '@/queries/workspaces';
 import { workspaceSettingQuery } from '@/queries/workspace-settings';
 import { SelectSearch } from '@/ui/select-search';
 import { Field, FieldGroup, FieldLabel, FieldError } from '@/ui/field';
@@ -26,6 +28,11 @@ export default function NewHousePage() {
     useEffect(() => {
         if (!isAuthLoading && !user) router.replace('/login');
     }, [isAuthLoading, user, router]);
+
+    const { data: workspace } = useQuery(
+        workspaceQuery(workspaceId, { enabled: !!workspaceId }),
+    );
+    usePageTitle(['Nueva ubicación', workspace?.name]);
 
     const [name, setName] = useState('');
     const [type, setType] = useState('house');

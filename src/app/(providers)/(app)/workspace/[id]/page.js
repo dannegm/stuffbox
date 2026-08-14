@@ -20,6 +20,7 @@ import {
     ScanIcon,
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { workspaceQuery } from '@/queries/workspaces';
 import { workspaceMembersQuery } from '@/queries/collaborators';
 import { locationChildrenQuery, locationCountsQuery } from '@/queries/locations';
@@ -180,6 +181,7 @@ export default function WorkspacePage({ params }) {
     );
     const { data: moves } = useQuery(movesQuery(id, { enabled: !!user }));
     const { data: tags } = useQuery(tagsQuery(id, { enabled: !!user }));
+    usePageTitle(workspace?.name);
 
     if (isAuthLoading || !user || isWorkspacePending || !workspace || isHousesPending) {
         return <Loading />;

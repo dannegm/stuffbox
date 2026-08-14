@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { WarningIcon, ScanIcon } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { locationQuery, locationAncestorsQuery } from '@/queries/locations';
 import { workspaceQuery } from '@/queries/workspaces';
 import { createItemMutation } from '@/queries/items';
@@ -56,6 +57,8 @@ export default function NewItemPage() {
         workspaceQuery(location?.workspace_id, { enabled: !!location }),
     );
     const { data: ancestors } = useQuery(locationAncestorsQuery(location?.parent_id));
+    const rootLocation = ancestors?.length ? ancestors[0] : location;
+    usePageTitle(['Nuevo artículo', rootLocation?.name, workspace?.name]);
 
     const { data: conditions } = useQuery(
         optionListsQuery(location?.workspace_id, 'condition', { enabled: !!location }),

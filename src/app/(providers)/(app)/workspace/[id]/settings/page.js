@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/providers/auth-provider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePageTitle } from '@/hooks/use-page-title';
 import {
     workspaceQuery,
     updateWorkspaceMutation,
@@ -85,6 +86,7 @@ export default function WorkspaceSettingsPage({ params }) {
     const { data: workspace, isPending: isWorkspacePending } = useQuery(
         workspaceQuery(id, { enabled: !!user }),
     );
+    usePageTitle(['Ajustes', workspace?.name]);
     const { data: mapDefault, isPending: isMapDefaultPending } = useQuery(
         workspaceSettingQuery(id, 'mapDefaultViewport', { enabled: !!user }),
     );
