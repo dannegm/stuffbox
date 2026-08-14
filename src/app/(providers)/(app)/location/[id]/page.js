@@ -154,23 +154,26 @@ const Loading = () => (
 // inline hook call) since useDroppable can't be called conditionally.
 const MOVE_OUT_TARGET = '__move_out__';
 
-const MoveOutDropZone = ({ parentName }) => {
+const MoveOutDropZone = ({ parentId, parentName }) => {
     const { setNodeRef, isOver } = useDroppable({ id: MOVE_OUT_TARGET });
 
     return (
-        <div
+        <Link
             ref={setNodeRef}
+            href={`/location/${parentId}`}
             data-block='MoveOutDropZone'
             className={cn(
-                'flex items-center gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors',
-                isOver && 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/40',
+                'relative z-10 flex items-center gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors',
+                isOver
+                    ? 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/40'
+                    : 'hover:border-foreground/30 hover:bg-muted/70 hover:text-foreground',
             )}
         >
             <span className='flex size-9 shrink-0 items-center justify-center rounded-md bg-muted [&_svg]:size-4'>
                 <ArrowUpIcon />
             </span>
             <span className='min-w-0 flex-1 truncate'>Sacar a {parentName ?? 'nivel anterior'}</span>
-        </div>
+        </Link>
     );
 };
 
@@ -1193,7 +1196,10 @@ export default function LocationPage({ params }) {
                                         <ScrollArea nav className='min-h-0 flex-1'>
                                             <div className='flex min-h-full flex-col gap-2'>
                                                 {location.parent_id && (
-                                                    <MoveOutDropZone parentName={parentName} />
+                                                    <MoveOutDropZone
+                                                        parentId={location.parent_id}
+                                                        parentName={parentName}
+                                                    />
                                                 )}
                                                 {searchedChildren.length > 0 ? (
                                                     <div className='grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2'>
@@ -1233,7 +1239,10 @@ export default function LocationPage({ params }) {
                                             header={
                                                 location.parent_id && (
                                                     <div className='pb-2'>
-                                                        <MoveOutDropZone parentName={parentName} />
+                                                        <MoveOutDropZone
+                                                            parentId={location.parent_id}
+                                                            parentName={parentName}
+                                                        />
                                                     </div>
                                                 )
                                             }
@@ -1261,7 +1270,10 @@ export default function LocationPage({ params }) {
                                         // through VirtualList at all.
                                         <div className='flex min-h-0 flex-1 flex-col gap-2'>
                                             {location.parent_id && (
-                                                <MoveOutDropZone parentName={parentName} />
+                                                <MoveOutDropZone
+                                                    parentId={location.parent_id}
+                                                    parentName={parentName}
+                                                />
                                             )}
                                             {locationsEmptyState}
                                         </div>
