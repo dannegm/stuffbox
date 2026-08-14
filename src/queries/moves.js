@@ -147,14 +147,14 @@ export const packedInMoveQuery = (moveId, opts = {}) => ({
             supabase()
                 .from('items')
                 .select(
-                    'id, name, description, quantity, condition, sentimental_value, icon, is_fragile, storage_orientation, item_tags(tags(id, icon, name))',
+                    'id, name, description, quantity, condition, sentimental_value, icon, is_fragile, storage_orientation, created_at, item_tags(tags(id, icon, name))',
                 )
                 .eq('active_move_id', moveId)
                 .order('name'),
             supabase()
                 .from('locations')
                 .select(
-                    'id, name, type, icon, parent_id, is_fragile, ai_summary, storage_orientation',
+                    'id, name, type, icon, parent_id, is_fragile, ai_summary, storage_orientation, created_at',
                 )
                 .eq('active_move_id', moveId)
                 .order('name'),

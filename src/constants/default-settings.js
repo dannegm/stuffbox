@@ -11,10 +11,21 @@ export const defaultSettings = {
     // defaulting to whichever has content until the user taps a tab, at which
     // point that choice sticks everywhere.
     locationMobileTab: null, // 'locations' | 'items' | null
+    // move/[id] Ubicaciones/Artículos tab (src/app/(providers)/(app)/move/[id]/page.js)
+    // — same shape and "defaults to whichever has content" behavior as
+    // locationMobileTab above, but its own key since it's a separate page;
+    // unlike that one, this applies at every breakpoint, not just mobile.
+    moveMobileTab: null, // 'locations' | 'items' | null
     // location/[id] sort menus (SortMenuButton) — global, not per-location,
     // same "sticks until changed" behavior as locationViewType above.
     locationSort: { field: 'name', direction: 'asc' },
     itemSort: { field: 'name', direction: 'asc' },
+    // move/[id]'s own pair of the same sort menus — kept separate from
+    // locationSort/itemSort since it's a different list (only 'name'/
+    // 'created_at' apply here; packedInMoveQuery doesn't fetch count/price/
+    // likes data).
+    moveLocationSort: { field: 'name', direction: 'asc' },
+    moveItemSort: { field: 'name', direction: 'asc' },
     // Where LocationMapPicker (src/components/locations/location-map-picker.jsx)
     // centers on first open, before the user clicks/drags/locates — CDMX.
     mapDefaultViewport: { center: [-99.1332, 19.4326], zoom: 14 },

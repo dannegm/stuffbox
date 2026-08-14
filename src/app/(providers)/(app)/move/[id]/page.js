@@ -36,15 +36,20 @@ import { MoveDatesDialog } from '@/components/moves/move-dates-dialog';
 import { LocationPicker } from '@/components/locations/location-picker';
 import { MultiSelectFilter } from '@/components/search/multi-select-filter';
 import { SearchTagFilter } from '@/components/search/search-tag-filter';
+import { SortMenuButton } from '@/components/search/sort-menu-button';
 import { SelectSearch } from '@/ui/select-search';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { getLocationIcon } from '@/helpers/location';
 import { getItemIcon } from '@/helpers/item';
+import { SORT_FIELDS, sortEntities } from '@/helpers/sort';
 import { useConfirm } from '@/hooks/use-confirm';
+import { useSettings } from '@/hooks/use-settings';
+import { defaultSettings } from '@/constants/default-settings';
 import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/ui/input-group';
 import { ScrollArea } from '@/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/ui/empty';
 import {
     ResponsiveDropdownMenu,
@@ -66,6 +71,13 @@ const TYPE_OPTIONS = LOCATION_TYPE_PRESETS.map(type => ({
     label: type.charAt(0).toUpperCase() + type.slice(1),
     icon: DEFAULT_LOCATION_ICONS[type] ?? FALLBACK_LOCATION_ICON,
 }));
+
+// Subset of the app-wide SORT_FIELDS — packedInMoveQuery only fetches
+// `name`/`created_at`, not the child counts/price rollups/ratings that
+// 'count'/'price'/'likes' need on location/[id], so those don't apply here.
+const PACKED_SORT_FIELDS = SORT_FIELDS.filter(
+    field => field.value === 'name' || field.value === 'created_at',
+);
 
 const Loading = () => (
     <div
@@ -93,6 +105,12 @@ export default function MovePage({ params }) {
     const [itemSearch, setItemSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState([]);
     const [tagFilter, setTagFilter] = useState([]);
+    const [packedTabSetting, setPackedTab] = useSettings('moveMobileTab', null);
+    const [locationSort, setLocationSort] = useSettings(
+        'moveLocationSort',
+        defaultSettings.moveLocationSort,
+    );
+    const [itemSort, setItemSort] = useSettings('moveItemSort', defaultSettings.moveItemSort);
 
     const { data: move, isPending: isMovePending } = useQuery(moveQuery(id));
     const { data: packed, isPending: isPackedPending } = useQuery(packedInMoveQuery(id));
@@ -169,11 +187,26 @@ export default function MovePage({ params }) {
 
     const hasRoute = move.origin?.lat != null && move.destination?.lat != null;
     const isEmpty = packed.items.length === 0 && packed.locations.length === 0;
+    const packedTab = packedTabSetting ?? (packed.locations.length > 0 ? 'locations' : 'items');
+
+    // A location can end up explicitly packed while nested inside another
+    // packed location (e.g. a small box packed on its own, then the bigger
+    // box it lives in gets packed later too) — both get their own row here,
+    // but the nested one is already implied by its packed parent, so only
+    // the top-most packed location per subtree is worth showing. Walking
+    // just the direct parent_id against this same packed set is enough even
+    // for deeper chains: a location three levels deep still gets hidden
+    // because its immediate parent is itself packed (and therefore in the
+    // set), regardless of whether that parent is shown or hidden in turn.
+    const packedLocationIds = new Set(packed.locations.map(location => location.id));
+    const topLevelPackedLocations = packed.locations.filter(
+        location => !packedLocationIds.has(location.parent_id),
+    );
 
     // Filters what's already loaded via Fuse, no refetch — same shape as
     // LocationPage's search/type/tag filters (types apply to locations only,
     // tags apply to items only).
-    const filteredLocations = packed.locations.filter(
+    const filteredLocations = topLevelPackedLocations.filter(
         location => typeFilter.length === 0 || typeFilter.includes(location.type),
     );
     const filteredItems = packed.items.filter(
@@ -186,12 +219,25 @@ export default function MovePage({ params }) {
         keys: ['name', 'item_tags.tags.name'],
         threshold: 0.3,
     });
-    const searchedLocations = locationSearch.trim()
+    const matchedLocations = locationSearch.trim()
         ? locationFuse.search(locationSearch.trim()).map(result => result.item)
         : filteredLocations;
-    const searchedItems = itemSearch.trim()
+    const matchedItems = itemSearch.trim()
         ? itemFuse.search(itemSearch.trim()).map(result => result.item)
         : filteredItems;
+
+    const getLocationSortValue = location =>
+        locationSort.field === 'created_at' ? new Date(location.created_at).getTime() : location.name;
+    const getItemSortValue = item =>
+        itemSort.field === 'created_at' ? new Date(item.created_at).getTime() : item.name;
+
+    const searchedLocations = sortEntities(
+        matchedLocations,
+        locationSort.field,
+        locationSort.direction,
+        getLocationSortValue,
+    );
+    const searchedItems = sortEntities(matchedItems, itemSort.field, itemSort.direction, getItemSortValue);
 
     return (
         <div className='absolute inset-0 flex flex-col overflow-hidden p-4' data-block='MovePage'>
@@ -326,8 +372,15 @@ export default function MovePage({ params }) {
                             </EmptyHeader>
                         </Empty>
                     ) : (
-                        <div className='flex flex-col gap-4'>
-                            {packed.locations.length > 0 && (
+                        <div className='flex flex-col gap-2'>
+                            <Tabs value={packedTab} onValueChange={setPackedTab}>
+                                <TabsList className='w-full'>
+                                    <TabsTrigger value='locations'>Cajas</TabsTrigger>
+                                    <TabsTrigger value='items'>Muebles</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+
+                            {packedTab === 'locations' ? (
                                 <div className='flex flex-col gap-2'>
                                     <div className='flex items-center gap-2'>
                                         <InputGroup className='flex-1'>
@@ -358,8 +411,17 @@ export default function MovePage({ params }) {
                                                 </>
                                             )}
                                         />
+                                        <SortMenuButton
+                                            sort={locationSort}
+                                            onSortChange={setLocationSort}
+                                            fields={PACKED_SORT_FIELDS}
+                                        />
                                     </div>
-                                    {searchedLocations.length > 0 ? (
+                                    {packed.locations.length === 0 ? (
+                                        <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                            Nada empacado en cajas todavía.
+                                        </p>
+                                    ) : searchedLocations.length > 0 ? (
                                         <div className='flex flex-col gap-2'>
                                             {searchedLocations.map(location => (
                                                 <div
@@ -401,9 +463,7 @@ export default function MovePage({ params }) {
                                         </p>
                                     )}
                                 </div>
-                            )}
-
-                            {packed.items.length > 0 && (
+                            ) : (
                                 <div className='flex flex-col gap-2'>
                                     <div className='flex items-center gap-2'>
                                         <InputGroup className='flex-1'>
@@ -424,8 +484,17 @@ export default function MovePage({ params }) {
                                             value={tagFilter}
                                             onChange={setTagFilter}
                                         />
+                                        <SortMenuButton
+                                            sort={itemSort}
+                                            onSortChange={setItemSort}
+                                            fields={PACKED_SORT_FIELDS}
+                                        />
                                     </div>
-                                    {searchedItems.length > 0 ? (
+                                    {packed.items.length === 0 ? (
+                                        <p className='rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground'>
+                                            Nada empacado en muebles todavía.
+                                        </p>
+                                    ) : searchedItems.length > 0 ? (
                                         <div className='flex flex-col gap-2'>
                                             {searchedItems.map(item => (
                                                 <div

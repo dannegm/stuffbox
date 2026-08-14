@@ -30,9 +30,6 @@ import {
     ListIcon,
     SquaresFourIcon,
     EyeIcon,
-    SortAscendingIcon,
-    SortDescendingIcon,
-    CheckIcon,
     StackIcon,
     ArrowsOutLineHorizontalIcon,
     ArrowsInLineHorizontalIcon,
@@ -68,7 +65,7 @@ import { entityRatingsQuery } from '@/queries/entity-ratings';
 import { RatingToggle } from '@/components/deck/rating-toggle';
 import { getEntityRatingKey, groupRatingsByEntity } from '@/helpers/entity-ratings';
 import { getInheritedPackedMoveId } from '@/helpers/moves';
-import { SORT_FIELDS, sortEntities, getLikeRank } from '@/helpers/sort';
+import { sortEntities, getLikeRank } from '@/helpers/sort';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSettings } from '@/hooks/use-settings';
 import { defaultSettings } from '@/constants/default-settings';
@@ -84,6 +81,7 @@ import { ItemListRow } from '@/components/items/item-list-row';
 import { ItemCardItem } from '@/components/items/item-card-item';
 import { MultiSelectFilter } from '@/components/search/multi-select-filter';
 import { SearchTagFilter } from '@/components/search/search-tag-filter';
+import { SortMenuButton } from '@/components/search/sort-menu-button';
 import { DynamicIcon } from '@/ui/dynamic-icon';
 import { CroppedPhoto } from '@/ui/cropped-photo';
 import { PhotoLightbox } from '@/ui/photo-lightbox';
@@ -125,7 +123,6 @@ import {
     ResponsiveDropdownMenuContent,
     ResponsiveDropdownMenuItem,
     ResponsiveDropdownMenuTrigger,
-    ResponsiveDropdownMenuSeparator,
 } from '@/ui/responsive-dropdown-menu';
 
 // Same shortlist as SearchFilters (src/components/search/search-filters.jsx) —
@@ -188,92 +185,6 @@ const DragPreview = ({ data }) => {
             <Icon className='size-4 shrink-0 text-muted-foreground' />
             <span className='min-w-0 truncate font-medium'>{label}</span>
         </div>
-    );
-};
-
-const SORT_DIRECTIONS = [
-    { value: 'asc', label: 'Ascendente', icon: SortAscendingIcon },
-    { value: 'desc', label: 'Descendente', icon: SortDescendingIcon },
-];
-
-const SORT_ROW_CLASS =
-    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-hidden select-none hover:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
-
-// Plain button, not a ResponsiveDropdownMenuItem — that one always closes
-// the menu/drawer on click (DrawerClose on mobile has no opt-out), which is
-// wrong here: picking a field or direction should only stage it, not commit
-// it. Only the Aplicar button below actually calls `onSortChange` + closes.
-const SortRow = ({ selected, onClick, children }) => (
-    <button
-        type='button'
-        onClick={onClick}
-        className={cn(SORT_ROW_CLASS, selected && 'bg-muted font-medium')}
-    >
-        {children}
-    </button>
-);
-
-// Icon-only trigger (icon itself flips to reflect the current *applied*
-// direction) for the field+direction sort menu shared by the locations and
-// items lists — same `{ field, direction }` shape for both, just fed
-// different `sort`/`onSortChange` per list. Selection is staged in
-// `pendingSort` while the menu is open and only committed via Aplicar —
-// dismissing the menu/drawer any other way (outside click, escape) discards
-// it, since `onSortChange` is never called.
-const SortMenuButton = ({ sort, onSortChange }) => {
-    const [open, setOpen] = useState(false);
-    const [pendingSort, setPendingSort] = useState(sort);
-
-    const handleOpenChange = nextOpen => {
-        if (nextOpen) setPendingSort(sort);
-        setOpen(nextOpen);
-    };
-
-    const handleApply = () => {
-        onSortChange(pendingSort);
-        setOpen(false);
-    };
-
-    return (
-        <ResponsiveDropdownMenu open={open} onOpenChange={handleOpenChange}>
-            <ResponsiveDropdownMenuTrigger
-                render={<Button size='icon-sm' variant='outline' aria-label='Ordenar' />}
-            >
-                {sort.direction === 'asc' ? <SortAscendingIcon /> : <SortDescendingIcon />}
-            </ResponsiveDropdownMenuTrigger>
-            <ResponsiveDropdownMenuContent align='end' className='flex flex-col gap-1'>
-                {SORT_FIELDS.map(option => (
-                    <SortRow
-                        key={option.value}
-                        selected={option.value === pendingSort.field}
-                        onClick={() =>
-                            setPendingSort(current => ({ ...current, field: option.value }))
-                        }
-                    >
-                        <span className='flex-1'>{option.label}</span>
-                        {option.value === pendingSort.field && <CheckIcon />}
-                    </SortRow>
-                ))}
-                <ResponsiveDropdownMenuSeparator />
-                {SORT_DIRECTIONS.map(direction => (
-                    <SortRow
-                        key={direction.value}
-                        selected={direction.value === pendingSort.direction}
-                        onClick={() =>
-                            setPendingSort(current => ({ ...current, direction: direction.value }))
-                        }
-                    >
-                        <direction.icon />
-                        <span className='flex-1'>{direction.label}</span>
-                        {direction.value === pendingSort.direction && <CheckIcon />}
-                    </SortRow>
-                ))}
-                <ResponsiveDropdownMenuSeparator />
-                <Button size='sm' onClick={handleApply}>
-                    Aplicar
-                </Button>
-            </ResponsiveDropdownMenuContent>
-        </ResponsiveDropdownMenu>
     );
 };
 
